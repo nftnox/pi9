@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <div id="user-name">Pozdrav, <span id="ime"></span></div>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">Team</a>
+        <a href="#">Chat</a>
+        <a href="#">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount" id="amount">0.00</span>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let userId = ""; // Varijabla za korisnički ID
+    const ime = "N"; // Ovdje postavite ime korisnika, ili ga preuzmite iz Firestore-a
+
+    async function loadUserId() {
+        // Pretpostavimo da imate funkciju koja preuzima korisnički ID
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("email", "==", "nftnox@gmail.com")); // Prilagodite uvjet
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(doc => {
+                userId = doc.id; // Dobijanje ID-a korisnika
+                document.getElementById('ime').innerText = ime;
+                loadUserData(); // Pozivamo funkciju za učitavanje podataka nakon što imamo ID
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            let amount = docSnap.data().amount || 0.00;
+            let clickCount = docSnap.data().clickCount || 0;
+            document.getElementById('amount').innerText = amount.toFixed(2);
+            document.getElementById('dolar-icon').addEventListener('click', async () => {
+                if (clickCount < 5) {
+                    amount += 0.1;
+                    clickCount++;
+                    document.getElementById('amount').innerText = amount.toFixed(2);
+                    await updateFirestore(amount, clickCount);
+                } else {
+                    alert("Maksimalno 5 klikova dnevno!");
+                }
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function updateFirestore(amount, clickCount) {
+        const docRef = doc(db, 'network', userId);
+        try {
+            await updateDoc(docRef, {
+                amount: amount,
+                clickCount: clickCount
+            });
+            console.log("Podaci uspešno ažurirani.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
+    }
+
+    loadUserId(); // Pozivamo funkciju za učitavanje korisničkog ID-a
+</script>
+
+</body>
+</html>         //OVAJ RADI DA PRIKAZE SAMO JEDNOG KORISNIKA ALI AMOUNT SE UPDATE//
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <div id="user-name">Pozdrav, <span id="ime"></span></div>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">Team</a>
+        <a href="#">Chat</a>
+        <a href="#">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="image-section">
+        <img src="path/to/your/image.jpg" alt="Description of image">
+    </div>
+    <div class="icon-section">
+        <div class="icon">
+            <span class="material-icons">chat</span>
+        </div>
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount" id="amount">0.00</span>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId'); // ID korisnika
+    const ime = urlParams.get('ime');
+    document.getElementById('ime').innerText = ime || 'Korisnik';
+
+    let amount = 0.00;
+    let clickCount = 0;
+    const maxClicks = 5;
+
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            amount = docSnap.data().amount || 0.00;
+            clickCount = docSnap.data().clickCount || 0;
+            document.getElementById('amount').innerText = amount.toFixed(2);
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    document.getElementById('dolar-icon').addEventListener('click', async () => {
+        if (clickCount < maxClicks) {
+            amount += 0.1;
+            clickCount++;
+            document.getElementById('amount').innerText = amount.toFixed(2);
+            await updateFirestore();
+        } else {
+            alert("Maksimalno 5 klikova dnevno!");
+        }
+    });
+
+    async function updateFirestore() {
+        const docRef = doc(db, 'network', userId);
+
+        try {
+            await updateDoc(docRef, {
+                amount: amount,
+                clickCount: clickCount
+            });
+            console.log("Podaci uspešno ažurirani.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
+    }
+
+    loadUserData();
+</script>
+
+</body>
+</html>              //OVAJ PRIKAZE SVE KAKO TREBA ALI NE UPDATE FIRESTORE//

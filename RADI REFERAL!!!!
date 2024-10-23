@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"> <!-- Dodavanje Roboto fonta -->
+    
+</head>
+<body>
+
+    <header>
+        <div id="user-name">Pozdrav, <span id="ime"></span></div>
+        <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+    
+        <!-- Toggle dugme za mobilne uređaje -->
+        <button id="toggle-menu-button" class="toggle-button">☰</button>
+    
+        <nav id="desktop-menu"> <!-- Desktop meni -->
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    
+        <!-- Mobilni meni -->
+        <nav id="toggle-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    </header>
+    
+
+    
+
+<script>
+    const toggleMenuButton = document.getElementById('toggle-menu-button');
+    const toggleMenu = document.getElementById('toggle-menu');
+
+    toggleMenuButton.addEventListener('click', () => {
+        // Togglovanje prikaza menija
+        if (toggleMenu.style.display === 'flex') {
+            toggleMenu.style.display = 'none'; // Sakrij meni
+        } else {
+            toggleMenu.style.display = 'flex'; // Prikaži meni
+        }
+    });
+</script>
+
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount">0.00/h</span>
+        </div>
+    </div>
+    <!-- Ikona za dijeljenje -->
+<button id="share-icon">
+    <span class="material-icons">share</span> Pozovi prijatelje
+</button>
+</div>
+
+<div class="image-container">
+    <img src="images/delta.jpg" alt="Delta Image" style="max-width: 100%; height: auto;">
+</div>
+
+
+<div class="image-container">
+    <img src="images/delta.jpg" alt="Delta Image" style="max-width: 100%; height: auto;">
+</div>
+
+<div class="image-container">
+    <img src="images/delta.jpg" alt="Delta Image" style="max-width: 100%; height: auto;">
+</div>
+
+
+<div class="image-container">
+    <img src="images/delta.jpg" alt="Delta Image" style="max-width: 100%; height: auto;">
+</div>
+<div class="background blue"></div>
+<div class="background purple"></div>
+
+
+<script>
+    const shareIcon = document.getElementById('share-icon');
+
+    // Funkcija za nativno dijeljenje
+    shareIcon.addEventListener('click', async () => {
+        const shareData = {
+            title: 'Poziv za pridruživanje',
+            text: 'Zdravo, pridruži mi se na https://nftnox.github.io/pi3/registracija.html'
+        };
+
+        try {
+            await navigator.share(shareData);
+            console.log('Uspješno podijeljeno');
+        } catch (err) {
+            console.error('Greška prilikom dijeljenja:', err);
+        }
+    });
+</script>
+
+
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let userId = ""; // ID trenutnog korisnika (npr. "Bambi")
+    let currentPrice = 0.00; // Trenutna cijena korisnika
+    let lastClickTime = null; // Vrijeme posljednjeg klika
+    let referralBonus = 0.01; // Početni bonus za novog korisnika (0.01 za 5 sekundi)
+
+    const MAX_REFERRALS = 10; // Maksimalan broj korisnika koji mogu koristiti isti referralCode
+
+    // Funkcija za dobijanje parametara iz URL-a
+    function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            ime: params.get('ime'),
+            prezime: params.get('prezime'),
+            username: params.get('username')
+        };
+    }
+
+    const { username: userParam } = getQueryParams(); // Dobijanje username iz URL-a
+
+    async function loadUserId() {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", userParam));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(doc => {
+                userId = doc.id; // Dobijanje ID-a korisnika
+                const userData = doc.data();
+                document.getElementById('ime').innerText = userData.ime; // Prikazivanje imena korisnika
+                
+                // Provjera da li novi korisnik ima referral kod
+                if (userData.referralCode) {
+                    // Provjera da li taj referralCode odgovara nekom korisniku
+                    checkReferral(userData.referralCode);
+                }
+                
+                loadUserData(); // Učitavanje podataka nakon što imamo ID
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    // Funkcija za provjeru referral koda
+    async function checkReferral(referralCode) {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", referralCode));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            // Ako pronađemo korisnika koji odgovara referralCode-u (npr. "ThorMoon")
+            querySnapshot.forEach(async doc => {
+                const referralOwnerId = doc.id; // ID korisnika kojem je iskorišten referral kod
+                const referralOwnerData = doc.data();
+                const referralCount = referralOwnerData.referralCount || 0; // Broj puta kada je referral kod iskorišten
+
+                if (referralCount >= MAX_REFERRALS) {
+                    // Ako je referralCode već iskorišten maksimalno puta
+                    console.log(`Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.`);
+                } else {
+                    // Dodavanje bonusa postojećem korisniku
+                    const newReferralBonus = 0.01 * (referralCount + 1); // Dodajemo 0.01 za svakog novog korisnika
+
+                    console.log(`Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus}`);
+
+                    // Ažuriraj korisnički dokument u Firestore-u
+                    await updateDoc(doc.ref, {
+                        referralBonus: 0.01 + newReferralBonus, // Ažuriramo bonus korisniku
+                        referralCount: referralCount + 1 // Povećavamo broj korištenja referral koda
+                    });
+                }
+            });
+        }
+    }
+
+    // Funkcija za učitavanje podataka trenutnog korisnika (npr. "Bambi")
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            currentPrice = docSnap.data().currentPrice || 0.00;
+            lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
+            const userReferralBonus = docSnap.data().referralBonus || 0.01; // Po defaultu, 0.01 ako nema referral bonusa
+
+            // Prikazivanje cijene
+            document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+            document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus + "/h" : "0.00/h";
+
+            const now = new Date();
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+
+            if (lastClickTime) {
+                const elapsed = now - lastClickTime;
+                const increments = Math.floor(elapsed / 5000);
+                currentPrice += increments * userReferralBonus; // Koristimo referralBonus za povećanje cijene
+                document.getElementById('amount').innerText = currentPrice.toFixed(2);
+                lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+                await updateFirestore(currentPrice, lastClickTime);
+            }
+
+            document.getElementById('dolar-icon').addEventListener('click', async () => {
+                const now = new Date();
+
+                if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                    lastClickTime = now;
+                    currentPrice += userReferralBonus; // Povećanje cijene po stopi bonusa
+                    document.querySelector('.amount').innerText = userReferralBonus + "/h";
+                    await updateFirestore(currentPrice, lastClickTime);
+                } else {
+                    alert("Možete kliknuti samo jednom svakih 24 sata.");
+                }
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    // Funkcija za ažuriranje Firestore-a
+    async function updateFirestore(currentPrice, lastClickTime) {
+        const docRef = doc(db, 'network', userId);
+        try {
+            await updateDoc(docRef, {
+                currentPrice: currentPrice,
+                lastClickTime: lastClickTime ? lastClickTime : null
+            });
+            console.log("Podaci uspješno ažurirani.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
+    }
+
+    // Kada se stranica učita, pozovite loadUserId
+    window.onload = () => {
+        loadUserId();
+
+        // Postavite interval za učitavanje podataka svakih 5 sekundi
+        setInterval(() => {
+            loadUserData(); // Učitava nove podatke
+        }, 5000);
+    };
+</script>
+
+
+</body>
+</html>

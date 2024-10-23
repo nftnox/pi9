@@ -1,0 +1,109 @@
+// Dugme za kreiranje grupe
+document.getElementById('create-group-button').addEventListener('click', () => {
+    showGroupModal();
+});
+
+// Prikaži modal za kreiranje grupe
+function showGroupModal() {
+    const modal = document.getElementById('group-modal');
+    modal.style.display = 'block';
+
+    // Prikaži listu prijatelja (samo kontakti s kojima je već razgovor započet)
+    const friendListDiv = document.getElementById('friend-list');
+    friendListDiv.innerHTML = ''; // Očisti prethodni sadržaj
+
+    const currentContacts = Array.from(contacts).map(item => JSON.parse(item)); // Uzmi kontakte
+
+    currentContacts.forEach(friend => {
+        const friendElement = document.createElement('div');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = friend.userId;
+        checkbox.value = friend.userName;
+
+        const label = document.createElement('label');
+        label.htmlFor = friend.userId;
+        label.innerText = friend.userName;
+
+        friendElement.appendChild(checkbox);
+        friendElement.appendChild(label);
+        friendListDiv.appendChild(friendElement);
+    });
+}
+
+// Zatvori modal kada klikneš na 'X'
+document.getElementById('close-modal').addEventListener('click', () => {
+    const modal = document.getElementById('group-modal');
+    modal.style.display = 'none';
+});
+
+// Kreiraj grupu nakon što su korisnici odabrani
+document.getElementById('create-group-confirm').addEventListener('click', () => {
+    const selectedFriends = [];
+    const checkboxes = document.querySelectorAll('#friend-list input[type="checkbox"]:checked');
+    const groupName = document.getElementById('group-name').value;
+
+    checkboxes.forEach(checkbox => {
+        selectedFriends.push({
+            userId: checkbox.id,
+            userName: checkbox.value
+        });
+    });
+
+    if (selectedFriends.length > 0 && groupName) {
+        createGroup(selectedFriends, groupName);
+    } else {
+        alert("Odaberite prijatelje i unesite ime grupe.");
+    }
+
+    const modal = document.getElementById('group-modal');
+    modal.style.display = 'none'; // Zatvori modal
+});
+
+// Funkcija za kreiranje grupe
+function createGroup(selectedFriends, groupName) {
+    const groupData = {
+        groupName: groupName,
+        members: selectedFriends.map(friend => friend.userId).concat([username]), // Dodaj i trenutnog korisnika kao člana
+        createdAt: new Date(),
+    };
+
+    // Dodaj grupu u Firestore
+    addDoc(collection(db, 'groups'), groupData)
+        .then(() => {
+            alert('Grupa uspješno kreirana!');
+            // Dodaj grupu u listu kontakata
+            contacts.add(JSON.stringify({ userName: groupName, userId: 'group_' + groupName }));
+            displayUsers(Array.from(contacts).map(item => JSON.parse(item))); // Osvježi prikaz
+        })
+        .catch(error => {
+            console.error('Greška prilikom kreiranja grupe:', error);
+        });
+}
+
+
+
+
+
+
+
+
+
+
+
+<div id="group-container">
+                <button id="create-group-button">➕ Kreiraj Grupu</button>
+            </div>
+            <div id="users-list"></div>
+            
+            <!-- Modal za kreiranje grupe -->
+            <div id="group-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <span id="close-modal" class="close">&times;</span>
+                    <h2>Kreiraj grupu</h2>
+                    <p>Odaberi prijatelje za grupu:</p>
+                    <div id="friend-list"></div>
+                    <input type="text" id="group-name" placeholder="Unesite ime grupe">
+                    <button id="create-group-confirm">Kreiraj grupu</button>
+                </div>
+            </div>

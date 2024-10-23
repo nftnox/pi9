@@ -1,0 +1,344 @@
+poslat cu ti kodove da razumijes o cemu pricam.     prvi kod registracija.html          <!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registracija</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet"> <!-- Dodaj Google Fonts -->
+    
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        /* Dodatni stilovi za inpute */
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #form-container {
+            display: none;
+        }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+            authDomain: "piii-7844e.firebaseapp.com",
+            projectId: "piii-7844e",
+            storageBucket: "piii-7844e.appspot.com",
+            messagingSenderId: "315770496799",
+            appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+            measurementId: "G-JH9SDWTS9V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('register-button').addEventListener('click', () => {
+                document.getElementById('registration-box').style.display = 'none';
+                document.getElementById('form-container').style.display = 'block';
+                document.getElementById('form-title').innerText = "Registracija";
+                document.getElementById('registration-form').style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+            });
+
+            document.getElementById('login-button').addEventListener('click', () => {
+                document.getElementById('registration-box').style.display = 'none';
+                document.getElementById('form-container').style.display = 'block';
+                document.getElementById('form-title').innerText = "Prijava";
+                document.getElementById('registration-form').style.display = 'none'; // Sakrij registraciju
+                document.getElementById('login-form').style.display = 'block';
+            });
+
+            document.getElementById('submit-registration').addEventListener('click', async () => {
+                const ime = document.getElementById('ime').value;
+                const prezime = document.getElementById('prezime').value;
+                const email = document.getElementById('email').value;
+                const username = document.getElementById('username').value;
+                const brojTelefona = document.getElementById('brojTelefona').value;
+                const drzava = document.getElementById('drzava').value;
+                const grad = document.getElementById('grad').value;
+                const adresa = document.getElementById('adresa').value;
+                const sifra = document.getElementById('sifra').value;
+
+                // Proveri da li username već postoji
+                const usernameQuery = query(collection(db, 'network'), where("username", "==", username));
+                const usernameSnapshot = await getDocs(usernameQuery);
+
+                // Proveri da li email već postoji
+                const emailQuery = query(collection(db, 'network'), where("email", "==", email));
+                const emailSnapshot = await getDocs(emailQuery);
+
+                if (!usernameSnapshot.empty) {
+                    alert("Username već postoji. Molimo izaberite drugi.");
+                    return;
+                }
+
+                if (!emailSnapshot.empty) {
+                    alert("Email već postoji. Molimo izaberite drugi.");
+                    return;
+                }
+
+                try {
+                    await addDoc(collection(db, 'network'), {
+                        ime,
+                        prezime,
+                        email,
+                        username,
+                        brojTelefona,
+                        drzava,
+                        grad,
+                        adresa,
+                        sifra,
+                        amount: 0,
+                        clickCount: 0
+                    });
+                    window.location.href = 'index.html?ime=' + ime + '&prezime=' + prezime;
+                } catch (e) {
+                    console.error("Greška pri dodavanju dokumenta: ", e);
+                }
+            });
+
+            document.getElementById('submit-login').addEventListener('click', async () => {
+                const identifier = document.getElementById('login-identifier').value; // Username ili email
+                const sifra = document.getElementById('login-sifra').value;
+
+                // Proveri da li su username/email i šifra uneti
+                if (!identifier || !sifra) {
+                    alert("Molimo unesite username ili email i šifru.");
+                    return;
+                }
+
+                // Kreiraj upit za pretragu korisnika
+                const qUsername = query(collection(db, 'network'), where("username", "==", identifier), where("sifra", "==", sifra));
+                const qEmail = query(collection(db, 'network'), where("email", "==", identifier), where("sifra", "==", sifra));
+
+                const usernameSnapshot = await getDocs(qUsername);
+
+                if (usernameSnapshot.empty) {
+                    const emailSnapshot = await getDocs(qEmail);
+                    if (emailSnapshot.empty) {
+                        alert("Pogrešno username/email ili šifra.");
+                    } else {
+                        const userData = emailSnapshot.docs[0].data();
+                        window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
+                    }
+                } else {
+                    const userData = usernameSnapshot.docs[0].data();
+                    window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
+                }
+            });
+
+            // Toggle password visibility
+            const togglePassword = (inputId, iconId) => {
+                const input = document.getElementById(inputId);
+                const icon = document.getElementById(iconId);
+                icon.addEventListener('click', () => {
+                    const type = input.type === 'password' ? 'text' : 'password';
+                    input.type = type;
+                    icon.textContent = type === 'password' ? 'visibility' : 'visibility_off'; // Google Material Icons
+                });
+            };
+            togglePassword('login-sifra', 'toggle-login-sifra');
+            togglePassword('sifra', 'toggle-sifra'); // Dodajte i za registraciju ako je potrebno
+        });
+    </script>
+</head>
+<body>
+    <div id="registration-box">
+        <h1>Prijavi se ili Registruj se</h1>
+        <button id="register-button">Registruj se</button>
+        <button id="login-button">Prijavi se</button>
+    </div>
+
+    <div id="form-container">
+        <h2 id="form-title">Prijava</h2> <!-- Inicijalno postavljeno na Prijava -->
+        <div id="login-form">
+            <input type="text" id="login-identifier" placeholder="Username ili Email" required>
+            <div style="position: relative;">
+                <input type="password" id="login-sifra" placeholder="Šifra" required>
+                <span id="toggle-login-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span> <!-- Koristi Google Fonts ikonu -->
+            </div>
+            <button id="submit-login">Prijavi se</button>
+        </div>
+
+        <div id="registration-form" style="display:none;">
+            <h2 id="form-title">Registracija</h2>
+            <input type="text" id="ime" placeholder="Ime" required>
+            <input type="text" id="prezime" placeholder="Prezime" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="text" id="brojTelefona" placeholder="Broj telefona" required>
+            <input type="text" id="drzava" placeholder="Država" required>
+            <input type="text" id="grad" placeholder="Grad" required>
+            <input type="text" id="adresa" placeholder="Adresa" required>
+            <div style="position: relative;">
+                <input type="password" id="sifra" placeholder="Šifra" required>
+                <span id="toggle-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span> <!-- Ikona za šifru -->
+            </div>
+            <button id="submit-registration">Registruj se</button>
+        </div>
+    </div>
+</body>
+</html>                 drugi kod index.html              <!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <div id="user-name">Pozdrav, <span id="ime"></span></div>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">Team</a>
+        <a href="#">Chat</a>
+        <a href="#">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount" id="amount">0.00</span>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let userId = ""; // Varijabla za korisnički ID
+let username = ""; // Varijabla za korisničko ime
+
+// Funkcija za dobijanje parametara iz URL-a
+function getQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        ime: params.get('ime'),
+        prezime: params.get('prezime'),
+        username: params.get('username')
+    };
+}
+
+// U funkciji login možete dobiti korisničko ime iz URL-a
+const { username: userParam } = getQueryParams(); // Dobijanje username iz URL-a
+
+async function loadUserId() {
+    const userCollection = collection(db, 'network');
+    const q = query(userCollection, where("username", "==", userParam)); // Koristimo username za pretragu
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+        querySnapshot.forEach(doc => {
+            userId = doc.id; // Dobijanje ID-a korisnika
+            const userData = doc.data();
+            document.getElementById('ime').innerText = userData.ime; // Prikazivanje imena korisnika
+            loadUserData(); // Pozivamo funkciju za učitavanje podataka nakon što imamo ID
+        });
+    } else {
+        console.error("Korisnik ne postoji u Firestore-u.");
+    }
+}
+
+async function loadUserData() {
+    const docRef = doc(db, 'network', userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        let amount = docSnap.data().amount || 0.00;
+        let clickCount = docSnap.data().clickCount || 0;
+        document.getElementById('amount').innerText = amount.toFixed(2);
+        document.getElementById('dolar-icon').addEventListener('click', async () => {
+            if (clickCount < 5) {
+                amount += 0.1;
+                clickCount++;
+                document.getElementById('amount').innerText = amount.toFixed(2);
+                await updateFirestore(amount, clickCount);
+            } else {
+                alert("Maksimalno 5 klikova dnevno!");
+            }
+        });
+    } else {
+        console.error("Korisnik ne postoji u Firestore-u.");
+    }
+}
+
+async function updateFirestore(amount, clickCount) {
+    const docRef = doc(db, 'network', userId);
+    try {
+        await updateDoc(docRef, {
+            amount: amount,
+            clickCount: clickCount
+        });
+        console.log("Podaci uspešno ažurirani.");
+    } catch (error) {
+        console.error("Greška prilikom ažuriranja podataka: ", error);
+    }
+}
+
+// Kada se stranica učita, pozovite loadUserId
+window.onload = () => {
+    loadUserId();
+};
+
+</script>
+
+</body>
+</html>                    napisi kad procitas
+
+
+
+
+
+
+
+sve to super radi, zelim malo nacin da promjenim. ne salji kod nego odgovori. da li ej moguce staviti da user kada klikne na dolar da na njemu pise 0.01/h i da u header stavis cijenu koja se svaki sat vremena mjenja? dakle ako je neko npr kliknuo na dolar gdje je bilo 0.0/h i kad je kliknuo cijena glavna u headeru ce pisati 0.01 i onda kad prodje sat vremena sama ce se povecat na 0.02 i tako da radi 24h, kad istekne 24h cijena na dugme dolar opet ide na 0.0/h a glavna cijena logicno ako je bilo 0.01/h x 24h(koliko traje dan) jednako je 0,24, onda drugi dan kad udje opet klikne na dolar i on se opet promjeni na 0.01/h i onda se pocne povecavat na 0.25 glavna cijena itd itd itd.     dakle korisnik mora udji svakih 24h kako bi mu se glavna cijena nastavila povecavati,     za pocetak da bismo vidjeli da li funkcionise necu moci cekat sat vremena, ti stavi npr 0.01 za svakih 5 sekundi(lahko cemo poslije promjeniti na 60 min)
+
+
+
+
+
+
+

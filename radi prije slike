@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+
+/* Sprečavanje zoomiranja na mobilnim uređajima */
+input,
+textarea {
+    touch-action: manipulation; /* Omogućava manipulaciju bez zumiranja */
+    
+}
+
+
+        /* Osigurajmo da se #referral-info prikazuje */
+        #referral-info {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+        }
+        #referral-info .material-icons {
+            margin-right: 5px;
+        }
+
+        /* Chat modal, smješten u donji desni ugao za desktop, full screen za mobilne uređaje */
+        #chat-modal {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            height: 600px;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            z-index: 1000;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+       
+
+        /* Gornji dio sa X dugmetom za zatvaranje */
+        #chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #5a99cd;
+            color: white;
+        }
+
+        #close-chat {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            color: white;
+            cursor: pointer;
+        }
+
+        #chat-box {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        #users-list {
+    display: flex;
+    flex-wrap: wrap; /* Omogućava prelazak korisnika u novi red */
+    gap: 10px; /* Razmak između korisnika */
+    padding: 10px;
+    justify-content: flex-start; /* Poredaj korisnike s leva */
+}
+
+.user-item {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%; /* Oblik kruga */
+    background-color: #5a99cd; /* Boja pozadine korisnika */
+    color: white; /* Boja teksta korisnika */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px; /* Veličina fonta za ime */
+    text-align: center;
+    overflow: hidden; /* U slučaju dužih imena */
+    text-overflow: ellipsis; /* Skrati tekst ako je predugačak */
+}
+
+.user-item:hover {
+    background-color: #3f78a9; /* Tamnija boja kada se prelazi mišem */
+}
+
+        /* Poruke u chat prozoru */
+        #messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .message {
+    display: block; /* Osigurajte da je svaki element u novom redu */
+    margin: 5px 0; /* Razmak između poruka */
+    padding: 10px; /* Unutarnji razmak za bolju čitljivost */
+    border-radius: 5px; /* Zaobljeni rubovi */
+    word-wrap: break-word; /* Omogućuje prelamanje riječi */
+    max-width: 80%; /* Maksimalna širina poruke */
+}
+
+
+
+        /* Donji dio s unosom poruke */
+#message-input {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    position: absolute; /* Fiksiranje na dno chata */
+    bottom: 0;
+    width: 100%; /* Osigurava da unosi zauzimaju cijelu širinu chata */
+    background-color: white; /* Dodaj pozadinu kako bi bio vidljiv na skrolanju */
+    border-top: 1px solid #ccc; /* Gornja granica za odvajanje od poruka */
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Blaga sjena za bolji vizual */
+}
+
+/* Unosno polje */
+#message-input input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Dugme za slanje */
+#message-input button {
+    padding: 10px;
+    background-color: #5a99cd;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+       
+       
+       /* Prethodni CSS za div #messages, uz male izmjene */
+/* Kontejner za poruke */
+#messages {
+    display: flex;
+    flex-direction: column; /* Da poruke idu vertikalno jedna ispod druge */
+    flex-grow: 1;
+    overflow-y: auto; /* Omogućava skrolanje poruka */
+    padding-bottom: 40px; /* Dovoljno prostora ispod zadnje poruke */
+    max-height: calc(100% - 70px); /* Visina poruka minus unos */
+    box-sizing: border-box; /* Padding uključen u ukupnu visinu */
+}
+
+.message {
+    padding: 10px;
+    border-radius: 5px;
+    margin: 5px 0;
+    max-width: 60%; /* Maksimalna širina poruke */
+    word-wrap: break-word; /* Da tekst ne prelazi okvir poruke */
+}
+
+.message.sender {
+    background-color: #5a99cd; /* Plava pozadina za logovanog korisnika */
+    color: white;
+    margin-left: auto; /* Pomeri poruku sendera desno */
+    text-align: right; /* Tekst unutar poruke poravnaj desno */
+}
+
+.message.recipient {
+    background-color: lightgray; /* Siva pozadina za drugog korisnika */
+    color: black;
+    margin-right: auto; /* Pomeri poruku recipienta levo */
+    text-align: left; /* Tekst unutar poruke poravnaj levo */
+}
+
+
+
+
+
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div id="user-name">Pozdrav, <span id="ime"></span></div>
+        <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+    
+        <!-- Toggle dugme za mobilne uređaje -->
+        <button id="toggle-menu-button" class="toggle-button">☰</button>
+    
+        <nav id="desktop-menu"> <!-- Desktop meni -->
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    
+        <!-- Mobilni meni -->
+        <nav id="toggle-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    </header>
+
+
+    <div id="chat-modal">
+        <div id="chat-header">
+            <span id="chat-header-title">Chat</span>
+            <button id="close-chat">✕</button>
+            <button id="back-to-users" style="display: none;">←</button> <!-- Dodajemo dugme za povratak -->
+        </div>
+        
+        <div id="chat-box">
+            <div id="users-list"></div> <!-- Prikaz korisnika u krugovima -->
+            <div id="messages" style="display: none;"></div> <!-- Skriveno dok ne odabereš korisnika -->
+            <div id="message-input" style="display: none;">
+                <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
+                <input type="text" id="chat-message" placeholder="Unesite poruku">
+                <button id="send-message">Pošalji</button>
+            </div>
+            
+        </div>
+    </div>
+    
+    
+
+    
+    <script>
+        const toggleMenuButton = document.getElementById('toggle-menu-button');
+        const toggleMenu = document.getElementById('toggle-menu');
+
+        toggleMenuButton.addEventListener('click', () => {
+            // Togglovanje prikaza menija
+            if (toggleMenu.style.display === 'flex') {
+                toggleMenu.style.display = 'none'; // Sakrij meni
+            } else {
+                toggleMenu.style.display = 'flex'; // Prikaži meni
+            }
+        });
+    </script>
+
+   
+
+
+
+
+
+
+
+    <div class="container">
+        <div class="icon-section">
+            <div class="icon" id="dolar-icon">
+                <span class="material-icons">attach_money</span>
+                <span class="amount">0.00/h</span>
+            </div>
+        </div>
+        
+        <!-- Dodavanje ikone za broj referral koda ispod trenutne cijene -->
+        <div id="referral-info">
+            <span class="material-icons" style="vertical-align: middle;">group</span> 
+            <span id="referral-count">0/10</span> <!-- Prikaz broja referral koda -->
+        </div>
+
+        <!-- Ikona za dijeljenje -->
+        <button id="share-icon">
+            <span class="material-icons">share</span> Pozovi prijatelje
+        </button>
+    </div>
+
+    <div class="image-container">
+        <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
+    </div>
+
+    <div class="partnership-box">
+        <p>
+            Delta coin is selecting partnerships with crypto-services and general businesses ahead of our Open Network launch. 
+            This is a unique, early opportunity for businesses to connect with over 10 million engaged Delta coin fans and become part of Delta’s rapidly expanding Web3 ecosystem. 
+            If your company is interested in partnering with Delta or you’d like to introduce a business to partner with Delta, tap “Partnerships” to explore how and why.
+        </p>
+    </div>
+
+    <div class="background blue"></div>
+    <div class="background purple"></div>
+
+    <script>
+        const shareIcon = document.getElementById('share-icon');
+
+        // Pretpostavljamo da korisničko ime dolazi iz URL parametara ili je već definirano
+        const { username: userParam } = getQueryParams();
+
+        // Funkcija za nativno dijeljenje
+        shareIcon.addEventListener('click', async () => {
+            const shareData = {
+                title: 'Poziv za pridruživanje',
+                text: `Zdravo, pridruži mi se na https://nftnox.github.io/pi5/registracija.html. Moj kod je ${userParam}`
+            };
+
+            try {
+                await navigator.share(shareData);
+                console.log('Uspješno podijeljeno');
+            } catch (err) {
+                console.error('Greška prilikom dijeljenja:', err);
+            }
+        });
+
+        // Funkcija za dobijanje parametara iz URL-a
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                ime: params.get('ime'),
+                prezime: params.get('prezime'),
+                username: params.get('username')
+            };
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+            authDomain: "piii-7844e.firebaseapp.com",
+            projectId: "piii-7844e",
+            storageBucket: "piii-7844e.appspot.com",
+            messagingSenderId: "315770496799",
+            appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+            measurementId: "G-JH9SDWTS9V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let userId = ""; // ID trenutnog korisnika
+        let username = ""; // Pravi username korisnika
+        let currentPrice = 0.00; // Trenutna cijena korisnika
+        let lastClickTime = null; // Vrijeme posljednjeg klika
+        let referralBonus = 0.01; // Početni bonus za novog korisnika (0.01 za 5 sekundi)
+
+        const MAX_REFERRALS = 10; // Maksimalan broj korisnika koji mogu koristiti isti referralCode
+
+        async function loadUserId() {
+            const userCollection = collection(db, 'network');
+            const q = query(userCollection, where("username", "==", userParam));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                querySnapshot.forEach(doc => {
+                    userId = doc.id; // Dobijanje ID-a korisnika
+                    const userData = doc.data();
+                    username = userData.ime; // Dobijanje stvarnog imena korisnika
+                    document.getElementById('ime').innerText = username; // Prikazivanje imena korisnika
+                    
+                    if (userData.referralCode) {
+                        checkReferral(userData.referralCode);
+                    }
+                    
+                    loadUserData(); // Učitavanje podataka nakon što imamo ID
+                });
+            } else {
+                console.error("Korisnik ne postoji u Firestore-u.");
+            }
+        }
+
+        async function checkReferral(referralCode) {
+            const userCollection = collection(db, 'network');
+            const q = query(userCollection, where("username", "==", referralCode));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                querySnapshot.forEach(async doc => {
+                    const referralOwnerId = doc.id;
+                    const referralOwnerData = doc.data();
+                    const referralCount = referralOwnerData.referralCount || 0;
+                    const usedByUser = referralOwnerData.usedBy || [];
+
+                    if (usedByUser.includes(userId)) {
+                        console.log(`Korisnik ${userId} je već iskoristio referral kod.`);
+                    } else if (referralCount >= MAX_REFERRALS) {
+                        console.log(`Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.`);
+                    } else {
+                        const newReferralBonus = 0.01 * (referralCount + 1);
+
+                        console.log(`Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus}`);
+
+                        await updateDoc(doc.ref, {
+                            referralBonus: 0.01 + newReferralBonus,
+                            referralCount: referralCount + 1,
+                            usedBy: [...usedByUser, userId]
+                        });
+
+                        document.getElementById('referral-count').innerText = `${referralCount + 1}/${MAX_REFERRALS}`;
+                    }
+                });
+            }
+        }
+
+        async function loadUserData() {
+            const docRef = doc(db, 'network', userId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                currentPrice = docSnap.data().currentPrice || 0.00;
+                lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
+                const userReferralBonus = docSnap.data().referralBonus || 0.01;
+
+                document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+                document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus + "/h" : "0.00/h";
+
+                const now = new Date();
+                const twentyFourHours = 24 * 60 * 60 * 1000;
+
+                if (lastClickTime) {
+                    const elapsed = now - lastClickTime;
+                    const increments = Math.floor(elapsed / 5000);
+                    currentPrice += increments * userReferralBonus;
+                    document.getElementById('amount').innerText = currentPrice.toFixed(2);
+                    lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+                    await updateFirestore(currentPrice, lastClickTime);
+                }
+
+                document.getElementById('dolar-icon').addEventListener('click', async () => {
+                    const now = new Date();
+
+                    if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                        lastClickTime = now;
+                        currentPrice += userReferralBonus;
+                        document.querySelector('.amount').innerText = userReferralBonus + "/h";
+                        await updateFirestore(currentPrice, lastClickTime);
+                    } else {
+                        alert("Možete kliknuti samo jednom svakih 24 sata.");
+                    }
+                });
+            } else {
+                console.error("Korisnik ne postoji u Firestore-u.");
+            }
+        }
+
+        async function updateFirestore(currentPrice, lastClickTime) {
+            const docRef = doc(db, 'network', userId);
+            try {
+                await updateDoc(docRef, {
+                    currentPrice: currentPrice,
+                    lastClickTime: lastClickTime ? lastClickTime : null
+                });
+                console.log("Podaci uspješno ažurirani.");
+            } catch (error) {
+                console.error("Greška prilikom ažuriranja podataka: ", error);
+            }
+        }
+
+        
+
+
+
+        let isChatOpen = false; // Pratimo da li je chat otvoren
+let selectedUserName = ''; // Čuvamo ime trenutno odabranog korisnika
+
+// Funkcija za dobijanje korisnika
+async function fetchUsers() {
+    const userCollection = collection(db, 'network');
+    const querySnapshot = await getDocs(userCollection);
+
+    const usersListDiv = document.getElementById('users-list');
+    usersListDiv.innerHTML = ''; // Očisti listu korisnika
+
+    // Iteriraj kroz sve dokumente (korisnike) i prikaži njihova imena u chat prozoru
+    querySnapshot.forEach(doc => {
+        const userData = doc.data();
+        const userName = userData.ime;
+
+        // Kreiraj HTML element za ime korisnika
+        const userElement = document.createElement('div');
+        userElement.classList.add('user-item'); // Stilizacija korisnika
+        userElement.innerText = userName; // Postavi ime korisnika kao tekst
+
+        // Dodaj klik događaj za odabir korisnika
+        userElement.addEventListener('click', () => {
+            openChat(userName); // Pozovi funkciju za otvaranje chat-a
+        });
+
+        usersListDiv.appendChild(userElement);
+    });
+}
+
+// Event listener za desktop meni
+document.getElementById('chat-link').addEventListener('click', async () => {
+    const chatModal = document.getElementById('chat-modal');
+    chatModal.style.display = 'flex'; // Prikaz modalnog prozora
+
+    // Ako se chat otvara po prvi put, dohvatimo sve korisnike
+    if (!isChatOpen) {
+        await fetchUsers(); // Pozovi funkciju za dobijanje korisnika
+        isChatOpen = true; // Postavljamo chat stanje kao otvoreno
+    } else {
+        resetChat(); // Ako je chat već otvoren, resetuj na listu korisnika
+    }
+});
+
+// Dodaj event listener za chat link u mobilnom meniju
+document.getElementById('toggle-menu').addEventListener('click', async (event) => {
+    if (event.target.id === 'chat-link') {
+        document.getElementById('toggle-menu').style.display = 'none'; // Sakrij mobilni meni
+        const chatModal = document.getElementById('chat-modal');
+        chatModal.style.display = 'flex'; // Prikaz modalnog prozora
+
+        // Ako se chat otvara po prvi put, dohvatimo sve korisnike
+        if (!isChatOpen) {
+            await fetchUsers(); // Pozovi funkciju za dobijanje korisnika
+            isChatOpen = true; // Postavljamo chat stanje kao otvoreno
+        } else {
+            resetChat(); // Ako je chat već otvoren, resetuj na listu korisnika
+        }
+    }
+});
+
+
+
+
+
+
+// Funkcija za otvaranje chat-a
+async function openChat(userName) {
+    selectedUserName = userName; // Zapamti ime odabranog korisnika
+    const messagesDiv = document.getElementById('messages');
+    const messageInputDiv = document.getElementById('message-input');
+    const usersListDiv = document.getElementById('users-list');
+    const backButton = document.getElementById('back-to-users');
+    const chatHeaderTitle = document.getElementById('chat-header-title');
+
+    // Sakrij listu korisnika i prikaži chat prozor
+    usersListDiv.style.display = 'none';
+    messagesDiv.style.display = 'block';
+    messageInputDiv.style.display = 'flex';
+
+    // Prikaz imena odabranog korisnika
+    chatHeaderTitle.innerText = `Chat with ${userName}`;
+    backButton.style.display = 'block'; // Prikaži dugme za povratak
+
+    // Dohvati i prikaži historiju poruka
+    await loadMessageHistory();
+    listenForNewMessages(); // Počnimo slušati nove poruke
+}
+
+
+async function loadMessageHistory() {
+    const messagesCollection = collection(db, 'poruke');
+    const q = query(messagesCollection, 
+        where('sender', 'in', [username, selectedUserName]),
+        where('recipient', 'in', [username, selectedUserName])
+    );
+    const querySnapshot = await getDocs(q);
+    
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.innerHTML = ''; // Očisti prethodne poruke
+
+    // Učitaj poruke u niz i sortiraj po timestamp-u
+    const messages = [];
+    querySnapshot.forEach(doc => {
+        const messageData = doc.data();
+        messages.push({
+            ...messageData,
+            id: doc.id // Sačuvaj id za kasniju upotrebu ako je potrebno
+        });
+    });
+
+    // Sortiraj poruke po timestamp-u
+    messages.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Prikaži sortirane poruke
+    messages.forEach(messageData => {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+
+        // Proveri ko je pošiljalac i dodaj odgovarajuću klasu
+        if (messageData.sender === username) {
+            messageElement.classList.add('sender');
+        } else {
+            messageElement.classList.add('recipient');
+        }
+
+        messageElement.innerText = `${messageData.sender}: ${messageData.message}`;
+        messagesDiv.appendChild(messageElement);
+    });
+}
+
+
+function listenForNewMessages() {
+    const messagesCollection = collection(db, 'poruke');
+    const q = query(messagesCollection, 
+        where('sender', 'in', [username, selectedUserName]),
+        where('recipient', 'in', [username, selectedUserName])
+    );
+
+    onSnapshot(q, (querySnapshot) => {
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = ''; // Očisti prethodne poruke
+
+        // Učitaj poruke u niz
+        const messages = [];
+        querySnapshot.forEach(doc => {
+            const messageData = doc.data();
+            messages.push({
+                ...messageData,
+                id: doc.id
+            });
+        });
+
+        // Sortiraj poruke po timestamp-u
+        messages.sort((a, b) => a.timestamp - b.timestamp);
+
+        // Prikaži sortirane poruke
+        messages.forEach(messageData => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+
+            // Proveri ko je pošiljalac i dodaj odgovarajuću klasu
+            if (messageData.sender === username) {
+                messageElement.classList.add('sender');
+            } else {
+                messageElement.classList.add('recipient');
+            }
+
+            messageElement.innerText = `${messageData.sender}: ${messageData.message}`;
+            messagesDiv.appendChild(messageElement);
+        });
+    });
+}
+
+
+
+
+
+// Zatvori chat kada korisnik klikne na X dugme
+document.getElementById('close-chat').addEventListener('click', () => {
+    closeChat(); // Zatvori chat
+});
+
+// Funkcija za zatvaranje chata
+function closeChat() {
+    const chatModal = document.getElementById('chat-modal');
+    chatModal.style.display = 'none'; // Sakrij modalni prozor
+    isChatOpen = false; // Postavi chat stanje kao zatvoreno
+}
+
+// Dodaj događaj za povratak na listu korisnika
+document.getElementById('back-to-users').addEventListener('click', () => {
+    resetChat(); // Resetuj chat na listu korisnika
+});
+
+// Funkcija za resetovanje chata na početnu listu korisnika
+function resetChat() {
+    const usersListDiv = document.getElementById('users-list');
+    const messagesDiv = document.getElementById('messages');
+    const messageInputDiv = document.getElementById('message-input');
+    const chatHeaderTitle = document.getElementById('chat-header-title');
+    const backButton = document.getElementById('back-to-users');
+
+    usersListDiv.style.display = 'block'; // Prikaži listu korisnika
+    messagesDiv.style.display = 'none'; // Sakrij chat prozor
+    messageInputDiv.style.display = 'none'; // Sakrij ulaz za poruku
+    chatHeaderTitle.innerText = 'Chat'; // Resetuj naslov na 'Chat'
+    backButton.style.display = 'none'; // Sakrij dugme za povratak NAKON OVOGA DODAJ
+}
+
+
+
+
+// Funkcija za slanje poruke
+async function sendMessage() {
+        const messageInput = document.getElementById('chat-message');
+        const messageText = messageInput.value.trim();
+
+        if (messageText) {
+            const messagesCollection = collection(db, 'poruke');
+            try {
+                await addDoc(messagesCollection, {
+                    sender: username, // Ime pošiljaoca
+                    recipient: selectedUserName, // Ime primaoca
+                    message: messageText, // Tekst poruke
+                    timestamp: new Date() // Vreme slanja poruke
+                });
+                console.log("Poruka uspješno poslana:", messageText);
+                messageInput.value = ''; // Očisti ulaz nakon slanja
+            } catch (error) {
+                console.error("Greška prilikom slanja poruke:", error);
+            }
+        }
+    }
+
+    // Dodajte događaj za slanje poruke kada se klikne na dugme
+    document.getElementById('send-message').addEventListener('click', sendMessage);
+
+
+
+// za korisnike da se red ne remeti//
+    document.getElementById("back-to-users").addEventListener("click", function() {
+    document.getElementById("users-list").style.display = "flex"; // Ponovo primjeni flexbox
+    document.getElementById("messages").style.display = "none"; // Sakrij poruke
+    document.getElementById("message-input").style.display = "none"; // Sakrij unos poruka
+    document.getElementById("back-to-users").style.display = "none"; // Sakrij dugme za povratak
+});
+
+function openChatWithUser(userId) {
+    document.getElementById("users-list").style.display = "none"; // Sakrij listu korisnika
+    document.getElementById("messages").style.display = "block"; // Prikazi poruke
+    document.getElementById("message-input").style.display = "flex"; // Prikazi unos poruka
+    document.getElementById("back-to-users").style.display = "block"; // Prikazi dugme za povratak
+}
+
+
+      
+
+        window.onload = () => {
+            loadUserId();
+            setInterval(() => {
+                loadUserData();
+            }, 5000);
+        };
+    </script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+<style>
+    body {
+        font-family: 'Roboto', sans-serif; /* Promjena fonta */
+        margin: 0;
+        padding: 0;
+        background-color: black;
+        
+       
+    }
+   
+
+    @media (max-width: 768px) {
+    html, body {
+        width: 100%;
+        overflow-x: hidden; /* Onemogućava horizontalno pomjeranje */
+        margin: 0; /* Uklanja podrazumijevane margine */
+        padding: 0; /* Uklanja podrazumijevane paddinge */
+    }
+
+    /* Osiguraj da svi kontejneri i elementi imaju odgovarajuću širinu */
+    * {
+        max-width: 100%; /* Ograničava širinu na 100% */
+        box-sizing: border-box; /* Uključuje padding i border u ukupnu širinu */
+    }
+
+    img {
+        max-width: 100%; /* Održava slike unutar širine kontejnera */
+        height: auto; /* Održava odnos slike */
+    }
+
+    /* Podesi širinu specifičnih elemenata ako je potrebno */
+    .some-element { /* Zameniti sa stvarnim klasama */
+        width: 100%; /* Ili odgovarajući procenat */
+    }
+}
+
+    .background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .blue {
+    background: linear-gradient(to bottom right, rgba(23, 135, 226, 0.6), rgba(0, 0, 0, 0) 50%);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 50%;
+    
+}
+
+
+.purple {
+    background: linear-gradient(to top left, rgba(128, 0, 128, 0.6), rgba(0, 0, 0, 0) 50%);
+    position: fixed; /* Changed to fixed to always stick to the bottom-right */
+    bottom: 0;
+    right: 0;
+    width: 50%;
+    height: 50%;
+    z-index: 1; /* Make sure it stays below other content if necessary */
+}
+
+
+
+        
+    nav {
+        display: flex;
+        gap: 20px;
+    }
+    nav a {
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+    nav .material-icons {
+        margin-right: 5px; /* Razmak između ikone i teksta */
+    }
+    .container {
+        display: flex;
+        
+        padding: 20px;
+    }
+    .icon-section {
+    flex: 2;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 20px;
+}
+
+.icon {
+    background-color: transparent; /* Prozirna pozadina */
+    border-radius: 0; /* Pravougaoni oblik */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 120px; /* Širina pravougaonika */
+    height: 60px; /* Visina pravougaonika */
+    font-size: 24px;
+    cursor: pointer;
+    position: relative;
+    background: transparent; /* Prozirna pozadina */
+    color: white; /* Bijela boja teksta */
+    border: 2px solid transparent; /* Prozirni obrub (outline) */
+    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+
+
+    
+
+    
+}
+
+   
+    .amount {
+        font-size: 24px;
+        margin-left: 2px;
+    }
+
+
+/* Stil za ikonice */
+.material-icons {
+    vertical-align: middle; /* Poravnanje ikone sa tekstom */
+    margin-right: 8px; /* Razmak između ikone i teksta */
+}
+
+
+#share-icon {
+    background-color: transparent; /* Prozirna pozadina */
+    border-radius: 0; /* Pravougaoni oblik */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 150px; /* Širina pravougaonika */
+    height: 60px; /* Visina pravougaonika */
+    font-size: 22px;
+    cursor: pointer;
+    position: relative;
+    background: transparent; /* Prozirna pozadina */
+    color: white; /* Bijela boja teksta */
+    border: 2px solid transparent; /* Prozirni obrub (outline) */
+    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+
+
+}
+
+#share-icon span.material-icons {
+    font-size: 24px; /* Veličina ikone */
+}
+
+
+</style>
+
+
+
+
+<style>
+    .partnership-box {
+        border-width: 2px; /* debljina obruba */
+        border-style: solid; /* stil obruba */
+        border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* gradijentni obrub s lijeva na desno */
+        padding: 20px; /* razmak unutar boxa */
+        margin: 20px auto; /* razmak iznad i ispod boxa, centrirano */
+        max-width: 600px; /* maksimalna širina boxa */
+        text-align: justify; /* opravdanje teksta */
+        background-color: #000; /* crna pozadina */
+        color: #fff; /* bijela boja teksta */
+        border-radius: 50px !important; /* povećanje zaobljenosti ivica */
+    }
+
+    .partnership-box p {
+        margin: 0; /* uklanja zadani razmak oko paragrafa */
+        text-indent: 0; /* nema uvlačenja prve linije */
+        line-height: 1.6; /* povećava razmak između redova */
+    }
+
+    .partnership-box img {
+    width: 100%; /* Postavi osnovnu širinu na 100% da se prilagođava */
+    max-width: 600px; /* Maksimalna širina za desktop */
+    height: auto; /* Automatsko prilagođavanje visine */
+}
+
+/* Za mobilne uređaje */
+@media only screen and (max-width: 768px) {
+    .partnership-box img {
+        max-width: 350px; /* Maksimalna širina za mobitele */
+    }
+}
+
+</style>
+
+
+
+
+<style>
+   header {
+
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  position: relative; /* Omogućuje apsolutno pozicioniranje menija */
+}
+
+
+/* Toggle dugme */
+.toggle-button {
+  display: none; /* Skriveno po defaultu */
+  font-size: 30px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+#toggle-menu {
+  display: none; /* Skriveno po defaultu */
+  flex-direction: column; /* Vertikalno poravnanje menija */
+  background: linear-gradient(to bottom, #000000, #4b0078); /* Gradijent od plave do tamno ljubičaste */
+  position: absolute;
+  right: 0px;
+  top: 60px;
+  width: 50%;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+
+
+
+
+#toggle-menu a {
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  display: block;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Stil za desktop meni */
+#desktop-menu {
+  display: flex;
+}
+
+#desktop-menu a {
+  margin-left: 20px;
+  text-decoration: none;
+  color: white;
+}
+
+/* Media query za mobilne uređaje */
+@media (max-width: 768px) {
+  /* Prikaži toggle dugme na mobilnim uređajima */
+  .toggle-button {
+      display: block;
+      transform: translateX(20px); /* Pomjera udesno za 20px */
+  }
+  /* Sakrij desktop meni na mobilnim uređajima */
+  #desktop-menu {
+      display: none;
+  }
+
+}
+
+.image-container {
+    display: flex;
+    justify-content: center; /* Centriraj sliku */
+    align-items: flex-start; /* Poravnaj gornji dio */
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .image-container {
+        align-items: flex-start; /* Gornji dio */
+        transform: translateY(10px); /* Pomakni prema dolje na mobilnim uređajima */
+    }
+}
+
+.image-container img {
+    animation: pulse 3s infinite; /* Animacija nazvana 'pulse' koja traje 2 sekunde i ponavlja se beskonačno */
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1); /* Početna veličina */
+    }
+    50% {
+        transform: scale(1.05); /* Blago povećanje veličine */
+    }
+    100% {
+        transform: scale(1); /* Vraćanje na početnu veličinu */
+    }
+}
+
+
+  </style>
+
+
+
+<style>
+    #current-price {
+        transform: translateX(130px); /* Podesi ovu vrijednost prema željenom pomjeranju */
+}
+
+@media only screen and (max-width: 768px) {
+    #current-price {
+        transform: translateX(40px); /* Podesi ovu vrijednost prema željenom pomjeranju */
+    }
+}
+
+#user-name {
+    position: relative;
+}
+
+@media only screen and (max-width: 768px) {
+    #user-name {
+        transform: translateX(-20px); /* Pomjeranje ulijevo, prilagodi prema potrebi */
+    }
+}
+
+
+</style>

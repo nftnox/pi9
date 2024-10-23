@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <div id="user-name">Pozdrav, <span id="ime"></span></div>
+    <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">Team</a>
+        <a href="#">Chat</a>
+        <a href="#">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount">0.00/h</span>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let userId = ""; // Varijabla za korisnički ID
+    let currentPrice = 0.00; // Varijabla za trenutnu cijenu
+    let hourlyIncrease = 0.00; // Varijabla za povećanje svakih sat vremena
+    let lastClickTime = null; // Varijabla za praćenje vremena poslednjeg klika
+
+    // Funkcija za dobijanje parametara iz URL-a
+    function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            ime: params.get('ime'),
+            prezime: params.get('prezime'),
+            username: params.get('username')
+        };
+    }
+
+    const { username: userParam } = getQueryParams(); // Dobijanje username iz URL-a
+
+    async function loadUserId() {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", userParam));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(doc => {
+                userId = doc.id; // Dobijanje ID-a korisnika
+                const userData = doc.data();
+                document.getElementById('ime').innerText = userData.ime; // Prikazivanje imena korisnika
+                loadUserData(); // Pozivamo funkciju za učitavanje podataka nakon što imamo ID
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            currentPrice = docSnap.data().currentPrice || 0.00;
+            document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+            hourlyIncrease = docSnap.data().hourlyIncrease || 0.00;
+            lastClickTime = docSnap.data().lastClickTime || null; // Učitavamo vreme poslednjeg klika
+            document.querySelector('.amount').innerText = hourlyIncrease.toFixed(2) + "/h";
+
+            // Postavi interval da se cijena ažurira svakih 5 sekundi
+            setInterval(async () => {
+                if (hourlyIncrease > 0) {
+                    currentPrice += hourlyIncrease * (5 / 3600); // Povećanje na osnovu vremena
+                    document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+                    await updateFirestore(currentPrice, hourlyIncrease, lastClickTime);
+                }
+            }, 5000);
+
+            // Klik na dolar ikonicu za dodavanje 0.01 na trenutnu cijenu
+            document.getElementById('dolar-icon').addEventListener('click', async () => {
+                const now = new Date();
+                const twentyFourHours = 24 * 60 * 60 * 1000; // 24h u milisekundama
+
+                if (!lastClickTime || (now - lastClickTime) > twentyFourHours) {
+                    hourlyIncrease = 0.01; // Povećaj na 0.01/h
+                    document.querySelector('.amount').innerText = hourlyIncrease.toFixed(2) + "/h";
+                    lastClickTime = now; // Postavi vreme poslednjeg klika
+                    await updateFirestore(currentPrice, hourlyIncrease, lastClickTime);
+                } else {
+                    alert("Možete kliknuti samo jednom svakih 24 sata.");
+                }
+            });
+
+            // Resetuj hourlyIncrease svakih 24h
+            setInterval(async () => {
+                const now = new Date();
+                if (lastClickTime && (now - lastClickTime) >= twentyFourHours) {
+                    hourlyIncrease = 0.00; // Resetuj na 0.00/h
+                    document.querySelector('.amount').innerText = hourlyIncrease.toFixed(2) + "/h";
+                    await updateFirestore(currentPrice, hourlyIncrease, null); // Resetujemo i poslednje vreme klika
+                }
+            }, 60000); // Proverava svakih 60 sekundi
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function updateFirestore(currentPrice, hourlyIncrease, lastClickTime) {
+        const docRef = doc(db, 'network', userId);
+        try {
+            await updateDoc(docRef, {
+                currentPrice: currentPrice,
+                hourlyIncrease: hourlyIncrease,
+                lastClickTime: lastClickTime ? lastClickTime : null // Ažuriraj vreme poslednjeg klika
+            });
+            console.log("Podaci uspješno ažurirani.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
+    }
+
+    // Kada se stranica učita, pozovite loadUserId
+    window.onload = () => {
+        loadUserId();
+    };
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+//SVE RADI OSIM STO NE VIDIM LIVE PROMJENU//
+
+
+
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <div id="user-name">Pozdrav, <span id="ime"></span></div>
+    <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">Team</a>
+        <a href="#">Chat</a>
+        <a href="#">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount">0.00/h</span>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let userId = ""; // Varijabla za korisnički ID
+    let currentPrice = 0.00; // Varijabla za trenutnu cijenu
+    let lastClickTime = null; // Varijabla za praćenje vremena poslednjeg klika
+
+    // Funkcija za dobijanje parametara iz URL-a
+    function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            ime: params.get('ime'),
+            prezime: params.get('prezime'),
+            username: params.get('username')
+        };
+    }
+
+    const { username: userParam } = getQueryParams(); // Dobijanje username iz URL-a
+
+    async function loadUserId() {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", userParam));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(doc => {
+                userId = doc.id; // Dobijanje ID-a korisnika
+                const userData = doc.data();
+                document.getElementById('ime').innerText = userData.ime; // Prikazivanje imena korisnika
+                loadUserData(); // Pozivamo funkciju za učitavanje podataka nakon što imamo ID
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            currentPrice = docSnap.data().currentPrice || 0.00;
+            lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null; // Učitavamo vreme poslednjeg klika
+
+            // Prikazivanje cijene
+            document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+            document.querySelector('.amount').innerText = (currentPrice > 0) ? "0.01/h" : "0.00/h"; // Početno povećanje
+
+            // Proveri prošlo vreme i nastavi sa povećanjem ako je manje od 24h
+            const now = new Date();
+            const twentyFourHours = 24 * 60 * 60 * 1000; // 24h u milisekundama
+
+            if (lastClickTime) {
+                const elapsed = now - lastClickTime; // Prolazno vreme
+                const increments = Math.floor(elapsed / 5000); // Računanje broja povećanja svake 5 sekundi
+                currentPrice += increments * 0.01; // Ažuriranje trenutne cijene
+                document.getElementById('amount').innerText = currentPrice.toFixed(2); // Ažuriranje prikazane cijene
+                lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5); // Ažuriranje vremena poslednjeg klika
+                await updateFirestore(currentPrice, lastClickTime); // Ažuriranje Firestore sa novim vremenom i cijenom
+            }
+
+            // Klik na dolar ikonicu za dodavanje 0.01 na trenutnu cijenu
+            document.getElementById('dolar-icon').addEventListener('click', async () => {
+                const now = new Date();
+
+                // Postavljanje vremena poslednjeg klika i povećanje
+                if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                    lastClickTime = now; // Postavi vreme poslednjeg klika
+                    currentPrice += 0.01; // Povećanje za 0.01
+                    document.querySelector('.amount').innerText = "0.01/h"; // Postavi hourlyIncrease na 0.01/h
+                    await updateFirestore(currentPrice, lastClickTime); // Ažurirajte Firestore
+                } else {
+                    alert("Možete kliknuti samo jednom svakih 24 sata.");
+                }
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function updateFirestore(currentPrice, lastClickTime) {
+        const docRef = doc(db, 'network', userId);
+        try {
+            await updateDoc(docRef, {
+                currentPrice: currentPrice,
+                lastClickTime: lastClickTime ? lastClickTime : null // Ažuriraj vreme poslednjeg klika
+            });
+            console.log("Podaci uspješno ažurirani.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
+    }
+
+    // Kada se stranica učita, pozovite loadUserId
+    window.onload = () => {
+        loadUserId();
+    };
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+//FENOMENALNO RADI//
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<header>
+    <div id="user-name">Pozdrav, <span id="ime"></span></div>
+    <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">Team</a>
+        <a href="#">Chat</a>
+        <a href="#">Profile</a>
+    </nav>
+</header>
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount">0.00/h</span>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let userId = ""; // Varijabla za korisnički ID
+    let currentPrice = 0.00; // Varijabla za trenutnu cijenu
+    let lastClickTime = null; // Varijabla za praćenje vremena poslednjeg klika
+
+    // Funkcija za dobijanje parametara iz URL-a
+    function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            ime: params.get('ime'),
+            prezime: params.get('prezime'),
+            username: params.get('username')
+        };
+    }
+
+    const { username: userParam } = getQueryParams(); // Dobijanje username iz URL-a
+
+    async function loadUserId() {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", userParam));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(doc => {
+                userId = doc.id; // Dobijanje ID-a korisnika
+                const userData = doc.data();
+                document.getElementById('ime').innerText = userData.ime; // Prikazivanje imena korisnika
+                loadUserData(); // Pozivamo funkciju za učitavanje podataka nakon što imamo ID
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            currentPrice = docSnap.data().currentPrice || 0.00;
+            lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null; // Učitavamo vreme poslednjeg klika
+
+            // Prikazivanje cijene
+            document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+            document.querySelector('.amount').innerText = (currentPrice > 0) ? "0.01/h" : "0.00/h"; // Početno povećanje
+
+            // Proveri prošlo vreme i nastavi sa povećanjem ako je manje od 24h
+            const now = new Date();
+            const twentyFourHours = 24 * 60 * 60 * 1000; // 24h u milisekundama
+
+            if (lastClickTime) {
+                const elapsed = now - lastClickTime; // Prolazno vreme
+                const increments = Math.floor(elapsed / 5000); // Računanje broja povećanja svake 5 sekundi
+                currentPrice += increments * 0.01; // Ažuriranje trenutne cijene
+                document.getElementById('amount').innerText = currentPrice.toFixed(2); // Ažuriranje prikazane cijene
+                lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5); // Ažuriranje vremena poslednjeg klika
+                await updateFirestore(currentPrice, lastClickTime); // Ažuriranje Firestore sa novim vremenom i cijenom
+            }
+
+            // Klik na dolar ikonicu za dodavanje 0.01 na trenutnu cijenu
+            document.getElementById('dolar-icon').addEventListener('click', async () => {
+                const now = new Date();
+
+                // Postavljanje vremena poslednjeg klika i povećanje
+                if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                    lastClickTime = now; // Postavi vreme poslednjeg klika
+                    currentPrice += 0.01; // Povećanje za 0.01
+                    document.querySelector('.amount').innerText = "0.01/h"; // Postavi hourlyIncrease na 0.01/h
+                    await updateFirestore(currentPrice, lastClickTime); // Ažurirajte Firestore
+                } else {
+                    alert("Možete kliknuti samo jednom svakih 24 sata.");
+                }
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function updateFirestore(currentPrice, lastClickTime) {
+        const docRef = doc(db, 'network', userId);
+        try {
+            await updateDoc(docRef, {
+                currentPrice: currentPrice,
+                lastClickTime: lastClickTime ? lastClickTime : null // Ažuriraj vreme poslednjeg klika
+            });
+            console.log("Podaci uspješno ažurirani.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
+    }
+
+    // Kada se stranica učita, pozovite loadUserId
+    window.onload = () => {
+        loadUserId();
+
+        // Postavite interval za učitavanje podataka svakih 5 sekundi
+        setInterval(() => {
+            loadUserData(); // Učitava nove podatke
+        }, 5000);
+    };
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+//VIDEO NE RADI X//
+
+
+<!-- Pop-up za video -->
+<div id="video-popup" class="popup">
+  <div class="popup-content">
+      <video id="promo-video" width="600" autoplay muted>
+          <source src="images/reklama.mp4" type="video/mp4">
+          Vaš preglednik ne podržava video tag.
+      </video>
+      <span id="close-popup" class="close-btn" style="color: black;">&times;</span>
+  </div>
+</div>
+
+<style>
+  /* Stilovi za pop-up */
+  .popup {
+      display: flex; /* Promijenite na flex kako bi se centriralo */
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8); /* Tamna pozadina */
+      justify-content: center;
+      align-items: center;
+  }
+
+  .popup-content {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      position: relative;
+  }
+
+  .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 28px;
+      cursor: pointer;
+      color: black; /* Postavi boju na crnu */
+  }
+</style>
+
+<script>
+  window.onload = function() {
+      const videoPopup = document.getElementById('video-popup');
+      const video = document.getElementById('promo-video');
+      const closeButton = document.getElementById('close-popup');
+
+      // Prikaži video pop-up kada se stranica učita
+      videoPopup.style.display = 'block';
+
+      // Automatski pokreni video
+      video.play();
+
+      // Onemogući kontrole videa
+      video.controls = false; // Onemogući kontrole
+
+      // Funkcija za zatvaranje pop-up-a
+      closeButton.onclick = function() {
+          videoPopup.style.display = 'none'; // Sakrij pop-up
+          video.pause(); // Pauziraj video
+          video.currentTime = 0; // Resetuj video na početak
+      };
+
+      // Dodajte ovdje kod za zatvaranje pop-up-a kada se klikne van pop-up sadržaja
+      window.onclick = function(event) {
+          if (event.target === videoPopup) {
+              videoPopup.style.display = 'none'; // Sakrij pop-up
+              video.pause(); // Pauziraj video
+              video.currentTime = 0; // Resetuj video na početak
+          }
+      };
+  };
+</script>
+
+
+
+
+video
+<div id="video-popup" class="video-popup" onclick="closePopup(event)">
+        <div class="video-content" onclick="event.stopPropagation();">
+            <span class="close" onclick="closePopup(event)">&times;</span>
+            <video autoplay muted>
+                <source src="images/reklama.mp4" type="video/mp4">
+                Vaš preglednik ne podržava video.
+            </video>
+        </div>
+    </div>
+
+    <script>
+        function closePopup(event) {
+            event.stopPropagation(); // Spriječiti da se događaj propagira do pozadine
+            console.log("closePopup() funkcija je pozvana."); // Provjera poziva funkcije
+            const videoPopup = document.getElementById('video-popup');
+            
+            if (videoPopup) {
+                videoPopup.style.display = 'none'; // Sakrij popup
+    
+                const video = videoPopup.querySelector('video');
+                if (video) {
+                    video.pause(); // Pauziraj video kada se popup zatvori
+                    video.currentTime = 0; // Resetuj video na početak
+                    console.log("Video je pauziran i resetovan."); // Provjera pauziranja i resetovanja videa
+                }
+            }
+        }
+    
+        window.onload = () => {
+            // Prikazuje popup kada se stranica učita
+            const videoPopup = document.getElementById('video-popup');
+            videoPopup.style.display = 'flex'; // Prikazivanje popupa
+    
+            // Postavite interval za učitavanje podataka svakih 5 sekundi
+            setInterval(() => {
+                loadUserData(); // Učitava nove podatke
+            }, 5000);
+        };
+    </script>
+
+    <style>
+    .video-popup {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        justify-content: center;
+        align-items: center;
+        z-index: 9999; /* Osigurava da je popup iznad ostalog sadržaja */
+    }
+    .video-content {
+        position: relative;
+        width: 40%;
+        max-width: 800px; /* Maksimalna širina popupa */
+        height: 30%; /* Postavite visinu popupa na 80% */
+    }
+    .close {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 30px;
+        color: white;
+        cursor: pointer;
+    }
+    video {
+        width: 100%;
+        height: 150%; /* Povećanje visine videa na 150% */
+        object-fit: cover; /* Pomaže da se video prilagodi okviru bez gubitka proporcija */
+    }
+
+    /* Medijski upit za mobilne uređaje */
+    @media (max-width: 768px) {
+        .video-content {
+            height: 20%; /* Postavite visinu popupa na 80% za mobilne uređaje */
+            width: 80%;
+        }
+        
+    }
+</style>
+
+
+
+
+
+//stari nacin djeljenja//
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount">0.00/h</span>
+        </div>
+        <div class="icon" id="share-icon">
+            <span class="material-icons">arrow_upward</span>
+            <span class="share-text">Invite</span>
+        </div>
+    </div>
+</div>
+
+<!-- Modal za dijeljenje -->
+<div id="share-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <h2>Podijeli putem:</h2>
+        <a href="viber://pa?text=Dobar dan, pridruži mi se na https://nftnox.github.io/pi2/" target="_blank">
+            <span class="material-icons">message</span> Viber
+        </a>
+        <a href="https://api.whatsapp.com/send?text=Dobar dan, pridruži mi se na https://nftnox.github.io/pi2/" target="_blank">
+            <span class="material-icons">chat</span> WhatsApp
+        </a>
+        <a href="fb-messenger://share/?link=https://nftnox.github.io/pi2/" target="_blank">
+            <span class="material-icons">message</span> Messenger
+        </a>
+        <a href="mailto:?subject=Pridruži mi se&body=Dobar dan, pridruži mi se na https://nftnox.github.io/pi2/">
+            <span class="material-icons">email</span> Gmail
+        </a>
+        <a href="sms:?&body=Dobar dan, pridruži mi se na https://nftnox.github.io/pi2/">
+            <span class="material-icons">sms</span> SMS
+        </a>
+    </div>
+</div>
+
+<style>
+    .modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+}
+
+.modal-content a {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    text-decoration: none;
+    color: #333;
+}
+
+.modal-content span {
+    margin-right: 10px;
+}
+
+.modal-content h2 {
+    margin-bottom: 20px;
+}
+
+.modal-content a:hover {
+    color: #007BFF;
+    cursor: pointer;
+}
+
+</style>
+
+<script>
+    const shareIcon = document.getElementById('share-icon');
+const shareModal = document.getElementById('share-modal');
+
+// Prikaz modal prozora na klik "Invite"
+shareIcon.addEventListener('click', () => {
+    shareModal.style.display = 'block';
+});
+
+// Zatvaranje modala kada se klikne izvan njega
+window.addEventListener('click', (event) => {
+    if (event.target == shareModal) {
+        shareModal.style.display = 'none';
+    }
+});
+
+</script>

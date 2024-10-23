@@ -1,0 +1,388 @@
+<header>
+    <div id="user-name">Pozdrav, <span id="ime"></span></div>
+    <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+
+    <!-- Toggle dugme za mobilne uređaje -->
+    <button id="toggle-menu-button" class="toggle-button">☰</button>
+
+    <nav id="desktop-menu"> <!-- Desktop meni -->
+        <a href="#"><span class="material-icons">home</span> Home</a>
+        <a href="#"><span class="material-icons">group</span> Team</a>
+        <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+        <a href="#"><span class="material-icons">person</span> Profile</a>
+    </nav>
+
+    <!-- Mobilni meni -->
+    <nav id="toggle-menu">
+        <a href="#"><span class="material-icons">home</span> Home</a>
+        <a href="#"><span class="material-icons">group</span> Team</a>
+        <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+        <a href="#"><span class="material-icons">person</span> Profile</a>
+    </nav>
+</header>
+
+
+<div id="chat-modal">
+    <div id="chat-header">
+        <span id="chat-header-title">Chat</span>
+        <button id="close-chat">✕</button>
+        <button id="back-to-users" style="display: none;">←</button> <!-- Dodajemo dugme za povratak -->
+        
+    </div>
+    
+    <div id="chat-box">
+        <div id="search-container">
+            <input type="text" id="user-search" placeholder="Search users...">
+            <button id="search-button">🔍</button>
+        </div>
+       
+        <div id="users-list"></div>
+
+    
+        
+        <div id="users-list"></div> <!-- Prikaz korisnika u krugovima -->
+        <div id="messages" style="display: none;"></div> <!-- Skriveno dok ne odabereš korisnika -->
+        <div id="message-input" style="display: none;">
+            <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
+            
+            <button id="start-call">📞</button> <!-- Dugme za započinjanje poziva -->
+
+            <input type="text" id="chat-message" placeholder="Unesite poruku">
+            <button id="send-message">Pošalji</button>
+        </div>
+        
+    </div>
+    
+</div>
+
+
+
+
+
+<script>
+    const toggleMenuButton = document.getElementById('toggle-menu-button');
+    const toggleMenu = document.getElementById('toggle-menu');
+
+    toggleMenuButton.addEventListener('click', () => {
+        // Togglovanje prikaza menija
+        if (toggleMenu.style.display === 'flex') {
+            toggleMenu.style.display = 'none'; // Sakrij meni
+        } else {
+            toggleMenu.style.display = 'flex'; // Prikaži meni
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount">0.00/h</span>
+        </div>
+    </div>
+    
+    <!-- Dodavanje ikone za broj referral koda ispod trenutne cijene -->
+    <div id="referral-info">
+        <span class="material-icons" style="vertical-align: middle;">group</span> 
+        <span id="referral-count">0/10</span> <!-- Prikaz broja referral koda --> 
+    </div>
+
+    <!-- Ikona za dijeljenje -->
+    <button id="share-icon">
+        <span class="material-icons">share</span> Pozovi prijatelje
+    </button>
+</div>
+
+<div class="image-container">
+    <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
+</div>
+
+<div class="partnership-box">
+    <p>
+        Delta coin is selecting partnerships with crypto-services and general businesses ahead of our Open Network launch. 
+        This is a unique, early opportunity for businesses to connect with over 10 million engaged Delta coin fans and become part of Delta’s rapidly expanding Web3 ecosystem. 
+        If your company is interested in partnering with Delta or you’d like to introduce a business to partner with Delta, tap “Partnerships” to explore how and why.
+    </p>
+</div>
+
+<div class="background blue"></div>
+<div class="background purple"></div>
+
+<script>
+    const shareIcon = document.getElementById('share-icon');
+
+    // Pretpostavljamo da korisničko ime dolazi iz URL parametara ili je već definirano
+    const { username: userParam } = getQueryParams();
+
+    // Funkcija za nativno dijeljenje
+    shareIcon.addEventListener('click', async () => {
+        const shareData = {
+            title: 'Poziv za pridruživanje',
+            text: Zdravo, pridruži mi se na https://nftnox.github.io/pi5/registracija.html. Moj kod je ${userParam}
+        };
+
+        try {
+            await navigator.share(shareData);
+            console.log('Uspješno podijeljeno');
+        } catch (err) {
+            console.error('Greška prilikom dijeljenja:', err);
+        }
+    });
+
+    // Funkcija za dobijanje parametara iz URL-a
+    function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            ime: params.get('ime'),
+            prezime: params.get('prezime'),
+            username: params.get('username')
+        };
+    }
+</script>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+
+    let userId = ""; // ID trenutnog korisnika
+    let username = ""; // Pravi username korisnika
+    let currentPrice = 0.00; // Trenutna cijena korisnika
+    let lastClickTime = null; // Vrijeme posljednjeg klika
+    let referralBonus = 0.01; // Početni bonus za novog korisnika (0.01 za 5 sekundi)
+
+    const MAX_REFERRALS = 10; // Maksimalan broj korisnika koji mogu koristiti isti referralCode
+
+    async function loadUserId() {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", userParam));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(doc => {
+                userId = doc.id; // Dobijanje ID-a korisnika
+                const userData = doc.data();
+                username = userData.ime; // Dobijanje stvarnog imena korisnika
+                document.getElementById('ime').innerText = username; // Prikazivanje imena korisnika
+                
+                if (userData.referralCode) {
+                    checkReferral(userData.referralCode);
+                }
+                
+                loadUserData(); // Učitavanje podataka nakon što imamo ID
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function checkReferral(referralCode) {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", referralCode));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(async doc => {
+                const referralOwnerId = doc.id;
+                const referralOwnerData = doc.data();
+                const referralCount = referralOwnerData.referralCount || 0;
+                const usedByUser = referralOwnerData.usedBy || [];
+
+                if (usedByUser.includes(userId)) {
+                    console.log(Korisnik ${userId} je već iskoristio referral kod.);
+                } else if (referralCount >= MAX_REFERRALS) {
+                    console.log(Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.);
+                } else {
+                    const newReferralBonus = 0.01 * (referralCount + 1);
+
+                    console.log(Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus});
+
+                    await updateDoc(doc.ref, {
+                        referralBonus: 0.01 + newReferralBonus,
+                        referralCount: referralCount + 1,
+                        usedBy: [...usedByUser, userId]
+                    });
+
+                    document.getElementById('referral-count').innerText = ${referralCount + 1}/${MAX_REFERRALS};
+                }
+            });
+        }
+    }
+
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            currentPrice = docSnap.data().currentPrice || 0.00;
+            lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
+            const userReferralBonus = docSnap.data().referralBonus || 0.01;
+
+            document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+            document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus + "/h" : "0.00/h";
+
+            const now = new Date();
+            const twentyFourHours = 24 * 60 * 60 * 1000;
+
+            if (lastClickTime) {
+                const elapsed = now - lastClickTime;
+                const increments = Math.floor(elapsed / 5000);
+                currentPrice += increments * userReferralBonus;
+                document.getElementById('amount').innerText = currentPrice.toFixed(2);
+                lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+                await updateFirestore(currentPrice, lastClickTime);
+            }
+
+            document.getElementById('dolar-icon').addEventListener('click', async () => {
+                const now = new Date();
+
+                if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                    lastClickTime = now;
+                    currentPrice += userReferralBonus;
+                    document.querySelector('.amount').innerText = userReferralBonus + "/h";
+                    await updateFirestore(currentPrice, lastClickTime);
+                } else {
+                    alert("Možete kliknuti samo jednom svakih 24 sata.");
+                }
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function updateFirestore(currentPrice, lastClickTime) {
+        const docRef = doc(db, 'network', userId);
+        try {
+            await updateDoc(docRef, {
+                currentPrice: currentPrice,
+                lastClickTime: lastClickTime ? lastClickTime : null
+            });
+            console.log("Podaci uspješno ažurirani.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
+    }                                        a ovo je prikaz korisnika u firestore                                  adresa  
+"Petra Pecije"
+(string)
+
+
+amount
+0
+(number)
+
+
+brojTelefona
+"5456"
+(string)
+
+
+clickCount
+0
+(number)
+
+
+currentPrice
+11761.140000001535
+(number)
+
+
+drzava
+"b"
+(string)
+
+
+email
+"bb@gmail.com"
+(string)
+
+
+grad
+"s"
+(string)
+
+
+ime
+"BB"
+(string)
+
+
+lastClickTime
+18 October 2024 at 09:17:29 UTC+2
+(timestamp)
+
+
+prezime
+"NN"
+(string)
+
+
+referralBonus
+0.05
+(number)
+
+
+referralCode
+""
+(string)
+
+
+referralCount
+4
+(number)
+
+
+sifra
+"Bambi"
+(string)
+
+
+
+usedBy
+(array)
+
+
+0
+"DWc3rktdI8yuO9vzQk6k"
+(string)
+
+
+1
+"nBJm71dfOzSASeTm4o9T"
+(string)
+
+
+2
+"9qDAxTV6jwuJi9TfvvPp"
+(string)
+
+
+3
+"shdNv8Ky32nFPbgydKco"
+(string)
+
+
+username
+"Bambi"                                                 to je dio moje stranice i sada radis fokus na referal count.          taj referal count treba da radi na nacin ako je neki korisnik iskoristio referal code od drugog korisnika tom drugom korisnika referal count se mjenja i umjesto 0/10 pisat ce 1/10,    a najbolji mozda nacin da to provjeris jeste da pregledas svakog korisnika u firestore kao sto imas ovaj primjjer  sto sam poslao iz firestore   dakle korisnik je npr Bambi, i njegov kod je iskoristen mozes da vidis ovo usedby i to 4 puta dosada, to znaci na njegovoj stranici ce pisati 4/10, i neciji kod se moze iskoristiti max 10 puta, dodaj boju referal count da bude bijela

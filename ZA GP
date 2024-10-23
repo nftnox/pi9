@@ -1,0 +1,316 @@
+dakle ovo je kod                    <!-- Chat modal -->
+<div id="chat-modal">
+    <div id="chat-box">
+        <div id="chat-header">
+            <h3>Chat Room</h3>
+            <button id="close-chat">✖</button>
+        </div>
+        <div id="back-arrow" style="display: none; cursor: pointer;">
+            <span>&larr;</span> <!-- Left arrow symbol -->
+        </div>
+        <!-- Add the Delta Masters button -->
+        <div id="delta-masters-container">
+            <button id="delta-masters">Delta Masters</button>
+        </div>
+        <!-- Hide the messages section by default -->
+        <div id="messages" style="display: none;"></div>
+        <div id="message-input" style="display: none;">
+            <input type="file" id="image-upload" accept="image/*" style="display: none;">
+            <button id="add-image">+</button>
+            <input type="text" id="chat-message" placeholder="Unesite poruku...">
+            <button id="send-message">Pošalji</button>
+        </div>
+    </div>
+</div>                                                           // Chat funkcionalnost
+
+        const chatModal = document.getElementById('chat-modal');
+const chatLink = document.getElementById('chat-link');
+const closeChat = document.getElementById('close-chat');
+const sendMessageButton = document.getElementById('send-message');
+const messagesContainer = document.getElementById('messages');
+const chatMessageInput = document.getElementById('chat-message');
+const addImageButton = document.getElementById('add-image');
+const imageUploadInput = document.getElementById('image-upload'); // File input za sliku
+
+// Prikaži chat prozor kada se klikne na "Chat"
+chatLink.addEventListener('click', () => {
+    chatModal.style.display = 'flex';
+});
+
+// Zatvori chat prozor kad klikneš na "X"
+closeChat.addEventListener('click', () => {
+    chatModal.style.display = 'none';
+});
+
+// Funkcija za slanje poruke
+async function sendMessage(messageText, imageUrl = '') {
+    try {
+        await addDoc(collection(db, 'messages'), {
+            username: username, // Dinamičko ime korisnika
+            message: messageText,
+            imageUrl: imageUrl, // Dodaj sliku u poruku
+            timestamp: new Date()
+        });
+        chatMessageInput.value = ''; // Očisti polje za unos poruke
+    } catch (error) {
+        console.error("Greška prilikom slanja poruke: ", error);
+    }
+}
+
+// Kada kliknemo na dugme "Pošalji"
+sendMessageButton.addEventListener('click', () => {
+    const messageText = chatMessageInput.value.trim();
+    if (messageText) {
+        sendMessage(messageText);
+    } else {
+        console.log("Poruka ne može biti prazna.");
+    }
+});
+
+// Dodavanje funkcionalnosti za dugme "+"
+addImageButton.addEventListener('click', () => {
+    imageUploadInput.click(); // Klikni na skriveni input za upload slike
+});
+
+// Obradi upload slike i prikaži je u chatu
+imageUploadInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0]; // Dobij odabranu sliku
+    if (file) {
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const imageUrl = e.target.result; // Učitani URL slike
+
+            // Spremi sliku u Firestore
+            await sendMessage('', imageUrl); // Pošaljemo praznu poruku i URL slike
+
+            // Očisti input za sliku
+            imageUploadInput.value = ''; // Očisti input za upload
+        };
+
+        reader.readAsDataURL(file); // Učitaj sliku kao base64 URL
+    }
+});
+
+// Prikazivanje poruka u stvarnom vremenu
+onSnapshot(collection(db, 'messages'), (snapshot) => {
+    const messagesArray = []; // Kreiraj niz poruka
+
+    snapshot.forEach((doc) => {
+        const messageData = doc.data();
+        messagesArray.push(messageData); // Dodaj poruke u niz
+    });
+
+    // Sortiraj poruke po timestampu
+    messagesArray.sort((a, b) => a.timestamp - b.timestamp);
+
+    messagesContainer.innerHTML = ''; // Očisti stare poruke
+
+    // Prikaz poruka
+    messagesArray.forEach((messageData) => {
+        const messageElement = document.createElement('div');
+
+        // Proverite da li je korisnik poslao poruku
+        if (messageData.username === username) { // username je ime prijavljenog korisnika
+            messageElement.classList.add('message', 'my-message'); // Poruka korisnika
+        } else {
+            messageElement.classList.add('message', 'other-message'); // Poruka drugih korisnika
+        }
+
+        // Dodaj statičnu sivu profilnu sliku  messageElement.appendChild(userImage);             OVAJ SREDNJI DIO SE DODAJE AKO ZELIM SLIKU
+        const userImage = document.createElement('img');
+      
+        
+        const messageDetails = document.createElement('div');
+        messageDetails.classList.add('message-details');
+
+        // Prikaz korisničkog imena
+        const usernameElement = document.createElement('div');
+        usernameElement.classList.add('username');
+        usernameElement.textContent = messageData.username;
+
+        // Tekst poruke
+        const contentElement = document.createElement('div');
+        contentElement.classList.add('message-content');
+        contentElement.textContent = messageData.message;
+
+
+  // Dodaj klasu no-background ako poruka ne sadrži tekst
+  if (messageData.message) {
+        contentElement.textContent = messageData.message;
+    } else {
+        contentElement.classList.add('no-background'); // Dodaj klasu ako je slika prisutna
+    }
+
+        messageDetails.appendChild(usernameElement);
+        messageDetails.appendChild(contentElement);
+
+        // Prikaz slike ako postoji
+        if (messageData.imageUrl) {
+            const imageElement = document.createElement('img');
+            imageElement.src = messageData.imageUrl; // Postavi src na učitani URL slike
+            imageElement.classList.add('chat-image'); // Dodaj klasu za stilizaciju slike
+            messageElement.appendChild(imageElement);
+        }
+
+        messageElement.appendChild(messageDetails);
+        messagesContainer.appendChild(messageElement);
+    });
+
+    messagesContainer.scrollTop = messagesContainer.scrollHeight; // Automatsko skrolanje na dno
+});
+
+// Dodaj ovu funkciju da zatvori toggle meni
+function closeToggleMenu() {
+    const toggleMenu = document.getElementById('toggle-menu');
+    toggleMenu.style.display = 'none'; // Skrivenje toggle menija
+}
+
+// Prikaži chat prozor kada se klikne na "Chat"
+chatLink.addEventListener('click', () => {
+    chatModal.style.display = 'flex';
+    closeToggleMenu(); // Zatvori meni nakon otvaranja chata
+});
+
+// Dodaj ovu funkciju na mobilnom meniju da otvori chat
+const mobileChatLink = document.querySelector('#toggle-menu a#chat-link');
+mobileChatLink.addEventListener('click', () => {
+    chatModal.style.display = 'flex';
+    closeToggleMenu(); // Zatvori meni nakon otvaranja chata
+});
+
+
+
+const deltaMastersButton = document.getElementById('delta-masters');
+const messagesDiv = document.getElementById('messages');
+const messageInputDiv = document.getElementById('message-input');
+const backArrow = document.getElementById('back-arrow');
+
+// Funkcija za resetovanje chata
+function resetChat() {
+    messagesDiv.style.display = 'none'; // Sakrij poruke
+    messageInputDiv.style.display = 'none'; // Sakrij unos
+    deltaMastersButton.style.display = 'block'; // Prikaži dugme Delta Masters
+    backArrow.style.display = 'none'; // Sakrij strelicu
+}
+
+// Funkcija za prikazivanje poruka i unosa
+deltaMastersButton.addEventListener('click', () => {
+    messagesDiv.style.display = 'block'; // Prikaži poruke
+    messageInputDiv.style.display = 'flex'; // Prikaži unos
+    deltaMastersButton.style.display = 'none'; // Sakrij dugme Delta Masters
+    backArrow.style.display = 'block'; // Prikaži strelicu
+});
+
+// Funkcija za povratak na početak
+backArrow.addEventListener('click', () => {
+    resetChat(); // Resetovanje chata
+});
+
+// Funkcija za zatvaranje chata
+document.getElementById('close-chat').addEventListener('click', () => {
+    resetChat(); // Resetovanje chata pri zatvaranju
+});
+
+// Resetovanje chata kada se modal ponovo otvori
+function openChatModal() {
+    resetChat(); // Resetovanje pri otvaranju
+    document.getElementById('chat-modal').style.display = 'block'; // Otvori modal
+}
+
+// Pozovite openChatModal() kada se chat modal otvori                                                          DAKLE KOD KOJI PERFEKTNO RADI, SADA PORED DELTA MASTERS DODAT CES NA ISTI NACIN SVAKOG USERNAME KOJI JE REGISTROVAN U FIRESTORE kolekciji network
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Podijeli
+
+
+Rekli ste:
+  ovo si uradio na pocetku  i uspio si prikazati sve usere posebno                      
+  
+ <!-- Delta Masters and User Buttons -->
+<div id="delta-masters-container">
+    <button id="delta-masters">Delta Masters</button>
+</div>
+<div id="user-buttons-container"></div> <!-- Novi kontejner za dugmad korisnika -->
+                 
+
+
+#user-buttons-container {
+    text-align: center;
+    margin: 10px 0;
+}
+
+.user-button {
+    background-color: #28a745; /* Zeleno dugme za korisnike */
+    color: white;
+    border: none;
+    border-radius: 50%; /* Okrugla dugmad */
+    width: 60px;
+    height: 60px;
+    font-size: 14px;
+    cursor: pointer;
+    margin: 5px; /* Razmak između dugmadi */
+}
+
+.user-button:hover {
+    background-color: #218838; /* Tamnija zelena na hover */
+}
+
+                                              
+                                              
+                                              
+const userButtonsContainer = document.getElementById('user-buttons-container');
+
+// Funkcija za kreiranje dugmeta za svakog korisnika
+function createUserButton(username) {
+    const button = document.createElement('button');
+    button.textContent = username;
+    button.classList.add('user-button'); // Dodaj klasu za stilizaciju
+    button.addEventListener('click', () => {
+        showUserMessages(username); // Prikaži poruke tog korisnika
+    });
+    userButtonsContainer.appendChild(button); // Dodaj dugme u kontejner
+}
+
+// Funkcija za dohvat korisnika iz Firestore kolekcije "network"
+async function fetchAndDisplayUsers() {
+    try {
+        const querySnapshot = await getDocs(collection(db, 'network')); // Dohvati korisnike iz Firestore
+        querySnapshot.forEach((doc) => {
+            const userData = doc.data();
+            createUserButton(userData.username); // Kreiraj dugme za svakog korisnika
+        });
+    } catch (error) {
+        console.error("Greška prilikom dohvaćanja korisnika: ", error);
+    }
+}
+
+// Pozovi funkciju da prikaže korisnike kad se učita stranica
+fetchAndDisplayUsers();
+
+// Funkcija za prikazivanje poruka odabranog korisnika
+function showUserMessages(username) {
+    // Ovde možeš dodati funkcionalnost za prikaz poruka odabranog korisnika
+    console.log(`Prikazivanje poruka za korisnika: ${username}`);
+    // Prikazivanje korisničkih poruka može biti slično onome što radiš za chat
+}
+
+
+
+                                                        DAKLE OVO KAD SI DODAO SVI KORISNICI SU SE POJAVILI PORED DELTA MASTERS STO JE ODLICNO, HAJDE SAMO DORADI OVAJ KOD                   kad kliknem na NEKOG USERA  da se otvori novi chat koji ce biti samo izmedju mene(koji sam logovan) i korisnik na kojeg sam kliknuo... klikom na njega ti dodaj njihov razgovor u firestore, tj username 1 i username 2, i onda ce biti zauvijek spasen samo izmedju njih dvojice....  

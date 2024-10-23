@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registracija</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+            authDomain: "piii-7844e.firebaseapp.com",
+            projectId: "piii-7844e",
+            storageBucket: "piii-7844e.appspot.com",
+            messagingSenderId: "315770496799",
+            appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+            measurementId: "G-JH9SDWTS9V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('register-button').addEventListener('click', () => {
+                document.getElementById('registration-box').style.display = 'none';
+                document.getElementById('form-container').style.display = 'block';
+                document.getElementById('form-title').innerText = "";
+                document.getElementById('registration-form').style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+            });
+
+            document.getElementById('login-button').addEventListener('click', () => {
+                document.getElementById('registration-box').style.display = 'none';
+                document.getElementById('form-container').style.display = 'block';
+                document.getElementById('form-title').innerText = "Prijava";
+                document.getElementById('registration-form').style.display = 'none';
+                document.getElementById('login-form').style.display = 'block';
+            });
+
+            document.getElementById('submit-registration').addEventListener('click', async () => {
+                const ime = document.getElementById('ime').value;
+                const prezime = document.getElementById('prezime').value;
+                const email = document.getElementById('email').value;
+                const username = document.getElementById('username').value;
+                const brojTelefona = document.getElementById('brojTelefona').value;
+                const drzava = document.getElementById('drzava').value;
+                const grad = document.getElementById('grad').value;
+                const adresa = document.getElementById('adresa').value;
+                const sifra = document.getElementById('sifra').value;
+                const referralCode = document.getElementById('referral-code').value; // Referal kod
+                const profilePicture = document.getElementById('profile-picture').files[0]; // File input for profile picture
+
+                // Check for existing username and email
+                const usernameQuery = query(collection(db, 'network'), where("username", "==", username));
+                const usernameSnapshot = await getDocs(usernameQuery);
+                const emailQuery = query(collection(db, 'network'), where("email", "==", email));
+                const emailSnapshot = await getDocs(emailQuery);
+
+                if (!usernameSnapshot.empty) {
+                    alert("Username već postoji. Molimo izaberite drugi.");
+                    return;
+                }
+
+                if (!emailSnapshot.empty) {
+                    alert("Email već postoji. Molimo izaberite drugi.");
+                    return;
+                }
+
+                try {
+                    let profilePictureUrl = '';
+                    // Upload profile picture to Firebase Storage and get URL
+                    if (profilePicture) {
+                        const storageRef = ref(storage, 'profilePictures/' + username + '_' + profilePicture.name);
+                        const snapshot = await uploadBytes(storageRef, profilePicture);
+                        profilePictureUrl = await getDownloadURL(snapshot.ref); // Get the image URL
+                    }
+
+                    // Save user data to Firestore, including the profile picture URL
+                    await addDoc(collection(db, 'network'), {
+                        ime,
+                        prezime,
+                        email,
+                        username,
+                        brojTelefona,
+                        drzava,
+                        grad,
+                        adresa,
+                        sifra,
+                        referralCode, // Dodavanje referal koda u bazu
+                        profilePictureUrl, // Save the image URL to Firestore
+                        amount: 0,
+                        clickCount: 0
+                    });
+
+                    // Notify the user of successful registration and redirect them to login
+                    alert("Registracija uspješna! Možete se prijaviti.");
+                    document.getElementById('login-button').click();
+                } catch (e) {
+                    console.error("Greška pri dodavanju dokumenta: ", e);
+                }
+
+                // Referral code logic (if any)
+                if (referralCode) {
+                    const existingUserQuery = query(collection(db, 'network'), where("username", "==", referralCode));
+                    const querySnapshot = await getDocs(existingUserQuery);
+
+                    if (!querySnapshot.empty) {
+                        querySnapshot.forEach(async (doc) => {
+                            const userId = doc.id;
+                            const userData = doc.data();
+
+                            // Update referral user's price
+                            let currentPrice = userData.currentPrice || 0.00;
+                            currentPrice += 0.01; // Povećanje cijene za 0.01
+                            await updateFirestore(userId, currentPrice, userData.lastClickTime); // Update Firestore
+                        });
+                    }
+                }
+            });
+
+            document.getElementById('submit-login').addEventListener('click', async () => {
+                const identifier = document.getElementById('login-identifier').value;
+                const sifra = document.getElementById('login-sifra').value;
+
+                if (!identifier || !sifra) {
+                    alert("Molimo unesite username ili email i šifru.");
+                    return;
+                }
+
+                const qUsername = query(collection(db, 'network'), where("username", "==", identifier), where("sifra", "==", sifra));
+                const qEmail = query(collection(db, 'network'), where("email", "==", identifier), where("sifra", "==", sifra));
+
+                const usernameSnapshot = await getDocs(qUsername);
+
+                if (usernameSnapshot.empty) {
+                    const emailSnapshot = await getDocs(qEmail);
+                    if (emailSnapshot.empty) {
+                        alert("Pogrešno username/email ili šifra.");
+                    } else {
+                        const userData = emailSnapshot.docs[0].data();
+                        window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
+                    }
+                } else {
+                    const userData = usernameSnapshot.docs[0].data();
+                    window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
+                }
+            });
+
+            const togglePassword = (inputId, iconId) => {
+                const input = document.getElementById(inputId);
+                const icon = document.getElementById(iconId);
+                icon.addEventListener('click', () => {
+                    const type = input.type === 'password' ? 'text' : 'password';
+                    input.type = type;
+                    icon.textContent = type === 'password' ? 'visibility' : 'visibility_off';
+                });
+            };
+            togglePassword('login-sifra', 'toggle-login-sifra');
+            togglePassword('sifra', 'toggle-sifra');
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <div id="registration-box"></div>
+        <div style="display: flex; justify-content: space-between; width: 100%; padding: 10px 20px;">
+            <button id="register-button">Registruj se</button>
+            <button id="login-button">Prijavi se</button>
+        </div>
+    </header>
+
+    <div class="background blue"></div>
+    <div class="background purple"></div>
+
+    <div class="image-container">
+        <img src="images/upitnik.png" alt="Delta Image" class="responsive-image">
+    </div>
+
+    <div id="form-container" style="display:none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); padding: 20px; z-index: 1000;">
+        <h2 id="form-title">Prijava</h2>
+        <div id="login-form">
+            <input type="text" id="login-identifier" placeholder="Username ili Email" required>
+            <div style="position: relative;">
+                <input type="password" id="login-sifra" placeholder="Šifra" required>
+                <span id="toggle-login-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span>
+            </div>
+            <button id="submit-login" style="color: black; display: block; margin: 0 auto; width: 108%;">Prijavi se</button>
+        </div>
+    
+        <div id="registration-form" style="display:none;">
+            <h2 id="form-title">Registracija</h2>
+            <input type="text" id="ime" placeholder="Ime" required>
+            <input type="text" id="prezime" placeholder="Prezime" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="text" id="brojTelefona" placeholder="Broj telefona" required>
+            <input type="text" id="drzava" placeholder="Država" required>
+            <input type="text" id="grad" placeholder="Grad" required>
+            <input type="text" id="adresa" placeholder="Adresa" required>
+            <div style="position: relative;">
+                <input type="password" id="sifra" placeholder="Šifra" required>
+                <span id="toggle-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span>
+            </div>
+            <input type="text" id="referral-code" placeholder="Referal kod (opcionalno)">
+            <input type="file" id="profile-picture" accept="image/*"> <!-- Input for profile picture -->
+            <button id="submit-registration" style="color: black; display: block; margin: 0 auto; width: 108%;">Registruj se</button>
+        </div>
+    </div>
+</body>
+</html>
+
+
+
+<style>
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        background-color: #000000;
+        font-family: Arial, sans-serif;
+        
+    }
+    header {
+        width: 100%;
+       
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    #registration-box {
+        text-align: center;
+    }
+    #form-container {
+        display: none;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        margin-top: 20px;
+    }
+    input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    button {
+    width: 220px; /* Širina pravougaonika */
+    height: 60px; /* Visina pravougaonika */
+    font-size: 20px;
+    cursor: pointer;
+    position: relative;
+    background: transparent; /* Prozirna pozadina */
+    color: white; /* Bijela boja teksta */
+    border: 2px solid transparent; /* Prozirni obrub (outline) */
+    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+    border-radius: 0; /* Pravougaoni oblik */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px; /* Moguće prilagoditi po potrebi */
+}
+
+@media (max-width: 600px) {
+    button {
+        width: 150px; /* Smanjena širina za mobilne uređaje */
+    }
+}
+
+button:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Lagani efekat na hover */
+}
+
+    .toggle-password {
+        cursor: pointer;
+        position: relative;
+        right: -190px;
+        top: -35px;
+    }
+
+    .background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .blue {
+    background: linear-gradient(to bottom right, rgba(23, 135, 226, 0.6), rgba(0, 0, 0, 0) 50%);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 50%;
+    
+}
+
+
+        .purple {
+            background: linear-gradient(to top left, rgba(128, 0, 128, 0.6), rgba(0, 0, 0, 0) 50%);
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            height: 50%;
+        }
+
+        #registration-form {
+    padding: 0; /* Ukloni padding unutar div-a */
+    margin: 0 auto; /* Centriraj div ako je potrebno */
+    max-width: 200px; /* Maksimalna širina div-a */
+}
+
+#login-form {
+    padding: 0; /* Ukloni padding unutar div-a */
+    margin: 0 auto; /* Centriraj div ako je potrebno */
+    max-width: 200px; /* Maksimalna širina div-a */
+}
+
+input {
+    width: 100%;
+    padding: 8px; /* Smanji padding unutar input polja */
+    margin: 5px 0; /* Smanji margin između input polja */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+
+
+#form-title {
+    text-align: center; /* Centriraj tekst */
+    margin: 0; /* Ukloni dodatne margine */
+    padding-bottom: 10px; /* Dodaj malo prostora ispod naslova */
+}
+
+
+.image-container {
+    display: flex;
+    justify-content: center; /* Centriraj sliku */
+    align-items: flex-start; /* Poravnaj gornji dio */
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .image-container {
+        align-items: flex-start; /* Gornji dio */
+        transform: translateY(50px); /* Pomakni prema dolje na mobilnim uređajima */
+    }
+}
+
+.image-container img {
+    animation: pulse 2s infinite; /* Animacija nazvana 'pulse' koja traje 2 sekunde i ponavlja se beskonačno */
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1); /* Početna veličina */
+    }
+    50% {
+        transform: scale(1.05); /* Blago povećanje veličine */
+    }
+    100% {
+        transform: scale(1); /* Vraćanje na početnu veličinu */
+    }
+}
+
+
+.responsive-image {
+        max-width: 150%; /* Osigurava da slika ne pređe širinu kontejnera */
+        height: auto; /* Održava proporcije slike */
+    }
+
+    @media (max-width: 768px) {
+        .responsive-image {
+            width: 220%; /* Povećaj širinu slike za mobilnu verziju */
+            position: relative; /* Opcionalno, ako želiš dodatno pozicioniranje */
+            
+        }
+    }
+</style>

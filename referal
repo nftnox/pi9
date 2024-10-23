@@ -1,0 +1,366 @@
+dio koda iz registracija.html                         <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+            authDomain: "piii-7844e.firebaseapp.com",
+            projectId: "piii-7844e",
+            storageBucket: "piii-7844e.appspot.com",
+            messagingSenderId: "315770496799",
+            appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+            measurementId: "G-JH9SDWTS9V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('register-button').addEventListener('click', () => {
+                document.getElementById('registration-box').style.display = 'none';
+                document.getElementById('form-container').style.display = 'block';
+                document.getElementById('form-title').innerText = "";
+                document.getElementById('registration-form').style.display = 'block';
+                document.getElementById('login-form').style.display = 'none';
+            });
+
+            document.getElementById('login-button').addEventListener('click', () => {
+                document.getElementById('registration-box').style.display = 'none';
+                document.getElementById('form-container').style.display = 'block';
+                document.getElementById('form-title').innerText = "Prijava";
+                document.getElementById('registration-form').style.display = 'none';
+                document.getElementById('login-form').style.display = 'block';
+            });
+
+            document.getElementById('submit-registration').addEventListener('click', async () => {
+                const ime = document.getElementById('ime').value;
+                const prezime = document.getElementById('prezime').value;
+                const email = document.getElementById('email').value;
+                const username = document.getElementById('username').value;
+                const brojTelefona = document.getElementById('brojTelefona').value;
+                const drzava = document.getElementById('drzava').value;
+                const grad = document.getElementById('grad').value;
+                const adresa = document.getElementById('adresa').value;
+                const sifra = document.getElementById('sifra').value;
+                const referralCode = document.getElementById('referral-code').value; // Referal kod
+
+                const usernameQuery = query(collection(db, 'network'), where("username", "==", username));
+                const usernameSnapshot = await getDocs(usernameQuery);
+                const emailQuery = query(collection(db, 'network'), where("email", "==", email));
+                const emailSnapshot = await getDocs(emailQuery);
+
+                if (!usernameSnapshot.empty) {
+                    alert("Username već postoji. Molimo izaberite drugi.");
+                    return;
+                }
+
+                if (!emailSnapshot.empty) {
+                    alert("Email već postoji. Molimo izaberite drugi.");
+                    return;
+                }
+
+                try {
+                    await addDoc(collection(db, 'network'), {
+                        ime,
+                        prezime,
+                        email,
+                        username,
+                        brojTelefona,
+                        drzava,
+                        grad,
+                        adresa,
+                        sifra,
+                        referralCode, // Dodavanje referal koda u bazu
+                        amount: 0,
+                        clickCount: 0
+                    });
+                    // Umjesto preusmjeravanja na index.html, preusmjeri na stranicu za prijavu
+                    document.getElementById('form-container').style.display = 'none'; // Sakrij formu
+                    document.getElementById('registration-box').style.display = 'none'; // Sakrij registration box
+                    alert("Registracija uspješna! Možete se prijaviti.");
+                    document.getElementById('login-button').click(); // Otvori prijavu
+                } catch (e) {
+                    console.error("Greška pri dodavanju dokumenta: ", e);
+                }
+
+                if (referralCode) {
+        const existingUserQuery = query(collection(db, 'network'), where("username", "==", referralCode));
+        const querySnapshot = await getDocs(existingUserQuery);
+
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(async (doc) => {
+                const userId = doc.id;
+                const userData = doc.data();
+
+                // Ažuriraj cijenu postojećeg korisnika
+                let currentPrice = userData.currentPrice || 0.00;
+                currentPrice += 0.01; // Povećanje cijene za 0.01
+                await updateFirestore(userId, currentPrice, userData.lastClickTime); // Ažuriraj Firestore
+            });
+        }
+    }
+            });
+
+            document.getElementById('submit-login').addEventListener('click', async () => {
+                const identifier = document.getElementById('login-identifier').value;
+                const sifra = document.getElementById('login-sifra').value;
+
+                if (!identifier || !sifra) {
+                    alert("Molimo unesite username ili email i šifru.");
+                    return;
+                }
+
+                const qUsername = query(collection(db, 'network'), where("username", "==", identifier), where("sifra", "==", sifra));
+                const qEmail = query(collection(db, 'network'), where("email", "==", identifier), where("sifra", "==", sifra));
+
+                const usernameSnapshot = await getDocs(qUsername);
+
+                if (usernameSnapshot.empty) {
+                    const emailSnapshot = await getDocs(qEmail);
+                    if (emailSnapshot.empty) {
+                        alert("Pogrešno username/email ili šifra.");
+                    } else {
+                        const userData = emailSnapshot.docs[0].data();
+                        window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
+                    }
+                } else {
+                    const userData = usernameSnapshot.docs[0].data();
+                    window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
+                }
+            });
+
+
+
+
+
+            
+
+            const togglePassword = (inputId, iconId) => {
+                const input = document.getElementById(inputId);
+                const icon = document.getElementById(iconId);
+                icon.addEventListener('click', () => {
+                    const type = input.type === 'password' ? 'text' : 'password';
+                    input.type = type;
+                    icon.textContent = type === 'password' ? 'visibility' : 'visibility_off';
+                });
+            };
+            togglePassword('login-sifra', 'toggle-login-sifra');
+            togglePassword('sifra', 'toggle-sifra');
+        });
+    </script>                                                drugi  kod               index.html                         <!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"> <!-- Dodavanje Roboto fonta -->
+    
+</head>
+<body>
+
+    <header>
+        <div id="user-name">Pozdrav, <span id="ime"></span></div>
+        <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+    
+        <!-- Toggle dugme za mobilne uređaje -->
+        <button id="toggle-menu-button" class="toggle-button">☰</button>
+    
+        <nav id="desktop-menu"> <!-- Desktop meni -->
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    
+        <!-- Mobilni meni -->
+        <nav id="toggle-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    </header>
+    
+
+    
+
+<script>
+    const toggleMenuButton = document.getElementById('toggle-menu-button');
+    const toggleMenu = document.getElementById('toggle-menu');
+
+    toggleMenuButton.addEventListener('click', () => {
+        // Togglovanje prikaza menija
+        if (toggleMenu.style.display === 'flex') {
+            toggleMenu.style.display = 'none'; // Sakrij meni
+        } else {
+            toggleMenu.style.display = 'flex'; // Prikaži meni
+        }
+    });
+</script>
+
+
+<div class="container">
+    <div class="icon-section">
+        <div class="icon" id="dolar-icon">
+            <span class="material-icons">attach_money</span>
+            <span class="amount">0.00/h</span>
+        </div>
+    </div>
+    <!-- Ikona za dijeljenje -->
+<button id="share-icon">
+    <span class="material-icons">share</span> Pozovi prijatelje
+</button>
+</div>
+
+<div class="image-container">
+    <img src="images/delta.jpg" alt="Delta Image" style="max-width: 100%; height: auto;">
+</div>
+
+
+<div class="background blue"></div>
+<div class="background purple"></div>
+
+
+<script>
+    const shareIcon = document.getElementById('share-icon');
+
+    // Funkcija za nativno dijeljenje
+    shareIcon.addEventListener('click', async () => {
+        const shareData = {
+            title: 'Poziv za pridruživanje',
+            text: 'Zdravo, pridruži mi se na https://nftnox.github.io/pi3/registracija.html'
+        };
+
+        try {
+            await navigator.share(shareData);
+            console.log('Uspješno podijeljeno');
+        } catch (err) {
+            console.error('Greška prilikom dijeljenja:', err);
+        }
+    });
+</script>
+
+
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let userId = ""; // Varijabla za korisnički ID
+    let currentPrice = 0.00; // Varijabla za trenutnu cijenu
+    let lastClickTime = null; // Varijabla za praćenje vremena poslednjeg klika
+
+    // Funkcija za dobijanje parametara iz URL-a
+    function getQueryParams() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            ime: params.get('ime'),
+            prezime: params.get('prezime'),
+            username: params.get('username')
+        };
+    }
+
+    const { username: userParam } = getQueryParams(); // Dobijanje username iz URL-a
+
+    async function loadUserId() {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", userParam));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(doc => {
+                userId = doc.id; // Dobijanje ID-a korisnika
+                const userData = doc.data();
+                document.getElementById('ime').innerText = userData.ime; // Prikazivanje imena korisnika
+                loadUserData(); // Pozivamo funkciju za učitavanje podataka nakon što imamo ID
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            currentPrice = docSnap.data().currentPrice || 0.00;
+            lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null; // Učitavamo vreme poslednjeg klika
+
+            // Prikazivanje cijene
+            document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+            document.querySelector('.amount').innerText = (currentPrice > 0) ? "0.01/h" : "0.00/h"; // Početno povećanje
+
+            // Proveri prošlo vreme i nastavi sa povećanjem ako je manje od 24h
+            const now = new Date();
+            const twentyFourHours = 24 * 60 * 60 * 1000; // 24h u milisekundama
+
+            if (lastClickTime) {
+                const elapsed = now - lastClickTime; // Prolazno vreme
+                const increments = Math.floor(elapsed / 5000); // Računanje broja povećanja svake 5 sekundi
+                currentPrice += increments * 0.01; // Ažuriranje trenutne cijene
+                document.getElementById('amount').innerText = currentPrice.toFixed(2); // Ažuriranje prikazane cijene
+                lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5); // Ažuriranje vremena poslednjeg klika
+                await updateFirestore(currentPrice, lastClickTime); // Ažuriranje Firestores a novim vremenom i cijenom
+            }
+
+            // Klik na dolar ikonicu za dodavanje 0.01 na trenutnu cijenu
+            document.getElementById('dolar-icon').addEventListener('click', async () => {
+                const now = new Date();
+
+                // Postavljanje vremena poslednjeg klika i povećanje
+                if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                    lastClickTime = now; // Postavi vreme poslednjeg klika
+                    currentPrice += 0.01; // Povećanje za 0.01
+                    document.querySelector('.amount').innerText = "0.01/h"; // Postavi hourlyIncrease na 0.01/h
+                    await updateFirestore(currentPrice, lastClickTime); // Ažurirajte Firestore
+                } else {
+                    alert("Možete kliknuti samo jednom svakih 24 sata.");
+                }
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
+
+    async function updateFirestore(currentPrice, lastClickTime) {
+        const docRef = doc(db, 'network', userId);
+        try {
+            await updateDoc(docRef, {
+                currentPrice: currentPrice,
+                lastClickTime: lastClickTime ? lastClickTime : null // Ažuriraj vreme poslednjeg klika
+            });
+            console.log("Podaci uspješno ažurirani.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
+    }
+
+    // Kada se stranica učita, pozovite loadUserId
+    window.onload = () => {
+        loadUserId();
+
+        // Postavite interval za učitavanje podataka svakih 5 sekundi
+        setInterval(() => {
+            loadUserData(); // Učitava nove podatke
+        }, 5000);
+    };
+
+</script>
+
+</body>
+</html>                                        molim te procitaj oba koda i ovo sto pisem.      sve mi super radi, trenutno funkcionalnost nemoj pokvariti, samo nesto treba doraditi.   dakle  zelim da ako novi korisnik se registruje i kad u referal code unese username POSTOJECEG KORISNIKA i kad zavrsi registraciju i nakon sto se to sve spasi u firestore, zelim da u index.html tom postojecem korisniku povecas rast njegove cijene    tj    svaki korisnik nakon klika na 0.0 dobije 0.01 i trenutna raste za 0.01 svakih 5 sekundi, ALI AKO JE NOVI KORISNIK U REFERAL CODE UNIO USERNAME POSTOJECEG KORISNIKA ONDA TOM POSTOJECEM KORISNIKU DODAJES +0.01 ZA SVAKOG KORISNIKA STO ISKORISTI NJEGOV USERNAME... DAKLE ZA JOS JEDNOG BILO BI 0.02 ZA 5 SEKUNDI, ZA JOS JEDNOG BI SE POVECALO NA 0.03 ZA 5 SEKUNDI I SVE TAKO.

@@ -1,0 +1,774 @@
+kod je jako velik, kad ga procitas i upamtis do kraja odgovori na bosanskom pa cu ti poslati sta zelim                                              <header>
+        <div id="user-name">Pozdrav, <span id="ime"></span></div>
+        <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+    
+        <!-- Toggle dugme za mobilne uređaje -->
+        <button id="toggle-menu-button" class="toggle-button">☰</button>
+    
+        <nav id="desktop-menu"> <!-- Desktop meni -->
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    
+        <!-- Mobilni meni -->
+        <nav id="toggle-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    </header>
+
+
+    <div id="chat-modal">
+        <div id="chat-header">
+            <span id="chat-header-title">Chat</span>
+            <button id="close-chat">✕</button>
+            <button id="back-to-users" style="display: none;">←</button> <!-- Dodajemo dugme za povratak -->
+            
+        </div>
+        
+        <div id="chat-box">
+            <div id="search-container">
+                <input type="text" id="user-search" placeholder="Search users...">
+                <button id="search-button">🔍</button>
+            </div>
+           
+            <div id="users-list"></div>
+
+        
+            
+            <div id="users-list"></div> <!-- Prikaz korisnika u krugovima -->
+            <div id="messages" style="display: none;"></div> <!-- Skriveno dok ne odabereš korisnika -->
+            <div id="message-input" style="display: none;">
+                <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
+                
+                <button id="start-call">📞</button> <!-- Dugme za započinjanje poziva -->
+
+                <input type="text" id="chat-message" placeholder="Unesite poruku">
+                <button id="send-message">Pošalji</button>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+   
+
+
+    
+    <script>
+        const toggleMenuButton = document.getElementById('toggle-menu-button');
+        const toggleMenu = document.getElementById('toggle-menu');
+
+        toggleMenuButton.addEventListener('click', () => {
+            // Togglovanje prikaza menija
+            if (toggleMenu.style.display === 'flex') {
+                toggleMenu.style.display = 'none'; // Sakrij meni
+            } else {
+                toggleMenu.style.display = 'flex'; // Prikaži meni
+            }
+        });
+    </script>
+
+   
+
+
+
+
+
+
+
+    <div class="container">
+        <div class="icon-section">
+            <div class="icon" id="dolar-icon">
+                <span class="material-icons">attach_money</span>
+                <span class="amount">0.00/h</span>
+            </div>
+        </div>
+        
+        <!-- Dodavanje ikone za broj referral koda ispod trenutne cijene -->
+        <div id="referral-info">
+            <span class="material-icons" style="vertical-align: middle;">group</span> 
+            <span id="referral-count">0/10</span> <!-- Prikaz broja referral koda -->
+        </div>
+
+        <!-- Ikona za dijeljenje -->
+        <button id="share-icon">
+            <span class="material-icons">share</span> Pozovi prijatelje
+        </button>
+    </div>
+
+    <div class="image-container">
+        <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
+    </div>
+
+    <div class="partnership-box">
+        <p>
+            Delta coin is selecting partnerships with crypto-services and general businesses ahead of our Open Network launch. 
+            This is a unique, early opportunity for businesses to connect with over 10 million engaged Delta coin fans and become part of Delta’s rapidly expanding Web3 ecosystem. 
+            If your company is interested in partnering with Delta or you’d like to introduce a business to partner with Delta, tap “Partnerships” to explore how and why.
+        </p>
+    </div>
+
+    <div class="background blue"></div>
+    <div class="background purple"></div>
+
+    <script>
+        const shareIcon = document.getElementById('share-icon');
+
+        // Pretpostavljamo da korisničko ime dolazi iz URL parametara ili je već definirano
+        const { username: userParam } = getQueryParams();
+
+        // Funkcija za nativno dijeljenje
+        shareIcon.addEventListener('click', async () => {
+            const shareData = {
+                title: 'Poziv za pridruživanje',
+                text: Zdravo, pridruži mi se na https://nftnox.github.io/pi5/registracija.html. Moj kod je ${userParam}
+            };
+
+            try {
+                await navigator.share(shareData);
+                console.log('Uspješno podijeljeno');
+            } catch (err) {
+                console.error('Greška prilikom dijeljenja:', err);
+            }
+        });
+
+        // Funkcija za dobijanje parametara iz URL-a
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                ime: params.get('ime'),
+                prezime: params.get('prezime'),
+                username: params.get('username')
+            };
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+            authDomain: "piii-7844e.firebaseapp.com",
+            projectId: "piii-7844e",
+            storageBucket: "piii-7844e.appspot.com",
+            messagingSenderId: "315770496799",
+            appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+            measurementId: "G-JH9SDWTS9V"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+
+        let userId = ""; // ID trenutnog korisnika
+        let username = ""; // Pravi username korisnika
+        let currentPrice = 0.00; // Trenutna cijena korisnika
+        let lastClickTime = null; // Vrijeme posljednjeg klika
+        let referralBonus = 0.01; // Početni bonus za novog korisnika (0.01 za 5 sekundi)
+
+        const MAX_REFERRALS = 10; // Maksimalan broj korisnika koji mogu koristiti isti referralCode
+
+        async function loadUserId() {
+            const userCollection = collection(db, 'network');
+            const q = query(userCollection, where("username", "==", userParam));
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                querySnapshot.forEach(doc => {
+                    userId = doc.id; // Dobijanje ID-a korisnika
+                    const userData = doc.data();
+                    username = userData.ime; // Dobijanje stvarnog imena korisnika
+                    document.getElementById('ime').innerText = username; // Prikazivanje imena korisnika
+                    
+                    if (userData.referralCode) {
+                        checkReferral(userData.referralCode);
+                    }
+                    
+                    loadUserData(); // Učitavanje podataka nakon što imamo ID
+                });
+            } else {
+                console.error("Korisnik ne postoji u Firestore-u.");
+            }
+        }
+
+        async function checkReferral(referralCode) {
+            const userCollection = collection(db, 'network');
+            const q = query(userCollection, where("username", "==", referralCode));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                querySnapshot.forEach(async doc => {
+                    const referralOwnerId = doc.id;
+                    const referralOwnerData = doc.data();
+                    const referralCount = referralOwnerData.referralCount || 0;
+                    const usedByUser = referralOwnerData.usedBy || [];
+
+                    if (usedByUser.includes(userId)) {
+                        console.log(Korisnik ${userId} je već iskoristio referral kod.);
+                    } else if (referralCount >= MAX_REFERRALS) {
+                        console.log(Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.);
+                    } else {
+                        const newReferralBonus = 0.01 * (referralCount + 1);
+
+                        console.log(Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus});
+
+                        await updateDoc(doc.ref, {
+                            referralBonus: 0.01 + newReferralBonus,
+                            referralCount: referralCount + 1,
+                            usedBy: [...usedByUser, userId]
+                        });
+
+                        document.getElementById('referral-count').innerText = ${referralCount + 1}/${MAX_REFERRALS};
+                    }
+                });
+            }
+        }
+
+        async function loadUserData() {
+            const docRef = doc(db, 'network', userId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                currentPrice = docSnap.data().currentPrice || 0.00;
+                lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
+                const userReferralBonus = docSnap.data().referralBonus || 0.01;
+
+                document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+                document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus + "/h" : "0.00/h";
+
+                const now = new Date();
+                const twentyFourHours = 24 * 60 * 60 * 1000;
+
+                if (lastClickTime) {
+                    const elapsed = now - lastClickTime;
+                    const increments = Math.floor(elapsed / 5000);
+                    currentPrice += increments * userReferralBonus;
+                    document.getElementById('amount').innerText = currentPrice.toFixed(2);
+                    lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+                    await updateFirestore(currentPrice, lastClickTime);
+                }
+
+                document.getElementById('dolar-icon').addEventListener('click', async () => {
+                    const now = new Date();
+
+                    if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                        lastClickTime = now;
+                        currentPrice += userReferralBonus;
+                        document.querySelector('.amount').innerText = userReferralBonus + "/h";
+                        await updateFirestore(currentPrice, lastClickTime);
+                    } else {
+                        alert("Možete kliknuti samo jednom svakih 24 sata.");
+                    }
+                });
+            } else {
+                console.error("Korisnik ne postoji u Firestore-u.");
+            }
+        }
+
+        async function updateFirestore(currentPrice, lastClickTime) {
+            const docRef = doc(db, 'network', userId);
+            try {
+                await updateDoc(docRef, {
+                    currentPrice: currentPrice,
+                    lastClickTime: lastClickTime ? lastClickTime : null
+                });
+                console.log("Podaci uspješno ažurirani.");
+            } catch (error) {
+                console.error("Greška prilikom ažuriranja podataka: ", error);
+            }
+        }
+
+        
+
+
+
+
+
+
+
+        let isChatOpen = false; // Pratimo da li je chat otvoren
+let selectedUserName = ''; // Čuvamo ime trenutno odabranog korisnika
+let selectedUserId = ''; // Čuvamo ID trenutno odabranog korisnika
+
+// Store all users globally to filter them later
+let allUsers = [];
+let contacts = new Set(); // Set koristi se za eliminaciju duplikata
+
+// Fetch only the users with whom a chat has been established
+async function fetchContacts() {
+    const chatRequestCollection = collection(db, 'chatRequests');
+
+    // Upiti za oba slučaja: korisnik kao requester i korisnik kao recipient
+    const qRequester = query(chatRequestCollection, where('accepted', '==', true), where('requester', '==', username));
+    const qRecipient = query(chatRequestCollection, where('accepted', '==', true), where('recipientName', '==', username));
+
+    contacts.clear(); // Očisti prethodne kontakte
+
+    // Dohvati sve chatove gdje je trenutni korisnik bio requester
+    const querySnapshotRequester = await getDocs(qRequester);
+    querySnapshotRequester.forEach(doc => {
+        const chatData = doc.data();
+        contacts.add(JSON.stringify({ userName: chatData.recipientName, userId: chatData.recipientId }));
+    });
+
+    // Dohvati sve chatove gdje je trenutni korisnik bio recipient
+    const querySnapshotRecipient = await getDocs(qRecipient);
+    querySnapshotRecipient.forEach(doc => {
+        const chatData = doc.data();
+        contacts.add(JSON.stringify({ userName: chatData.requester, userId: chatData.requesterId }));
+    });
+
+    const uniqueContacts = Array.from(contacts).map(item => JSON.parse(item));
+    displayUsers(uniqueContacts); // Prikaži kontakte bez duplikata
+}
+
+// Funkcija za prikazivanje korisnika u listi
+function displayUsers(users) {
+    const usersListDiv = document.getElementById('users-list');
+    usersListDiv.innerHTML = ''; // Očisti prethodnu listu
+
+    users.forEach(user => {
+        const userElement = document.createElement('div');
+        userElement.classList.add('user-item');
+        userElement.innerText = user.userName;
+
+        // Dodaj event listener za ulazak u chat sa odabranim korisnikom
+        userElement.addEventListener('click', () => {
+            checkExistingChatRequest(user.userId, user.userName);
+        });
+
+        usersListDiv.appendChild(userElement);
+    });
+}
+
+// Funkcija za pretragu korisnika prilikom unosa
+document.getElementById('user-search').addEventListener('input', function () {
+    const searchText = this.value.toLowerCase();
+
+    if (searchText === '') {
+        // Ako je pretraga prazna, prikazuj samo kontakte
+        displayUsers(Array.from(contacts).map(item => JSON.parse(item)));
+    } else {
+        // Ako postoji unos u pretrazi, filtriraj sve korisnike
+        const filteredUsers = allUsers.filter(user => user.userName.toLowerCase().includes(searchText));
+        displayUsers(filteredUsers); // Ažuriraj listu s filtriranim korisnicima
+    }
+});
+
+// Funkcija za dohvat svih korisnika
+async function fetchUsers() {
+    const userCollection = collection(db, 'network');
+    const querySnapshot = await getDocs(userCollection);
+
+    allUsers = []; // Očisti listu korisnika
+    querySnapshot.forEach(doc => {
+        const userData = doc.data();
+        const userName = userData.ime;
+        const userId = doc.id;
+
+        allUsers.push({ userName, userId });
+    });
+
+    // Nakon dohvaćanja svih korisnika, prikaži samo one s kojima je započet razgovor
+    await fetchContacts(); // Prikaži samo kontakte
+}
+
+// Funkcija za inicijalno učitavanje kada se otvori chat modal
+document.getElementById('chat-link').addEventListener('click', async () => {
+    await fetchUsers(); // Učitaj sve korisnike, ali prikaži samo one s kojima je započet razgovor
+});
+
+
+
+// Funkcija za provjeru postojećeg zahtjeva za chat između dva korisnika
+async function checkExistingChatRequest(userId, userName) {
+    selectedUserId = userId; // Dodano: Postavljanje selectedUserId
+    selectedUserName = userName;
+    const chatRequestCollection = collection(db, 'chatRequests');
+    const q = query(chatRequestCollection, 
+                    where('requester', 'in', [username, userName]), 
+                    where('recipientName', 'in', [username, userName]));
+
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        // Ako već postoji zahtjev, prikazujemo prompt za prihvatanje
+        querySnapshot.forEach(doc => {
+            const requestData = doc.data();
+            if (requestData.recipientName === username && !requestData.accepted) {
+                showAcceptChatPrompt(requestData.requester, doc.id); // Korisnik prima zahtjev
+            } else if (requestData.requester === username && !requestData.accepted) {
+                alert(Čekate da ${requestData.recipientName} prihvati vaš zahtjev.);
+            } else {
+                openChat(userName); // Ako je zahtjev već prihvaćen, otvaramo chat
+            }
+        });
+    } else {
+        // Ako ne postoji zahtjev, prikažemo prompt za početak chata
+        showChatRequestPrompt(userName, userId);
+    }
+}
+
+// Funkcija za prikazivanje prozora za početak chata
+function showChatRequestPrompt(userName, userId) {
+    // Provjeravamo da li prozor već postoji, da bismo spriječili dupli prikaz
+    let existingPrompt = document.querySelector('.chat-request-prompt');
+    if (existingPrompt) {
+        document.body.removeChild(existingPrompt);
+    }
+
+    const chatRequestPrompt = document.createElement('div');
+    chatRequestPrompt.classList.add('chat-request-prompt');
+    chatRequestPrompt.style.position = 'fixed';
+    chatRequestPrompt.style.top = '50%';
+    chatRequestPrompt.style.left = '50%';
+    chatRequestPrompt.style.transform = 'translate(-50%, -50%)';
+    chatRequestPrompt.style.padding = '20px';
+    chatRequestPrompt.style.backgroundColor = 'white';
+    chatRequestPrompt.style.border = '1px solid black';
+    chatRequestPrompt.style.zIndex = '1000'; // Osiguravamo da je prozor iznad svih ostalih elemenata
+
+    chatRequestPrompt.innerHTML = 
+        <p>Želite li započeti chat sa ${userName}?</p>
+        <button id="accept-chat-request">Da</button>
+        <button id="decline-chat-request">Ne</button>
+    ;
+
+    document.body.appendChild(chatRequestPrompt);
+
+
+
+
+
+
+    
+    // Postavi događaj za prihvatanje zahtjeva
+    document.getElementById('accept-chat-request').addEventListener('click', () => {
+        sendChatRequest(userId, userName);
+        document.body.removeChild(chatRequestPrompt); // Ukloni prozor za zahtjev
+    });
+
+    // Postavi događaj za odbijanje zahtjeva
+    document.getElementById('decline-chat-request').addEventListener('click', () => {
+        document.body.removeChild(chatRequestPrompt); // Ukloni prozor za zahtjev
+    });
+}
+
+// Funkcija za prikazivanje prozora za prihvatanje chata
+function showAcceptChatPrompt(requesterName, requestId) {
+    const chatAcceptPrompt = document.createElement('div');
+    chatAcceptPrompt.classList.add('chat-accept-prompt');
+    chatAcceptPrompt.style.position = 'fixed';
+    chatAcceptPrompt.style.top = '50%';
+    chatAcceptPrompt.style.left = '50%';
+    chatAcceptPrompt.style.transform = 'translate(-50%, -50%)';
+    chatAcceptPrompt.style.padding = '20px';
+    chatAcceptPrompt.style.backgroundColor = 'white';
+    chatAcceptPrompt.style.border = '1px solid black';
+    chatAcceptPrompt.style.zIndex = '1000'; // Osiguravamo da je prozor iznad svih ostalih elemenata
+
+    chatAcceptPrompt.innerHTML = 
+        <p>Korisnik ${requesterName} želi da započne chat sa vama. Prihvatate li?</p>
+        <button id="accept-chat-${requestId}">Prihvati</button>
+        <button id="decline-chat-${requestId}">Odbij</button>
+    ;
+
+    document.body.appendChild(chatAcceptPrompt);
+
+    // Prihvati zahtjev
+    document.getElementById(accept-chat-${requestId}).addEventListener('click', () => {
+        acceptChatRequest(requestId);
+        document.body.removeChild(chatAcceptPrompt); // Ukloni obavještenje
+    });
+
+    // Odbij zahtjev
+    document.getElementById(decline-chat-${requestId}).addEventListener('click', () => {
+        document.body.removeChild(chatAcceptPrompt); // Ukloni obavještenje
+    });
+}
+
+// Funkcija za slanje zahtjeva za chat
+async function sendChatRequest(userId, userName) {
+    try {
+        const chatRequestCollection = collection(db, 'chatRequests');
+        await addDoc(chatRequestCollection, {
+            requester: username, // Logovani korisnik
+            recipientId: userId, // ID korisnika kojem šaljemo zahtjev
+            recipientName: userName,
+            accepted: false // Po defaultu nije prihvaćen
+        });
+        console.log("Zahtjev za chat uspješno poslan.");
+    } catch (error) {
+        console.error("Greška prilikom slanja zahtjeva:", error);
+    }
+}
+
+// Funkcija za prihvatanje zahtjeva za chat
+async function acceptChatRequest(requestId) {
+    const requestDocRef = doc(db, 'chatRequests', requestId);
+    try {
+        await updateDoc(requestDocRef, { accepted: true });
+        console.log("Zahtjev za chat prihvaćen.");
+        openChat(selectedUserName); // Omogući normalan chat nakon prihvatanja
+    } catch (error) {
+        console.error("Greška prilikom prihvatanja zahtjeva:", error);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// Event listener za desktop meni
+document.getElementById('chat-link').addEventListener('click', async () => {
+    const chatModal = document.getElementById('chat-modal');
+    chatModal.style.display = 'flex'; // Prikaz modalnog prozora
+
+    // Ako se chat otvara po prvi put, dohvatimo sve korisnike
+    if (!isChatOpen) {
+        await fetchUsers(); // Pozovi funkciju za dobijanje korisnika
+        isChatOpen = true; // Postavljamo chat stanje kao otvoreno
+    } else {
+        resetChat(); // Ako je chat već otvoren, resetuj na listu korisnika
+    }
+});
+
+// Dodaj event listener za chat link u mobilnom meniju
+document.getElementById('toggle-menu').addEventListener('click', async (event) => {
+    if (event.target.id === 'chat-link') {
+        document.getElementById('toggle-menu').style.display = 'none'; // Sakrij mobilni meni
+        const chatModal = document.getElementById('chat-modal');
+        chatModal.style.display = 'flex'; // Prikaz modalnog prozora
+
+        // Ako se chat otvara po prvi put, dohvatimo sve korisnike
+        if (!isChatOpen) {
+            await fetchUsers(); // Pozovi funkciju za dobijanje korisnika
+            isChatOpen = true; // Postavljamo chat stanje kao otvoreno
+        } else {
+            resetChat(); // Ako je chat već otvoren, resetuj na listu korisnika
+        }
+    }
+});
+
+
+
+
+
+
+// Funkcija za otvaranje chat-a
+function openChat(userName) {
+    selectedUserName = userName;
+
+    // Pronađite ID korisnika na osnovu imena
+    const user = allUsers.find(u => u.userName === userName);
+    if (user) {
+        selectedUserId = user.userId;
+    } else {
+        console.error('Korisnik nije pronađen');
+    }
+
+    // Postojeći kod za prikazivanje chata...
+    const messagesDiv = document.getElementById('messages');
+    const messageInputDiv = document.getElementById('message-input');
+    const usersListDiv = document.getElementById('users-list');
+    const backButton = document.getElementById('back-to-users');
+    const chatHeaderTitle = document.getElementById('chat-header-title');
+
+    usersListDiv.style.display = 'none';
+    messagesDiv.style.display = 'block';
+    messageInputDiv.style.display = 'flex';
+
+    chatHeaderTitle.innerText = Chat with ${userName};
+    backButton.style.display = 'block';
+
+    // Učitajte historiju poruka i počnite slušati nove poruke
+    loadMessageHistory();
+    listenForNewMessages();
+}
+
+
+
+async function loadMessageHistory() {
+    const messagesCollection = collection(db, 'poruke');
+    const q = query(messagesCollection, 
+        where('sender', 'in', [username, selectedUserName]),
+        where('recipient', 'in', [username, selectedUserName])
+    );
+    const querySnapshot = await getDocs(q);
+    
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.innerHTML = ''; // Očisti prethodne poruke
+
+    // Učitaj poruke u niz i sortiraj po timestamp-u
+    const messages = [];
+    querySnapshot.forEach(doc => {
+        const messageData = doc.data();
+        messages.push({
+            ...messageData,
+            id: doc.id // Sačuvaj id za kasniju upotrebu ako je potrebno
+        });
+    });
+
+    // Sortiraj poruke po timestamp-u
+    messages.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Prikaži sortirane poruke
+    messages.forEach(messageData => {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+
+        // Proveri ko je pošiljalac i dodaj odgovarajuću klasu
+        if (messageData.sender === username) {
+            messageElement.classList.add('sender');
+        } else {
+            messageElement.classList.add('recipient');
+        }
+
+        messageElement.innerText = ${messageData.sender}: ${messageData.message};
+        messagesDiv.appendChild(messageElement);
+    });
+}
+
+
+function listenForNewMessages() {
+    const messagesCollection = collection(db, 'poruke');
+    const q = query(messagesCollection, 
+        where('sender', 'in', [username, selectedUserName]),
+        where('recipient', 'in', [username, selectedUserName])
+    );
+
+    onSnapshot(q, (querySnapshot) => {
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = ''; // Očisti prethodne poruke
+
+        // Učitaj poruke u niz
+        const messages = [];
+        querySnapshot.forEach(doc => {
+            const messageData = doc.data();
+            messages.push({
+                ...messageData,
+                id: doc.id
+            });
+        });
+
+        // Sortiraj poruke po timestamp-u
+        messages.sort((a, b) => a.timestamp - b.timestamp);
+
+        // Prikaži sortirane poruke
+        messages.forEach(messageData => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+
+            // Proveri ko je pošiljalac i dodaj odgovarajuću klasu
+            if (messageData.sender === username) {
+                messageElement.classList.add('sender');
+            } else {
+                messageElement.classList.add('recipient');
+            }
+
+            messageElement.innerText = ${messageData.sender}: ${messageData.message};
+            messagesDiv.appendChild(messageElement);
+        });
+    });
+}
+
+
+
+
+
+// Zatvori chat kada korisnik klikne na X dugme
+document.getElementById('close-chat').addEventListener('click', () => {
+    closeChat(); // Zatvori chat
+});
+
+// Funkcija za zatvaranje chata
+function closeChat() {
+    const chatModal = document.getElementById('chat-modal');
+    chatModal.style.display = 'none'; // Sakrij modalni prozor
+    isChatOpen = false; // Postavi chat stanje kao zatvoreno
+}
+
+// Dodaj događaj za povratak na listu korisnika
+document.getElementById('back-to-users').addEventListener('click', () => {
+    resetChat(); // Resetuj chat na listu korisnika
+});
+
+// Funkcija za resetovanje chata na početnu listu korisnika
+function resetChat() {
+    const usersListDiv = document.getElementById('users-list');
+    const messagesDiv = document.getElementById('messages');
+    const messageInputDiv = document.getElementById('message-input');
+    const chatHeaderTitle = document.getElementById('chat-header-title');
+    const backButton = document.getElementById('back-to-users');
+
+    usersListDiv.style.display = 'block'; // Prikaži listu korisnika
+    messagesDiv.style.display = 'none'; // Sakrij chat prozor
+    messageInputDiv.style.display = 'none'; // Sakrij ulaz za poruku
+    chatHeaderTitle.innerText = 'Chat'; // Resetuj naslov na 'Chat'
+    backButton.style.display = 'none'; // Sakrij dugme za povratak NAKON OVOGA DODAJ
+}
+
+
+
+
+// Funkcija za slanje poruke
+async function sendMessage() {
+        const messageInput = document.getElementById('chat-message');
+        const messageText = messageInput.value.trim();
+
+        if (messageText) {
+            const messagesCollection = collection(db, 'poruke');
+            try {
+                await addDoc(messagesCollection, {
+                    sender: username, // Ime pošiljaoca
+                    recipient: selectedUserName, // Ime primaoca
+                    message: messageText, // Tekst poruke
+                    timestamp: new Date() // Vreme slanja poruke
+                });
+                console.log("Poruka uspješno poslana:", messageText);
+                messageInput.value = ''; // Očisti ulaz nakon slanja
+            } catch (error) {
+                console.error("Greška prilikom slanja poruke:", error);
+            }
+        }
+    }
+
+    // Dodajte događaj za slanje poruke kada se klikne na dugme
+    document.getElementById('send-message').addEventListener('click', sendMessage);
+
+
+
+// za korisnike da se red ne remeti//
+    document.getElementById("back-to-users").addEventListener("click", function() {
+    document.getElementById("users-list").style.display = "flex"; // Ponovo primjeni flexbox
+    document.getElementById("messages").style.display = "none"; // Sakrij poruke
+    document.getElementById("message-input").style.display = "none"; // Sakrij unos poruka
+    document.getElementById("back-to-users").style.display = "none"; // Sakrij dugme za povratak
+});
+
+function openChatWithUser(userId) {
+    document.getElementById("users-list").style.display = "none"; // Sakrij listu korisnika
+    document.getElementById("messages").style.display = "block"; // Prikazi poruke
+    document.getElementById("message-input").style.display = "flex"; // Prikazi unos poruka
+    document.getElementById("back-to-users").style.display = "block"; // Prikazi dugme za povratak
+}
+
+
+
+
+PORED SEARCH BUTTON DODAJ GRUPA dugme, DAKLE dugme grupa, klikom na to dugme dajes mi mogucnost kreiranja grupe, ali da mi das listu kome cu poslati poziv a u listi ce biti samo oni koji su vec moji prijatelji tj isti oni koji su prikazani u chatu, i onda biram koga cu da pozovem. NAKON STO SE GRUPA KREIRA ONA SE DODAJE PORED TIH KORISNIKA u chatu, I TA GRUPA JE SAMO ZA TE KORISNIKE, SAMO TI KORISNICI MOGU DA VIDE TU GRUPU, i oni koji budu dodani u grupu ne trebaju odobriti chat, jer su vec odobrili cim su u mogucnosti da se dodaju u grupu, dakle onaj koji kreira i one koje doda u grupu svi dobiju tu grupu u svom chatu
