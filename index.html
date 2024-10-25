@@ -391,12 +391,12 @@ textarea {
     }
 
     .product img {
-        width: 200px;
-        height: 200px;
-        object-fit: cover;
-        margin-bottom: 10px;
-        border-radius: 8px;
-    }
+    width: 250px; /* Povećana širina slike */
+    height: 250px; /* Povećana visina slike */
+    object-fit: cover;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
 
     .product-list-container {
         display: flex;
@@ -470,7 +470,7 @@ textarea {
 
     <header>
         <div id="user-name">Pozdrav, <span id="ime"></span></div>
-        <div id="current-price">Trenutna cijena: <span id="amount">0.00</span></div>
+        <div id="current-price">Your wallet: <span id="amount">0.00</span></div>
     
         <!-- Toggle dugme za mobilne uređaje -->
         <button id="toggle-menu-button" class="toggle-button">☰</button>
@@ -610,6 +610,13 @@ document.getElementById('close-image-modal').addEventListener('click', function(
     <div class="image-container">
         <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
     </div>
+
+
+    <div id="total-coins-spent" style="text-align: center; font-size: 24px; margin-top: 20px; color: white;">
+        Delta Coins Majning: <span id="coins-spent">0</span>/21,000,000
+    </div>
+    
+    
 
 <!-- Virtuelna tržnica -->
 <div id="virtual-marketplace" class="marketplace-outline">
@@ -838,7 +845,7 @@ async function loadProducts() {
         const productImg = document.createElement('img');
         productImg.src = productData.imageUrl;
         productImg.alt = productData.name;
-        productImg.style.maxWidth = '100px';
+       
 
         const productName = document.createElement('div');
         productName.textContent = productData.name;
@@ -1948,6 +1955,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
+async function updateTotalCoinsSpent() {
+    const userCollection = collection(db, 'network');
+    const querySnapshot = await getDocs(userCollection);
+    let totalCoinsSpent = 0;
+
+    querySnapshot.forEach(doc => {
+        const userData = doc.data();
+        const userCurrentPrice = userData.currentPrice || 0;
+        totalCoinsSpent += userCurrentPrice;
+    });
+
+    // Ažurirajte prikaz na stranici
+    document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
+}
+
+
+
+
+
+
+
+
+
     // Učitaj proizvode nakon učitavanja stranice
     window.onload = () => {
         loadUserId();
@@ -1955,6 +1986,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadProducts();
         setInterval(() => {
             loadUserData();
+            updateTotalCoinsSpent(); // Ažuriranje svakih 5 sekundi
         }, 5000);
     };
     </script>
