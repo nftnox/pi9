@@ -18,351 +18,20 @@ textarea {
 
 
       
-        /* Chat modal, smješten u donji desni ugao za desktop, full screen za mobilne uređaje */
-        #chat-modal {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 350px;
-            height: 600px;
-            background-color: white;
-            border: 1px solid #ccc;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            z-index: 1000;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-       
-
-        /* Gornji dio sa X dugmetom za zatvaranje */
-        #chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background-color: #5a99cd;
-            color: white;
-        }
-
-        #close-chat {
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            color: white;
-            cursor: pointer;
-        }
-
-        #chat-box {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-
-        #chat-message {
-        width: 100px; /* Postavi željenu širinu */
-        padding: 5px; /* Smanji unutrašnji razmak */
-        font-size: 14px; /* Smanji veličinu fonta */
-    }
-
-        #users-list {
-    display: flex;
-    flex-direction: column; /* Stack users vertically */
-    gap: 15px; /* Add space between users */
-    padding: 10px;
-}
-
-.user-item {
-    display: flex; /* Align elements horizontally */
-    align-items: center; /* Center image and text vertically */
-    gap: 10px; /* Space between profile image and text */
-    padding: 10px;
-    border-bottom: 1px solid #ccc; /* Add a separator line */
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.user-item:hover {
-    background-color: #3f78a9; /* Tamnija boja kada se prelazi mišem */
-}
-
 
 
 /* User info styling */
-.user-info {
-    display: flex;
-    flex-direction: column; /* Stack name and last message vertically */
-}
-
-.user-info .user-name {
-    font-weight: bold; /* Bold the username */
-    margin-bottom: 5px; /* Add space below the name */
-}
-
-.user-info .last-message {
-    color: #666; /* Gray color for the last message */
-    font-size: 14px; /* Slightly smaller font size */
-    overflow: hidden;
-    text-overflow: ellipsis; /* Truncate long messages */
-    white-space: nowrap; /* Prevent text from wrapping */
-}
-
-        /* Poruke u chat prozoru */
-        #messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 10px;
-            border-bottom: 1px solid #ccc;
-        }
-
-        .message {
-    display: block; /* Osigurajte da je svaki element u novom redu */
-    margin: 5px 0; /* Razmak između poruka */
-    padding: 10px; /* Unutarnji razmak za bolju čitljivost */
-    border-radius: 5px; /* Zaobljeni rubovi */
-    word-wrap: break-word; /* Omogućuje prelamanje riječi */
-    max-width: 80%; /* Maksimalna širina poruke */
-}
-
-
-
-        /* Donji dio s unosom poruke */
-        #message-input {
-    display: flex;
-    gap: 10px;
-    padding: 10px;
-    position: sticky; /* Fiksirano na dno, ali unutar tok dokumenta */
-    bottom: 0;
-    width: 100%; /* Osigurava da unos zauzima cijelu širinu chata */
-    background-color: white; /* Dodaj pozadinu */
-    border-top: 1px solid #ccc; /* Gornja linija za odvajanje od poruka */
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Blaga sjena za vizualni efekat */
-    z-index: 10; /* Osiguraj da unos bude iznad poruka */
-}
-
-
-/* Unosno polje */
-#message-input input {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-/* Dugme za slanje */
-#message-input button {
-    padding: 10px;
-    background-color: #5a99cd;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-       
-       
-       /* Prethodni CSS za div #messages, uz male izmjene */
-/* Kontejner za poruke */
-#messages {
-    display: flex;
-    flex-direction: column; /* Da poruke idu vertikalno jedna ispod druge */
-    flex-grow: 1;
-    overflow-y: auto; /* Omogućava skrolanje poruka */
-    padding-bottom: 40px; /* Dovoljno prostora ispod zadnje poruke */
-    max-height: calc(100% - 70px); /* Visina poruka minus unos */
-    box-sizing: border-box; /* Padding uključen u ukupnu visinu */
-}
-
-.message {
-    padding: 10px;
-    border-radius: 5px;
-    margin: 5px 0;
-    max-width: 60%; /* Maksimalna širina poruke */
-    word-wrap: break-word; /* Da tekst ne prelazi okvir poruke */
-}
-
-.message.sender {
-    background-color: #5a99cd; /* Plava pozadina za logovanog korisnika */
-    color: white;
-    margin-left: auto; /* Pomeri poruku sendera desno */
-    text-align: right; /* Tekst unutar poruke poravnaj desno */
-}
-
-.message.recipient {
-    background-color: lightgray; /* Siva pozadina za drugog korisnika */
-    color: black;
-    margin-right: auto; /* Pomeri poruku recipienta levo */
-    text-align: left; /* Tekst unutar poruke poravnaj levo */
-}
 
 
 
 
-#search-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px; /* Razmak između pretrage i liste korisnika */
-}
-
-#user-search {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    width: 250px; /* Širina polja za pretragu */
-    font-size: 16px;
-}
-
-#search-button {
-    background-color: #4CAF50; /* Zelena boja */
-    color: white; /* Bijela boja teksta */
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-left: 10px; /* Razmak između polja za pretragu i dugmeta */
-    font-size: 16px;
-    transition: background-color 0.3s ease; /* Animacija za hover */
-}
-
-#search-button:hover {
-    background-color: #45a049; /* Tamnija zelena kada se pređe mišem */
-}
-
-#search-button:focus {
-    outline: none; /* Uklanja plavi rub kad je dugme fokusirano */
-}
-
-
-/* Stilovi za modal */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4); /* Crna pozadina sa transparentnošću */
-}
-
-.modal-content {
-    background-color: white;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 10px;
-}
-
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close:hover, .close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-
-.user-item img {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    background-color: #5a99cd; /* Fallback background */
-}
 
 
 
-.message img {
-    max-width: 100px; /* Limits the width of the image */
-    max-height: 100px; /* Limits the height of the image */
-    border-radius: 8px; /* Adds rounded corners */
-    margin-bottom: 10px; /* Adds spacing below the image */
-    object-fit: cover; /* Ensures the image covers the area without being distorted */
-}
-
-/* The modal for full-screen image */
-.image-modal {
-    display: none; /* Hidden by default */
-    position: fixed;
-    z-index: 1000; /* Ensure it appears above other elements */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    background-color: rgba(0, 0, 0, 0.9); /* Black background with transparency */
-}
-
-/* Image inside the modal */
-.modal-content {
-    margin: auto;
-    display: block;
-    max-width: 90%;
-    max-height: 90%;
-}
-
-/* Close button */
-.close {
-    position: absolute;
-    top: 20px;
-    right: 35px;
-    color: white;
-    font-size: 40px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-    color: #bbb;
-    text-decoration: none;
-    cursor: pointer;
-}
-@media screen and (max-width: 768px) {
-    .image-modal {
-        align-items: flex-start; /* Align the image to the top */
-        padding-top: 250px; /* Add padding at the top to push the image down */
-    }
-
-    .modal-content {
-        max-width: 95%;
-        max-height: 70%; /* Keep the height smaller for mobile */
-    }
-}
 
 
 
-#send-image {
-        width: 40px; /* Širina dugmeta */
-        height: 40px; /* Visina dugmeta */
-        font-size: 20px; /* Veličina fonta unutar dugmeta */
-        background-color: #f0f0f0; /* Svijetlo siva boja pozadine */
-        border: none;
-        border-radius: 5px; /* Zaobljeni uglovi */
-        cursor: pointer;
-    }
 
-    /* Smanjenje pozadine dugmeta za video poziv */
-    #start-call {
-        width: 40px; /* Širina dugmeta */
-        height: 40px; /* Visina dugmeta */
-        padding: 5px; /* Manji unutrašnji razmak */
-        font-size: 18px; /* Veličina ikone */
-        background-color: rgba(0, 0, 0, 0.1); /* Smanjena pozadina */
-        border: none;
-        border-radius: 5px; /* Zaobljeni uglovi */
-        cursor: pointer;
-    }
 
 /* Main container for all products */
 .marketplace-outline {
@@ -476,33 +145,75 @@ textarea {
             margin-bottom: 20px;
         }
 
+
+
+
+
+
+       .profile-outline {
+            padding: 20px;
+            border: 2px solid #ccc; /* Outer border for the entire profile */
+            background-color: #fff; /* White background */
+            border-radius: 10px;
+            max-width: 1200px;
+            margin: 0 auto; /* Center the container */
+        }
+
+        /* Title styling within the large outline box */
+        .profile-title {
+    font-size: 24px; /* Vraćen originalni font za bolju vidljivost */
+    padding: 10px;
+    color: #fff;
+    background-color: #4b0078;
+    border-radius: 8px;
+    text-align: center;
+    margin: 0 auto 20px auto; /* Centriranje naslova */
+    max-width: 400px; /* Smanjena maksimalna širina */
+}
+
+@media screen and (max-width: 768px) {
+    .profile-title {
+        max-width: 280px; /* Smanjena maksimalna širina za tablete i manje ekrane */
+    }
+}
+
+        /* Container for individual products */
         .product {
-            border: 1px solid #ccc;
+            border: 5px solid;
+            border-image: linear-gradient(to right, #5a99cd, #4b0078) 1;
+            border-radius: 8px;
             padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
+            margin: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .product img {
-            width: 200px;
-            height: 200px;
-            object-fit: cover;
-            margin-bottom: 10px;
-        }
+    width: 250px; /* Povećana širina slike */
+    height: 250px; /* Povećana visina slike */
+    object-fit: cover;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
 
         .product-name {
+            font-size: 16px;
             font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
         }
 
         .product-price {
-            margin: 5px 0;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
         }
 
         .buy-button, .set-price-button {
-            padding: 10px;
+            padding: 8px;
             margin-top: 10px;
             border: none;
             border-radius: 5px;
@@ -510,12 +221,12 @@ textarea {
         }
 
         .buy-button {
-            background-color: green;
+            background-color: #4CAF50;
             color: white;
         }
 
         .set-price-button {
-            background-color: blue;
+            background-color: #4b0078;
             color: white;
         }
 
@@ -524,6 +235,13 @@ textarea {
             padding: 5px;
             margin-top: 10px;
             text-align: center;
+        }
+
+        .product-list-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
         }
     </style>
 </head>
@@ -543,64 +261,16 @@ textarea {
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
         </nav>
+
+
+        <nav id="toggle-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
     </header>
-    
-
-<div id="chat-modal">
-    <div id="chat-header">
-        <span id="chat-header-title">Chat</span>
-        <button id="close-chat">✕</button>
-        <button id="back-to-users" style="display: none;">←</button> <!-- Dodajemo dugme za povratak -->
-        
-    </div>
-    
-    <div id="chat-box">
-        <div id="search-container">
-            <input type="text" id="user-search" placeholder="Search users...">
-            <button id="search-button">🔍</button>
-        </div>
-       
-        <div id="users-list"></div>
-
-    
-        
-        <div id="users-list"></div> <!-- Prikaz korisnika u krugovima -->
-        <div id="messages" style="display: none;"></div> <!-- Skriveno dok ne odabereš korisnika -->
-        <div id="message-input" style="display: none;">
-            <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
-            
-            <button id="start-call"><span class="material-icons">videocam</span></button>
-
-
-            <input type="text" id="chat-message" placeholder="Unesite poruku">
-            <button id="send-message">Pošalji</button>
-        </div>
-        
-    </div>
-    
-</div>
-
-<!-- Modal for full-screen image -->
-<div id="image-modal" class="image-modal">
-<span id="close-image-modal" class="close">&times;</span>
-<img class="modal-content" id="full-screen-image">
-</div>
-
-
-<script>
-    document.addEventListener('click', function(event) {
-    if (event.target.tagName === 'IMG' && event.target.parentElement.classList.contains('message')) {
-        const modal = document.getElementById('image-modal');
-        const modalImg = document.getElementById('full-screen-image');
-        modal.style.display = 'block';
-        modalImg.src = event.target.src; // Set the image source to the clicked image
-    }
-});
-
-// Close the modal when the close button is clicked
-document.getElementById('close-image-modal').addEventListener('click', function() {
-    document.getElementById('image-modal').style.display = 'none';
-});
+  
 
 </script>
 
@@ -623,72 +293,12 @@ document.getElementById('close-image-modal').addEventListener('click', function(
    
 
 
-
-<script>
-    function scrollToBottom() {
-    const messagesDiv = document.getElementById('messages');
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
-
-</script>
-
-
-
-    <div class="container">
-        <div class="icon-section">
-            <div class="icon" id="dolar-icon">
-                <span class="material-icons">attach_money</span>
-                <span class="amount">0.00/h</span>
-            </div>
-        </div>
-        
-        <!-- Dodavanje ikone za broj referral koda ispod trenutne cijene -->
-        <div id="referral-info">
-            <span class="material-icons" style="vertical-align: middle;">group</span> 
-            <span id="referral-count">0/10</span> <!-- Prikaz broja referral koda -->
-        </div>
-
-        <!-- Ikona za dijeljenje -->
-        <button id="share-icon">
-            <span class="material-icons">share</span> Pozovi prijatelje
-        </button>
-    </div>
-
+    
     <div class="image-container">
         <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
     </div>
 
-    <script>
-        const shareIcon = document.getElementById('share-icon');
-
-        // Pretpostavljamo da korisničko ime dolazi iz URL parametara ili je već definirano
-        const { username: userParam } = getQueryParams();
-
-        // Funkcija za nativno dijeljenje
-        shareIcon.addEventListener('click', async () => {
-            const shareData = {
-                title: 'Poziv za pridruživanje',
-                text: `Zdravo, pridruži mi se na https://nftnox.github.io/pi8/registracija.html. Moj kod je ${userParam}`
-            };
-
-            try {
-                await navigator.share(shareData);
-                console.log('Uspješno podijeljeno');
-            } catch (err) {
-                console.error('Greška prilikom dijeljenja:', err);
-            }
-        });
-
-        // Funkcija za dobijanje parametara iz URL-a
-        function getQueryParams() {
-            const params = new URLSearchParams(window.location.search);
-            return {
-                ime: params.get('ime'),
-                prezime: params.get('prezime'),
-                username: params.get('username')
-            };
-        }
-    </script>
+    
 
 
 
@@ -715,10 +325,10 @@ document.getElementById('close-image-modal').addEventListener('click', function(
 
 
 //kupljeni//
-        <div>
-        <h1 id="profile-title"></h1>
-        <div id="profile-products"></div>
-    </div>
+<div class="profile-outline">
+    <div id="profile-title" class="profile-title"></div>
+    <div id="profile-products" class="product-list-container"></div>
+</div>
 
 
 
@@ -906,33 +516,6 @@ document.getElementById('close-image-modal').addEventListener('click', function(
         // Pozovi funkciju za učitavanje proizvoda
         loadProfileProducts();
     </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
