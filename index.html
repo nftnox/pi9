@@ -2074,69 +2074,83 @@ setupGameRequestListener();
 
 
 
-let gameId; // ID trenutne igre u Firestore-u
-let currentPlayer = 'X'; // Počinje igrač X
-let boardState = Array(9).fill(null); // Inicijalno stanje table
+let gameId; // ID igre u Firestore-u
+let currentPlayer = 'X'; // Prvi potez je uvijek 'X'
+let boardState = Array(9).fill(null); // Početno stanje table
 
+// Kada korisnik prihvati zahtjev za igru
+async function startGameSession() {
+    // Provjera da li je igra već kreirana
+    if (!gameId) {
+        const gameDoc = await addDoc(collection(db, 'activeGames'), {
+            boardState: boardState,
+            currentPlayer: 'X',
+            players: [username, selectedUserName],
+            lastMove: -1,
+            timestamp: new Date()
+        });
+        gameId = gameDoc.id;
+    }
+    startTicTacToeGame();
+}
+
+// Funkcija za pokretanje igre Tic Tac Toe
 function startTicTacToeGame() {
     const boardDiv = document.getElementById('tic-tac-toe-board');
     const cells = document.querySelectorAll('.cell');
 
     boardDiv.style.display = 'block';
 
-    cells.forEach(cell => {
+    // Dodavanje događaja za svaku ćeliju na tabli
+    cells.forEach((cell, index) => {
         cell.addEventListener('click', async () => {
-            const index = cell.getAttribute('data-index');
-            if (!boardState[index] && currentPlayer === 'X') { // Pošiljalac je uvijek 'X'
-                boardState[index] = 'X';
-                cell.textContent = 'X';
-                await updateGameBoard(index, 'X'); // Ažuriraj stanje igre u Firestore-u
-                checkGameState();
+            if (!boardState[index] && currentPlayer === 'X' && username === currentPlayer) { 
+                boardState[index] = 'X'; 
+                await updateGameBoard(index, 'X');
+            } else if (!boardState[index] && currentPlayer === 'O' && username !== currentPlayer) {
+                boardState[index] = 'O';
+                await updateGameBoard(index, 'O');
             }
         });
     });
 
-    // Dodaj osluškivač za poteze
+    // Osluškivanje poteza iz Firestore-a
     listenForMoves();
 }
 
+// Ažuriranje stanja igre u Firestore-u
 async function updateGameBoard(index, player) {
-    if (!gameId) {
-        // Kreiraj novi dokument igre u Firestore-u
-        const gameDoc = await addDoc(collection(db, 'activeGames'), {
-            boardState,
-            currentPlayer: player,
-            players: [username, selectedUserName],
-            lastMove: index
-        });
-        gameId = gameDoc.id;
-    } else {
-        // Ažuriraj postojeću igru u Firestore-u
+    if (gameId) {
         const gameRef = doc(db, 'activeGames', gameId);
         await updateDoc(gameRef, {
-            boardState,
+            boardState: boardState,
             currentPlayer: player === 'X' ? 'O' : 'X',
             lastMove: index
         });
     }
 }
 
+// Osluškivanje promjena u igri
 function listenForMoves() {
-    const gameRef = collection(db, 'activeGames');
-    onSnapshot(gameRef, (snapshot) => {
-        snapshot.docChanges().forEach(change => {
-            if (change.type === 'modified') {
-                const data = change.doc.data();
-                if (data.players.includes(username) && data.boardState !== boardState) {
-                    boardState = data.boardState;
-                    currentPlayer = data.currentPlayer;
-                    updateBoardUI();
-                }
+    const gameRef = doc(db, 'activeGames', gameId);
+    onSnapshot(gameRef, (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            boardState = data.boardState;
+            currentPlayer = data.currentPlayer;
+            updateBoardUI();
+
+            if (data.lastMove !== -1) {
+                const lastCell = document.querySelector(`.cell[data-index='${data.lastMove}']`);
+                lastCell.textContent = boardState[data.lastMove];
             }
-        });
+
+            checkGameState();
+        }
     });
 }
 
+// Ažuriranje izgleda table nakon svakog poteza
 function updateBoardUI() {
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, index) => {
@@ -2144,6 +2158,7 @@ function updateBoardUI() {
     });
 }
 
+// Provjera stanja igre (pobjeda ili neriješeno)
 function checkGameState() {
     const winningCombinations = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -2166,10 +2181,11 @@ function checkGameState() {
     }
 }
 
+// Resetovanje table nakon igre
 function resetBoard() {
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => (cell.textContent = ''));
     boardState = Array(9).fill(null);
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => cell.textContent = '');
 }
 
 
