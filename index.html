@@ -2074,83 +2074,97 @@ setupGameRequestListener();
 
 
 
-let gameId; // ID igre u Firestore-u
-let currentPlayer = 'X'; // Prvi potez je uvijek 'X'
+let gameId = null; // ID igre
+let currentPlayer = 'X'; // Počinje igrač X
 let boardState = Array(9).fill(null); // Početno stanje table
 
-// Kada korisnik prihvati zahtjev za igru
-async function startGameSession() {
-    // Provjera da li je igra već kreirana
-    if (!gameId) {
-        const gameDoc = await addDoc(collection(db, 'activeGames'), {
-            boardState: boardState,
-            currentPlayer: 'X',
-            players: [username, selectedUserName],
-            lastMove: -1,
-            timestamp: new Date()
-        });
-        gameId = gameDoc.id;
-    }
-    startTicTacToeGame();
-}
-
-// Funkcija za pokretanje igre Tic Tac Toe
-function startTicTacToeGame() {
+// Inicijalizacija igre
+function initTicTacToeGame() {
     const boardDiv = document.getElementById('tic-tac-toe-board');
     const cells = document.querySelectorAll('.cell');
 
     boardDiv.style.display = 'block';
 
-    // Dodavanje događaja za svaku ćeliju na tabli
+    // Dodaj događaje za sve ćelije na tabli
     cells.forEach((cell, index) => {
-        cell.addEventListener('click', async () => {
-            if (!boardState[index] && currentPlayer === 'X' && username === currentPlayer) { 
-                boardState[index] = 'X'; 
-                await updateGameBoard(index, 'X');
-            } else if (!boardState[index] && currentPlayer === 'O' && username !== currentPlayer) {
-                boardState[index] = 'O';
-                await updateGameBoard(index, 'O');
-            }
-        });
+        cell.addEventListener('click', () => makeMove(index));
     });
 
-    // Osluškivanje poteza iz Firestore-a
-    listenForMoves();
+    // Pokreni osluškivanje poteza iz Firestore-a
+    listenForGameUpdates();
 }
 
-// Ažuriranje stanja igre u Firestore-u
-async function updateGameBoard(index, player) {
+// Funkcija za potez igrača
+async function makeMove(index) {
+    // Ako je potez već napravljen ili nije red na trenutnog igrača, preskoči
+    if (boardState[index] || currentPlayer !== username) return;
+
+    boardState[index] = currentPlayer;
+
+    // Ažuriraj stanje u Firestore-u
+    await updateGameInFirestore(index, currentPlayer);
+
+    // Provjeri stanje igre (pobjeda ili neriješeno)
+    checkGameState();
+
+    // Promjena trenutnog igrača
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+}
+
+// Ažuriraj stanje igre u Firestore-u
+async function updateGameInFirestore(index, player) {
     if (gameId) {
+        // Ažuriraj postojeću igru
         const gameRef = doc(db, 'activeGames', gameId);
         await updateDoc(gameRef, {
             boardState: boardState,
-            currentPlayer: player === 'X' ? 'O' : 'X',
+            currentPlayer: currentPlayer,
             lastMove: index
         });
+    } else {
+        // Kreiraj novu igru
+        const gameDoc = await addDoc(collection(db, 'activeGames'), {
+            boardState: boardState,
+            currentPlayer: currentPlayer,
+            players: [username, selectedUserName],
+            lastMove: index,
+            timestamp: new Date()
+        });
+        gameId = gameDoc.id;
     }
 }
 
-// Osluškivanje promjena u igri
-function listenForMoves() {
-    const gameRef = doc(db, 'activeGames', gameId);
-    onSnapshot(gameRef, (doc) => {
-        if (doc.exists()) {
-            const data = doc.data();
-            boardState = data.boardState;
-            currentPlayer = data.currentPlayer;
-            updateBoardUI();
+// Osluškivanje promjena igre u Firestore-u
+function listenForGameUpdates() {
+    const gameRef = collection(db, 'activeGames');
 
-            if (data.lastMove !== -1) {
-                const lastCell = document.querySelector(`.cell[data-index='${data.lastMove}']`);
-                lastCell.textContent = boardState[data.lastMove];
+    // Osluškuj promjene u kolekciji aktivnih igara
+    onSnapshot(gameRef, (snapshot) => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'modified' || change.type === 'added') {
+                const data = change.doc.data();
+
+                // Provjeri da li su trenutni korisnici uključeni u igru
+                if (data.players.includes(username)) {
+                    boardState = data.boardState;
+                    currentPlayer = data.currentPlayer;
+                    updateBoardUI();
+
+                    // Osvježi potez na tabli
+                    const lastMove = data.lastMove;
+                    if (lastMove !== -1) {
+                        const cell = document.querySelector(`.cell[data-index="${lastMove}"]`);
+                        cell.textContent = boardState[lastMove];
+                    }
+
+                    checkGameState();
+                }
             }
-
-            checkGameState();
-        }
+        });
     });
 }
 
-// Ažuriranje izgleda table nakon svakog poteza
+// Ažuriraj prikaz na tabli
 function updateBoardUI() {
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, index) => {
@@ -2158,7 +2172,7 @@ function updateBoardUI() {
     });
 }
 
-// Provjera stanja igre (pobjeda ili neriješeno)
+// Provjeri stanje igre
 function checkGameState() {
     const winningCombinations = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -2181,11 +2195,11 @@ function checkGameState() {
     }
 }
 
-// Resetovanje table nakon igre
+// Resetuj tablu
 function resetBoard() {
     boardState = Array(9).fill(null);
     const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => cell.textContent = '');
+    cells.forEach(cell => (cell.textContent = ''));
 }
 
 
