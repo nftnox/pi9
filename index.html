@@ -502,7 +502,7 @@ textarea {
 
    <script>
    document.addEventListener('DOMContentLoaded', () => {
-    // Definiraj funkcionalnost za dugme "Mint"
+    // Dodaj funkcionalnost za dugme "Mint"
     document.getElementById('mint-button').addEventListener('click', async () => {
         if (typeof window.ethereum !== 'undefined') {
             try {
@@ -512,17 +512,14 @@ textarea {
                 const accounts = await web3.eth.getAccounts();
                 
                 // Adresa pametnog ugovora DeltaCoin-a
-                const contractAddress = '0xd9145CCE52D386f254917e481eB44e9943F39138';
+                const contractAddress = '0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8'; // Zamijeni sa tvojom stvarnom adresom ugovora
                 
                 // ABI za pametni ugovor DeltaCoin-a
                 const contractABI = [
                     {
                         "constant": false,
-                        "inputs": [
-                            { "name": "to", "type": "address" },
-                            { "name": "value", "type": "uint256" }
-                        ],
-                        "name": "mint",
+                        "inputs": [],
+                        "name": "userMint",
                         "outputs": [],
                         "type": "function"
                     }
@@ -531,11 +528,8 @@ textarea {
                 // Inicijalizacija pametnog ugovora
                 const deltaCoinContract = new web3.eth.Contract(contractABI, contractAddress);
 
-                // Izračunavanje iznosa u wei (100 DeltaCoin-a)
-                const tokenAmount = web3.utils.toWei('100', 'ether'); // 1 DeltaCoin = 1 ether
-
-                // Mintanje tokena na račun korisnika
-                await deltaCoinContract.methods.mint(accounts[0], tokenAmount).send({
+                // Pozivanje funkcije userMint za mintanje 100 DeltaCoin-a
+                await deltaCoinContract.methods.userMint().send({
                     from: accounts[0]
                 });
 
