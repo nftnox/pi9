@@ -497,81 +497,124 @@ textarea {
     </header>
 
 
+    <button id="mint-button">Mint 100 DeltaCoin</button>
+
+
    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-    // Funkcija za povezivanje s MetaMask-om
-    async function connectWallet() {
-        // Provjera dostupnosti MetaMask-a
+   document.addEventListener('DOMContentLoaded', () => {
+    // Definiraj funkcionalnost za dugme "Mint"
+    document.getElementById('mint-button').addEventListener('click', async () => {
         if (typeof window.ethereum !== 'undefined') {
             try {
-                // Povezivanje s MetaMask-om
+                // Povezivanje sa MetaMask-om
                 await window.ethereum.request({ method: 'eth_requestAccounts' });
                 const web3 = new Web3(window.ethereum);
                 const accounts = await web3.eth.getAccounts();
+                
+                // Adresa pametnog ugovora DeltaCoin-a
+                const contractAddress = '0xd9145CCE52D386f254917e481eB44e9943F39138';
+                
+                // ABI za pametni ugovor DeltaCoin-a
+                const contractABI = [
+                    {
+                        "constant": false,
+                        "inputs": [
+                            { "name": "to", "type": "address" },
+                            { "name": "value", "type": "uint256" }
+                        ],
+                        "name": "mint",
+                        "outputs": [],
+                        "type": "function"
+                    }
+                ];
 
-                if (accounts.length > 0) {
-                    const userAccount = accounts[0];
-                    alert("Povezan sa MetaMask-om: " + userAccount);
-                } else {
-                    alert("MetaMask je detektovan, ali nema dostupnih računa.");
-                }
+                // Inicijalizacija pametnog ugovora
+                const deltaCoinContract = new web3.eth.Contract(contractABI, contractAddress);
+
+                // Izračunavanje iznosa u wei (100 DeltaCoin-a)
+                const tokenAmount = web3.utils.toWei('100', 'ether'); // 1 DeltaCoin = 1 ether
+
+                // Mintanje tokena na račun korisnika
+                await deltaCoinContract.methods.mint(accounts[0], tokenAmount).send({
+                    from: accounts[0]
+                });
+
+                alert(`Uspješno ste mintali 100 DeltaCoin-a na vaš račun ${accounts[0]}.`);
             } catch (error) {
-                console.error("Greška pri povezivanju: ", error);
-                alert("Došlo je do greške prilikom povezivanja s MetaMask-om.");
+                console.error('Greška prilikom mintanja DeltaCoin-a:', error);
+                alert('Došlo je do greške prilikom mintanja DeltaCoin-a.');
             }
         } else {
-            alert('MetaMask nije detektovan. Provjeri da li je instaliran i aktivan.');
+            alert('MetaMask nije pronađen. Instalirajte ekstenziju za MetaMask.');
         }
-    }
-
-    // Dodajemo događaje za desktop i mobilnu verziju
-    document.getElementById('connect-metamask-desktop').addEventListener('click', connectWallet);
-    document.getElementById('connect-metamask-mobile').addEventListener('click', connectWallet);
+    });
 });
+
 
 
    </script>
 
-<button onclick="transferDeltaCoin(currentPrice)">Prebaci DeltaCoin u MetaMask</button>
 
 
 
 <script>
-   async function transferDeltaCoin(amount) {
-    try {
-        // Adresa pametnog ugovora DeltaCoin
-        const contractAddress = '0xd9145CCE52D386f254917e481eB44e9943F39138'; // Zamijeni s ispravnom adresom
+    // Povezivanje s MetaMask-om i pametnim ugovorom DeltaCoin
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Provjeri da li je MetaMask dostupan
+        if (window.ethereum) {
+            try {
+                // Povezivanje s MetaMaskom
+                await ethereum.request({ method: 'eth_requestAccounts' });
+                window.web3 = new Web3(window.ethereum);
+                const accounts = await web3.eth.getAccounts();
+                const userAccount = accounts[0];
+                console.log("Povezan sa MetaMask-om: ", userAccount);
 
-        // ABI za DeltaCoin
-        const contractABI = [
-            {
-                "constant": false,
-                "inputs": [
-                    { "name": "to", "type": "address" },
-                    { "name": "value", "type": "uint256" }
-                ],
-                "name": "transfer",
-                "outputs": [],
-                "type": "function"
+                // Adresa pametnog ugovora
+                const contractAddress = '0xd9145CCE52D386f254917e481eB44e9943F39138';
+                
+                // ABI za pametni ugovor (skraćeni primjer)
+                const contractABI = [
+                    // ABI funkcija za prijenos tokena
+                    {
+                        "constant": false,
+                        "inputs": [
+                            { "name": "to", "type": "address" },
+                            { "name": "value", "type": "uint256" }
+                        ],
+                        "name": "transfer",
+                        "outputs": [],
+                        "type": "function"
+                    }
+                ];
+
+                // Inicijaliziraj instancu ugovora
+                const deltaCoinContract = new web3.eth.Contract(contractABI, contractAddress);
+
+                // Dodaj event listener za "rudarski" klik na stranici
+                document.getElementById('dolar-icon').addEventListener('click', async () => {
+                    // Iznos koji se šalje korisniku (na primjer 1 DeltaCoin)
+                    const tokenAmount = web3.utils.toWei('1', 'ether'); // 1 DeltaCoin
+
+                    try {
+                        // Pozovi funkciju za prijenos tokena
+                        await deltaCoinContract.methods.transfer(userAccount, tokenAmount).send({
+                            from: userAccount
+                        });
+
+                        alert(`Uspješno dodijeljeno 1 DeltaCoin korisniku ${userAccount}`);
+                    } catch (error) {
+                        console.error("Greška prilikom prijenosa tokena: ", error);
+                        alert("Došlo je do greške pri prijenosu tokena.");
+                    }
+                });
+            } catch (error) {
+                console.error("Povezivanje s MetaMask-om nije uspjelo: ", error);
             }
-        ];
-
-        // Inicijalizacija DeltaCoin ugovora
-        const deltaCoinContract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Prijenos DeltaCoin tokena korisniku
-        await deltaCoinContract.methods.transfer(
-            ethereum.selectedAddress, // Korisnička MetaMask adresa
-            web3.utils.toWei(amount.toString(), 'ether')
-        ).send({ from: ethereum.selectedAddress });
-
-        alert(`Uspješno poslano ${amount} DeltaCoin-a!`);
-    } catch (error) {
-        console.error('Greška prilikom prijenosa DeltaCoin-a:', error);
-        alert('Došlo je do greške pri prijenosu DeltaCoin-a.');
-    }
-}
-
+        } else {
+            alert("MetaMask nije pronađen. Instalirajte MetaMask ekstenziju.");
+        }
+    });
 </script>
 
 
@@ -2053,7 +2096,7 @@ async function updateTotalCoinsSpent() {
 
 
 
-
+///////////IGRA/////////////////
 
 
 
