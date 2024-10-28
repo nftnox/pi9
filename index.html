@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.5/dist/web3.min.js"></script>
+
 
     <style>
 
@@ -480,19 +482,55 @@ textarea {
             <a href="#"><span class="material-icons">group</span> Team</a>
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
+            <a href="#" id="connect-metamask-desktop"><span class="material-icons">account_balance_wallet</span> MetaMask</a> <!-- Dodano -->
         </nav>
-    
+        
         <!-- Mobilni meni -->
         <nav id="toggle-menu">
             <a href="#"><span class="material-icons">home</span> Home</a>
             <a href="#"><span class="material-icons">group</span> Team</a>
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
+            <a href="#" id="connect-metamask-mobile"><span class="material-icons">account_balance_wallet</span> MetaMask</a> <!-- Dodano -->
         </nav>
+        
     </header>
 
 
-   
+   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    // Funkcija za povezivanje s MetaMask-om
+    async function connectWallet() {
+        // Provjera dostupnosti MetaMask-a
+        if (typeof window.ethereum !== 'undefined') {
+            try {
+                // Povezivanje s MetaMask-om
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const web3 = new Web3(window.ethereum);
+                const accounts = await web3.eth.getAccounts();
+
+                if (accounts.length > 0) {
+                    const userAccount = accounts[0];
+                    alert("Povezan sa MetaMask-om: " + userAccount);
+                } else {
+                    alert("MetaMask je detektovan, ali nema dostupnih računa.");
+                }
+            } catch (error) {
+                console.error("Greška pri povezivanju: ", error);
+                alert("Došlo je do greške prilikom povezivanja s MetaMask-om.");
+            }
+        } else {
+            alert('MetaMask nije detektovan. Provjeri da li je instaliran i aktivan.');
+        }
+    }
+
+    // Dodajemo događaje za desktop i mobilnu verziju
+    document.getElementById('connect-metamask-desktop').addEventListener('click', connectWallet);
+    document.getElementById('connect-metamask-mobile').addEventListener('click', connectWallet);
+});
+
+
+   </script>
 
     <div id="chat-modal">
         <div id="chat-header">
@@ -516,7 +554,8 @@ textarea {
             <div id="messages" style="display: none;"></div> <!-- Skriveno dok ne odabereš korisnika -->
             <div id="message-input" style="display: none;">
                 <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
-                
+          
+
                 <button id="start-call"><span class="material-icons">videocam</span></button>
 
 
@@ -613,7 +652,7 @@ document.getElementById('close-image-modal').addEventListener('click', function(
 
 
     <div id="total-coins-spent" style="text-align: center; font-size: 24px; margin-top: 20px; color: white;">
-        Delta Coins Majning: <span id="coins-spent">0</span>/21,000,000
+        Delta Coins Majning: <span id="coins-spent">0</span>/27,000,000
     </div>
     
     
@@ -625,9 +664,6 @@ document.getElementById('close-image-modal').addEventListener('click', function(
         <!-- Individual product boxes will be added here -->
     </div>
 </div>
-
-
-
 
 
 
@@ -1974,7 +2010,7 @@ async function updateTotalCoinsSpent() {
 
 
 
-
+///////////IGRA/////////////////
 
 
 
