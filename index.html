@@ -464,28 +464,6 @@ textarea {
         margin-bottom: 20px; /* Dodaje razmak ispod naslova */
         font-weight: bold; /* Podebljava naslov */
     }
-
-    .board {
-    display: grid;
-    grid-template-columns: repeat(3, 60px);
-    gap: 5px;
-}
-
-.cell {
-    width: 60px;
-    height: 60px;
-    border: 1px solid #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 24px;
-    cursor: pointer;
-}
-
-.cell:hover {
-    background-color: #f0f0f0;
-}
-
     </style>
 </head>
 <body>
@@ -539,8 +517,10 @@ textarea {
             <div id="message-input" style="display: none;">
                 <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
           
-                <button id="start-game"><span class="material-icons">sports_esports</span></button>
-
+                <button id="start-game" style="width: 40px; height: 40px; font-size: 20px; background-color: rgba(0, 0, 0, 0.1); border: none; border-radius: 5px; cursor: pointer;">
+                    <span class="material-icons">sports_esports</span>
+                </button>
+                
                 <button id="start-call"><span class="material-icons">videocam</span></button>
 
 
@@ -560,28 +540,22 @@ textarea {
 
 
 
+
 <div id="tic-tac-toe-board" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
     <h3 style="text-align: center;">Tic Tac Toe</h3>
-    <div class="board">
-        <div class="row">
-            <div class="cell" data-index="0"></div>
-            <div class="cell" data-index="1"></div>
-            <div class="cell" data-index="2"></div>
-        </div>
-        <div class="row">
-            <div class="cell" data-index="3"></div>
-            <div class="cell" data-index="4"></div>
-            <div class="cell" data-index="5"></div>
-        </div>
-        <div class="row">
-            <div class="cell" data-index="6"></div>
-            <div class="cell" data-index="7"></div>
-            <div class="cell" data-index="8"></div>
-        </div>
+    <div class="board" style="display: grid; grid-template-columns: repeat(3, 100px); gap: 5px;">
+        <div class="cell" data-index="0" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="1" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="2" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="3" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="4" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="5" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="6" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="7" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="8" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
     </div>
     <button id="close-game" style="margin-top: 10px;">Zatvori igru</button>
 </div>
-
 
 
 
@@ -2018,91 +1992,78 @@ async function updateTotalCoinsSpent() {
 
 ///////////IGRA/////////////////
 
-// Funkcija za pokretanje poziva za igru
-document.getElementById('start-game').addEventListener('click', () => {
+// Kada korisnik klikne na dugme za igru
+document.getElementById('start-game').addEventListener('click', async () => {
     if (!selectedUserId || !selectedUserName) {
-        console.error('Nema odabranog korisnika za igru.');
+        alert("Nije odabran korisnik za igru.");
         return;
     }
-    sendGameRequest(selectedUserId, selectedUserName);
-});
-
-// Funkcija za slanje zahtjeva za igru
-async function sendGameRequest(userId, userName) {
     try {
-        const gameRequestRef = collection(db, 'gameRequests');
-        await addDoc(gameRequestRef, {
+        // Kreiraj dokument za zahtjev za igru u Firestore
+        const gameRequestRef = await addDoc(collection(db, 'gameRequests'), {
             requester: username,
-            recipientId: userId,
-            recipientName: userName,
+            recipientId: selectedUserId,
+            recipientName: selectedUserName,
             accepted: false,
             timestamp: new Date()
         });
-        console.log("Zahtjev za igru poslan.");
-        showGameNotification(`Čekate da ${userName} prihvati vaš poziv za igru.`);
+        console.log("Zahtjev za igru poslan:", gameRequestRef.id);
+        alert(`Čekate da ${selectedUserName} prihvati vaš zahtjev za igru.`);
     } catch (error) {
         console.error("Greška prilikom slanja zahtjeva za igru:", error);
     }
-}
+});
 
-// Prikaz notifikacije kada korisnik primi zahtjev za igru
+// Funkcija za prikazivanje notifikacije kada korisnik primi zahtjev za igru
 function showIncomingGameNotification(requesterName, gameId) {
-    const gameNotification = document.createElement('div');
-    gameNotification.classList.add('incoming-game-notification');
-    gameNotification.innerHTML = `
-        <p>${requesterName} vas poziva na igru Tic Tac Toe. Prihvatate li?</p>
-        <button id="accept-game-${gameId}" style="background-color: green; color: white;">Prihvati</button>
-        <button id="decline-game-${gameId}" style="background-color: red; color: white;">Odbij</button>
+    const notification = document.createElement('div');
+    notification.classList.add('incoming-game-notification');
+    notification.innerHTML = `
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
+            <p>${requesterName} vas poziva na igru Tic Tac Toe. Prihvatate li?</p>
+            <button id="accept-game" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px;">Prihvati</button>
+            <button id="decline-game" style="background-color: red; color: white; padding: 10px 20px;">Odbij</button>
+        </div>
     `;
-
-    document.body.appendChild(gameNotification);
+    document.body.appendChild(notification);
 
     // Prihvatanje poziva za igru
-    document.getElementById(`accept-game-${gameId}`).addEventListener('click', () => {
-        acceptGameRequest(gameId);
-        document.body.removeChild(gameNotification);
+    document.getElementById('accept-game').addEventListener('click', async () => {
+        await updateDoc(doc(db, 'gameRequests', gameId), { accepted: true });
+        document.body.removeChild(notification);
+        startTicTacToeGame(); // Pokretanje igre
     });
 
     // Odbijanje poziva za igru
-    document.getElementById(`decline-game-${gameId}`).addEventListener('click', () => {
-        document.body.removeChild(gameNotification);
+    document.getElementById('decline-game').addEventListener('click', () => {
+        document.body.removeChild(notification);
     });
 }
 
-// Prihvatanje zahtjeva za igru
-async function acceptGameRequest(gameId) {
-    const gameRef = doc(db, 'gameRequests', gameId);
-    await updateDoc(gameRef, { accepted: true });
-    console.log("Zahtjev za igru prihvaćen.");
-    startTicTacToeGame(); // Pokreni igru
-}
-
-// Postavljanje osluškivača za dolazne zahtjeve za igru
-function setupIncomingGameListener() {
+// Osluškivač za dolazne zahtjeve za igru
+function setupGameRequestListener() {
     const gameRequestRef = collection(db, 'gameRequests');
     onSnapshot(gameRequestRef, (snapshot) => {
         snapshot.docChanges().forEach(change => {
             if (change.type === 'added') {
-                const doc = change.doc;
-                const data = doc.data();
+                const data = change.doc.data();
                 if (!data.accepted && data.recipientId === userId) {
-                    console.log('Dolazni zahtjev za igru od:', data.requester);
-                    showIncomingGameNotification(data.requester, doc.id);
+                    showIncomingGameNotification(data.requester, change.doc.id);
                 }
             }
         });
     });
 }
 
-// Inicijalizacija osluškivača za dolazne zahtjeve za igru
-setupIncomingGameListener();
+// Pokreni osluškivač za dolazne zahtjeve za igru
+setupGameRequestListener();
 
 
 
 function startTicTacToeGame() {
     const boardDiv = document.getElementById('tic-tac-toe-board');
     const cells = document.querySelectorAll('.cell');
-    let currentPlayer = 'X'; // Prvi igrač je uvijek X
+    let currentPlayer = 'X'; // Počinje igrač X
     let boardState = Array(9).fill(null);
 
     boardDiv.style.display = 'block';
@@ -2121,6 +2082,7 @@ function startTicTacToeGame() {
 
     document.getElementById('close-game').addEventListener('click', () => {
         boardDiv.style.display = 'none';
+        resetBoard();
     });
 }
 
@@ -2140,7 +2102,7 @@ function checkGameState(boardState) {
         }
     }
 
-    if (boardState.every(cell => cell)) {
+    if (boardState.every(cell => cell !== null)) {
         alert("Neriješeno!");
         resetBoard();
     }
@@ -2148,8 +2110,7 @@ function checkGameState(boardState) {
 
 function resetBoard() {
     const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => cell.textContent = '');
-    boardState = Array(9).fill(null);
+    cells.forEach(cell => (cell.textContent = ''));
 }
 
 
