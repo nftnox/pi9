@@ -1994,104 +1994,113 @@ async function updateTotalCoinsSpent() {
 
 // Kada korisnik klikne na dugme za igru
 // Funkcija za slanje zahtjeva za igru
-let gameId = null; // ID igre
-let currentPlayer = 'X'; // Počinje igrač X
-let boardState = Array(9).fill(null); // Početno stanje table
-
-// Inicijalizacija igre
-function startTicTacToeGame() {
-    const boardDiv = document.getElementById('tic-tac-toe-board');
-    const cells = document.querySelectorAll('.cell');
-
-    boardDiv.style.display = 'block';
-
-    cells.forEach((cell, index) => {
-        cell.addEventListener('click', () => makeMove(index));
-    });
-
-    // Osluškuj promjene na Firestore-u
-    listenForGameUpdates();
-}
-
-// Funkcija za potez igrača
-async function makeMove(index) {
-    // Ako je potez već napravljen ili nije red na trenutnog igrača, preskoči
-    if (boardState[index] || currentPlayer !== username) return;
-
-    boardState[index] = currentPlayer;
-
-    // Ažuriraj stanje igre u Firestore-u
-    await updateGameInFirestore(index, currentPlayer);
-
-    // Provjeri stanje igre (pobjeda ili neriješeno)
-    checkGameState();
-
-    // Promjena trenutnog igrača
-    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-}
-
-// Ažuriraj stanje igre u Firestore-u
-async function updateGameInFirestore(index, player) {
-    if (gameId) {
-        // Ažuriraj postojeću igru
-        const gameRef = doc(db, 'ticTacToeGames', gameId);
-        await updateDoc(gameRef, {
-            boardState: boardState,
-            currentPlayer: currentPlayer,
-            lastMove: index
-        });
-    } else {
-        // Kreiraj novu igru
-        const gameDoc = await addDoc(collection(db, 'ticTacToeGames'), {
-            boardState: boardState,
-            currentPlayer: currentPlayer,
-            players: [username, selectedUserName],
-            lastMove: index,
+document.getElementById('start-game').addEventListener('click', async () => {
+    if (!selectedUserId || !selectedUserName) {
+        alert("Nije odabran korisnik za igru.");
+        return;
+    }
+    try {
+        const gameRequestRef = await addDoc(collection(db, 'gameRequests'), {
+            requester: username,
+            recipientId: selectedUserId,
+            recipientName: selectedUserName,
+            accepted: false,
             timestamp: new Date()
         });
-        gameId = gameDoc.id;
+        console.log("Zahtjev za igru poslan:", gameRequestRef.id);
+        // Dodaj osluškivač za prihvatanje igre
+        listenForGameAcceptance(gameRequestRef.id);
+        alert(`Čekate da ${selectedUserName} prihvati vaš zahtjev za igru.`);
+    } catch (error) {
+        console.error("Greška prilikom slanja zahtjeva za igru:", error);
     }
+});
+
+// Funkcija za prikazivanje notifikacije kada korisnik primi zahtjev za igru
+function showIncomingGameNotification(requesterName, gameId) {
+    const notification = document.createElement('div');
+    notification.classList.add('incoming-game-notification');
+    notification.innerHTML = `
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
+            <p>${requesterName} vas poziva na igru Tic Tac Toe. Prihvatate li?</p>
+            <button id="accept-game" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px;">Prihvati</button>
+            <button id="decline-game" style="background-color: red; color: white; padding: 10px 20px;">Odbij</button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+
+    // Prihvatanje poziva za igru
+    document.getElementById('accept-game').addEventListener('click', async () => {
+        await updateDoc(doc(db, 'gameRequests', gameId), { accepted: true });
+        document.body.removeChild(notification);
+        startTicTacToeGame(); // Pokreni igru za primaoca
+    });
+
+    // Odbijanje poziva za igru
+    document.getElementById('decline-game').addEventListener('click', () => {
+        document.body.removeChild(notification);
+    });
 }
 
-// Osluškivanje promjena igre u Firestore-u
-function listenForGameUpdates() {
-    const gameRef = collection(db, 'ticTacToeGames');
+// Funkcija za osluškivanje prihvatanja zahtjeva za igru
+function listenForGameAcceptance(gameId) {
+    const gameRef = doc(db, 'gameRequests', gameId);
+    onSnapshot(gameRef, (doc) => {
+        const data = doc.data();
+        if (data.accepted) {
+            startTicTacToeGame(); // Pokreni igru za pošiljaoca
+        }
+    });
+}
 
-    // Osluškuj promjene u kolekciji aktivnih igara
-    onSnapshot(gameRef, (snapshot) => {
+// Postavljanje osluškivača za dolazne zahtjeve za igru
+function setupGameRequestListener() {
+    const gameRequestRef = collection(db, 'gameRequests');
+    onSnapshot(gameRequestRef, (snapshot) => {
         snapshot.docChanges().forEach(change => {
-            if (change.type === 'modified' || change.type === 'added') {
+            if (change.type === 'added') {
                 const data = change.doc.data();
-
-                // Provjeri da li su trenutni korisnici uključeni u igru
-                if (data.players.includes(username)) {
-                    boardState = data.boardState;
-                    currentPlayer = data.currentPlayer;
-                    updateBoardUI();
-
-                    const lastMove = data.lastMove;
-                    if (lastMove !== -1) {
-                        const cell = document.querySelector(`.cell[data-index="${lastMove}"]`);
-                        cell.textContent = boardState[lastMove];
-                    }
-
-                    checkGameState();
+                if (!data.accepted && data.recipientId === userId) {
+                    showIncomingGameNotification(data.requester, change.doc.id);
                 }
             }
         });
     });
 }
 
-// Ažuriraj prikaz na tabli
-function updateBoardUI() {
+// Pokreni osluškivač za dolazne zahtjeve za igru
+setupGameRequestListener();
+
+
+
+
+function startTicTacToeGame() {
+    const boardDiv = document.getElementById('tic-tac-toe-board');
     const cells = document.querySelectorAll('.cell');
-    cells.forEach((cell, index) => {
-        cell.textContent = boardState[index] || '';
+    let currentPlayer = 'X'; // Počinje igrač X
+    let boardState = Array(9).fill(null);
+
+    boardDiv.style.display = 'block';
+
+    cells.forEach(cell => {
+        cell.addEventListener('click', () => {
+            const index = cell.getAttribute('data-index');
+            if (!boardState[index]) {
+                boardState[index] = currentPlayer;
+                cell.textContent = currentPlayer;
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                checkGameState(boardState);
+            }
+        });
+    });
+
+    document.getElementById('close-game').addEventListener('click', () => {
+        boardDiv.style.display = 'none';
+        resetBoard();
     });
 }
 
-// Provjera stanja igre
-function checkGameState() {
+function checkGameState(boardState) {
     const winningCombinations = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
         [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -2113,12 +2122,11 @@ function checkGameState() {
     }
 }
 
-// Resetovanje table
 function resetBoard() {
-    boardState = Array(9).fill(null);
     const cells = document.querySelectorAll('.cell');
     cells.forEach(cell => (cell.textContent = ''));
 }
+
 
 
     // Učitaj proizvode nakon učitavanja stranice
