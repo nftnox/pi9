@@ -1993,13 +1993,13 @@ async function updateTotalCoinsSpent() {
 ///////////IGRA/////////////////
 
 // Kada korisnik klikne na dugme za igru
+// Funkcija za slanje zahtjeva za igru
 document.getElementById('start-game').addEventListener('click', async () => {
     if (!selectedUserId || !selectedUserName) {
         alert("Nije odabran korisnik za igru.");
         return;
     }
     try {
-        // Kreiraj dokument za zahtjev za igru u Firestore
         const gameRequestRef = await addDoc(collection(db, 'gameRequests'), {
             requester: username,
             recipientId: selectedUserId,
@@ -2008,6 +2008,8 @@ document.getElementById('start-game').addEventListener('click', async () => {
             timestamp: new Date()
         });
         console.log("Zahtjev za igru poslan:", gameRequestRef.id);
+        // Dodaj osluškivač za prihvatanje igre
+        listenForGameAcceptance(gameRequestRef.id);
         alert(`Čekate da ${selectedUserName} prihvati vaš zahtjev za igru.`);
     } catch (error) {
         console.error("Greška prilikom slanja zahtjeva za igru:", error);
@@ -2031,7 +2033,7 @@ function showIncomingGameNotification(requesterName, gameId) {
     document.getElementById('accept-game').addEventListener('click', async () => {
         await updateDoc(doc(db, 'gameRequests', gameId), { accepted: true });
         document.body.removeChild(notification);
-        startTicTacToeGame(); // Pokretanje igre
+        startTicTacToeGame(); // Pokreni igru za primaoca
     });
 
     // Odbijanje poziva za igru
@@ -2040,7 +2042,18 @@ function showIncomingGameNotification(requesterName, gameId) {
     });
 }
 
-// Osluškivač za dolazne zahtjeve za igru
+// Funkcija za osluškivanje prihvatanja zahtjeva za igru
+function listenForGameAcceptance(gameId) {
+    const gameRef = doc(db, 'gameRequests', gameId);
+    onSnapshot(gameRef, (doc) => {
+        const data = doc.data();
+        if (data.accepted) {
+            startTicTacToeGame(); // Pokreni igru za pošiljaoca
+        }
+    });
+}
+
+// Postavljanje osluškivača za dolazne zahtjeve za igru
 function setupGameRequestListener() {
     const gameRequestRef = collection(db, 'gameRequests');
     onSnapshot(gameRequestRef, (snapshot) => {
@@ -2060,33 +2073,78 @@ setupGameRequestListener();
 
 
 
+
+let gameId; // ID trenutne igre u Firestore-u
+let currentPlayer = 'X'; // Počinje igrač X
+let boardState = Array(9).fill(null); // Inicijalno stanje table
+
 function startTicTacToeGame() {
     const boardDiv = document.getElementById('tic-tac-toe-board');
     const cells = document.querySelectorAll('.cell');
-    let currentPlayer = 'X'; // Počinje igrač X
-    let boardState = Array(9).fill(null);
 
     boardDiv.style.display = 'block';
 
     cells.forEach(cell => {
-        cell.addEventListener('click', () => {
+        cell.addEventListener('click', async () => {
             const index = cell.getAttribute('data-index');
-            if (!boardState[index]) {
-                boardState[index] = currentPlayer;
-                cell.textContent = currentPlayer;
-                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-                checkGameState(boardState);
+            if (!boardState[index] && currentPlayer === 'X') { // Pošiljalac je uvijek 'X'
+                boardState[index] = 'X';
+                cell.textContent = 'X';
+                await updateGameBoard(index, 'X'); // Ažuriraj stanje igre u Firestore-u
+                checkGameState();
             }
         });
     });
 
-    document.getElementById('close-game').addEventListener('click', () => {
-        boardDiv.style.display = 'none';
-        resetBoard();
+    // Dodaj osluškivač za poteze
+    listenForMoves();
+}
+
+async function updateGameBoard(index, player) {
+    if (!gameId) {
+        // Kreiraj novi dokument igre u Firestore-u
+        const gameDoc = await addDoc(collection(db, 'activeGames'), {
+            boardState,
+            currentPlayer: player,
+            players: [username, selectedUserName],
+            lastMove: index
+        });
+        gameId = gameDoc.id;
+    } else {
+        // Ažuriraj postojeću igru u Firestore-u
+        const gameRef = doc(db, 'activeGames', gameId);
+        await updateDoc(gameRef, {
+            boardState,
+            currentPlayer: player === 'X' ? 'O' : 'X',
+            lastMove: index
+        });
+    }
+}
+
+function listenForMoves() {
+    const gameRef = collection(db, 'activeGames');
+    onSnapshot(gameRef, (snapshot) => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'modified') {
+                const data = change.doc.data();
+                if (data.players.includes(username) && data.boardState !== boardState) {
+                    boardState = data.boardState;
+                    currentPlayer = data.currentPlayer;
+                    updateBoardUI();
+                }
+            }
+        });
     });
 }
 
-function checkGameState(boardState) {
+function updateBoardUI() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, index) => {
+        cell.textContent = boardState[index] || '';
+    });
+}
+
+function checkGameState() {
     const winningCombinations = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
         [0, 3, 6], [1, 4, 7], [2, 5, 8],
@@ -2111,7 +2169,9 @@ function checkGameState(boardState) {
 function resetBoard() {
     const cells = document.querySelectorAll('.cell');
     cells.forEach(cell => (cell.textContent = ''));
+    boardState = Array(9).fill(null);
 }
+
 
 
 
