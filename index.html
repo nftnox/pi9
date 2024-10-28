@@ -532,67 +532,46 @@ textarea {
 
    </script>
 
+<button onclick="transferDeltaCoin(currentPrice)">Prebaci DeltaCoin u MetaMask</button>
 
 
 
 <script>
-    // Povezivanje s MetaMask-om i pametnim ugovorom DeltaCoin
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Provjeri da li je MetaMask dostupan
-        if (window.ethereum) {
-            try {
-                // Povezivanje s MetaMaskom
-                await ethereum.request({ method: 'eth_requestAccounts' });
-                window.web3 = new Web3(window.ethereum);
-                const accounts = await web3.eth.getAccounts();
-                const userAccount = accounts[0];
-                console.log("Povezan sa MetaMask-om: ", userAccount);
+   async function transferDeltaCoin(amount) {
+    try {
+        // Adresa pametnog ugovora DeltaCoin
+        const contractAddress = '0xd9145CCE52D386f254917e481eB44e9943F39138'; // Zamijeni s ispravnom adresom
 
-                // Adresa pametnog ugovora
-                const contractAddress = '0xd9145CCE52D386f254917e481eB44e9943F39138';
-                
-                // ABI za pametni ugovor (skraćeni primjer)
-                const contractABI = [
-                    // ABI funkcija za prijenos tokena
-                    {
-                        "constant": false,
-                        "inputs": [
-                            { "name": "to", "type": "address" },
-                            { "name": "value", "type": "uint256" }
-                        ],
-                        "name": "transfer",
-                        "outputs": [],
-                        "type": "function"
-                    }
-                ];
-
-                // Inicijaliziraj instancu ugovora
-                const deltaCoinContract = new web3.eth.Contract(contractABI, contractAddress);
-
-                // Dodaj event listener za "rudarski" klik na stranici
-                document.getElementById('dolar-icon').addEventListener('click', async () => {
-                    // Iznos koji se šalje korisniku (na primjer 1 DeltaCoin)
-                    const tokenAmount = web3.utils.toWei('1', 'ether'); // 1 DeltaCoin
-
-                    try {
-                        // Pozovi funkciju za prijenos tokena
-                        await deltaCoinContract.methods.transfer(userAccount, tokenAmount).send({
-                            from: userAccount
-                        });
-
-                        alert(`Uspješno dodijeljeno 1 DeltaCoin korisniku ${userAccount}`);
-                    } catch (error) {
-                        console.error("Greška prilikom prijenosa tokena: ", error);
-                        alert("Došlo je do greške pri prijenosu tokena.");
-                    }
-                });
-            } catch (error) {
-                console.error("Povezivanje s MetaMask-om nije uspjelo: ", error);
+        // ABI za DeltaCoin
+        const contractABI = [
+            {
+                "constant": false,
+                "inputs": [
+                    { "name": "to", "type": "address" },
+                    { "name": "value", "type": "uint256" }
+                ],
+                "name": "transfer",
+                "outputs": [],
+                "type": "function"
             }
-        } else {
-            alert("MetaMask nije pronađen. Instalirajte MetaMask ekstenziju.");
-        }
-    });
+        ];
+
+        // Inicijalizacija DeltaCoin ugovora
+        const deltaCoinContract = new web3.eth.Contract(contractABI, contractAddress);
+
+        // Prijenos DeltaCoin tokena korisniku
+        await deltaCoinContract.methods.transfer(
+            ethereum.selectedAddress, // Korisnička MetaMask adresa
+            web3.utils.toWei(amount.toString(), 'ether')
+        ).send({ from: ethereum.selectedAddress });
+
+        alert(`Uspješno poslano ${amount} DeltaCoin-a!`);
+    } catch (error) {
+        console.error('Greška prilikom prijenosa DeltaCoin-a:', error);
+        alert('Došlo je do greške pri prijenosu DeltaCoin-a.');
+    }
+}
+
 </script>
 
 
@@ -2074,7 +2053,7 @@ async function updateTotalCoinsSpent() {
 
 
 
-///////////IGRA/////////////////
+
 
 
 
