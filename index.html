@@ -1994,103 +1994,22 @@ async function updateTotalCoinsSpent() {
 
 // Kada korisnik klikne na dugme za igru
 // Funkcija za slanje zahtjeva za igru
-document.getElementById('start-game').addEventListener('click', async () => {
-    if (!selectedUserId || !selectedUserName) {
-        alert("Nije odabran korisnik za igru.");
-        return;
-    }
-    try {
-        const gameRequestRef = await addDoc(collection(db, 'gameRequests'), {
-            requester: username,
-            recipientId: selectedUserId,
-            recipientName: selectedUserName,
-            accepted: false,
-            timestamp: new Date()
-        });
-        console.log("Zahtjev za igru poslan:", gameRequestRef.id);
-        // Dodaj osluškivač za prihvatanje igre
-        listenForGameAcceptance(gameRequestRef.id);
-        alert(`Čekate da ${selectedUserName} prihvati vaš zahtjev za igru.`);
-    } catch (error) {
-        console.error("Greška prilikom slanja zahtjeva za igru:", error);
-    }
-});
-
-// Funkcija za prikazivanje notifikacije kada korisnik primi zahtjev za igru
-function showIncomingGameNotification(requesterName, gameId) {
-    const notification = document.createElement('div');
-    notification.classList.add('incoming-game-notification');
-    notification.innerHTML = `
-        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
-            <p>${requesterName} vas poziva na igru Tic Tac Toe. Prihvatate li?</p>
-            <button id="accept-game" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px;">Prihvati</button>
-            <button id="decline-game" style="background-color: red; color: white; padding: 10px 20px;">Odbij</button>
-        </div>
-    `;
-    document.body.appendChild(notification);
-
-    // Prihvatanje poziva za igru
-    document.getElementById('accept-game').addEventListener('click', async () => {
-        await updateDoc(doc(db, 'gameRequests', gameId), { accepted: true });
-        document.body.removeChild(notification);
-        startTicTacToeGame(); // Pokreni igru za primaoca
-    });
-
-    // Odbijanje poziva za igru
-    document.getElementById('decline-game').addEventListener('click', () => {
-        document.body.removeChild(notification);
-    });
-}
-
-// Funkcija za osluškivanje prihvatanja zahtjeva za igru
-function listenForGameAcceptance(gameId) {
-    const gameRef = doc(db, 'gameRequests', gameId);
-    onSnapshot(gameRef, (doc) => {
-        const data = doc.data();
-        if (data.accepted) {
-            startTicTacToeGame(); // Pokreni igru za pošiljaoca
-        }
-    });
-}
-
-// Postavljanje osluškivača za dolazne zahtjeve za igru
-function setupGameRequestListener() {
-    const gameRequestRef = collection(db, 'gameRequests');
-    onSnapshot(gameRequestRef, (snapshot) => {
-        snapshot.docChanges().forEach(change => {
-            if (change.type === 'added') {
-                const data = change.doc.data();
-                if (!data.accepted && data.recipientId === userId) {
-                    showIncomingGameNotification(data.requester, change.doc.id);
-                }
-            }
-        });
-    });
-}
-
-// Pokreni osluškivač za dolazne zahtjeve za igru
-setupGameRequestListener();
-
-
-
-
 let gameId = null; // ID igre
 let currentPlayer = 'X'; // Počinje igrač X
 let boardState = Array(9).fill(null); // Početno stanje table
 
 // Inicijalizacija igre
-function initTicTacToeGame() {
+function startTicTacToeGame() {
     const boardDiv = document.getElementById('tic-tac-toe-board');
     const cells = document.querySelectorAll('.cell');
 
     boardDiv.style.display = 'block';
 
-    // Dodaj događaje za sve ćelije na tabli
     cells.forEach((cell, index) => {
         cell.addEventListener('click', () => makeMove(index));
     });
 
-    // Pokreni osluškivanje poteza iz Firestore-a
+    // Osluškuj promjene na Firestore-u
     listenForGameUpdates();
 }
 
@@ -2101,7 +2020,7 @@ async function makeMove(index) {
 
     boardState[index] = currentPlayer;
 
-    // Ažuriraj stanje u Firestore-u
+    // Ažuriraj stanje igre u Firestore-u
     await updateGameInFirestore(index, currentPlayer);
 
     // Provjeri stanje igre (pobjeda ili neriješeno)
@@ -2115,7 +2034,7 @@ async function makeMove(index) {
 async function updateGameInFirestore(index, player) {
     if (gameId) {
         // Ažuriraj postojeću igru
-        const gameRef = doc(db, 'activeGames', gameId);
+        const gameRef = doc(db, 'ticTacToeGames', gameId);
         await updateDoc(gameRef, {
             boardState: boardState,
             currentPlayer: currentPlayer,
@@ -2123,7 +2042,7 @@ async function updateGameInFirestore(index, player) {
         });
     } else {
         // Kreiraj novu igru
-        const gameDoc = await addDoc(collection(db, 'activeGames'), {
+        const gameDoc = await addDoc(collection(db, 'ticTacToeGames'), {
             boardState: boardState,
             currentPlayer: currentPlayer,
             players: [username, selectedUserName],
@@ -2136,7 +2055,7 @@ async function updateGameInFirestore(index, player) {
 
 // Osluškivanje promjena igre u Firestore-u
 function listenForGameUpdates() {
-    const gameRef = collection(db, 'activeGames');
+    const gameRef = collection(db, 'ticTacToeGames');
 
     // Osluškuj promjene u kolekciji aktivnih igara
     onSnapshot(gameRef, (snapshot) => {
@@ -2150,7 +2069,6 @@ function listenForGameUpdates() {
                     currentPlayer = data.currentPlayer;
                     updateBoardUI();
 
-                    // Osvježi potez na tabli
                     const lastMove = data.lastMove;
                     if (lastMove !== -1) {
                         const cell = document.querySelector(`.cell[data-index="${lastMove}"]`);
@@ -2172,7 +2090,7 @@ function updateBoardUI() {
     });
 }
 
-// Provjeri stanje igre
+// Provjera stanja igre
 function checkGameState() {
     const winningCombinations = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -2195,14 +2113,12 @@ function checkGameState() {
     }
 }
 
-// Resetuj tablu
+// Resetovanje table
 function resetBoard() {
     boardState = Array(9).fill(null);
     const cells = document.querySelectorAll('.cell');
     cells.forEach(cell => (cell.textContent = ''));
 }
-
-
 
 
     // Učitaj proizvode nakon učitavanja stranice
