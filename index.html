@@ -1994,7 +1994,7 @@ async function updateTotalCoinsSpent() {
 
 // Kada korisnik klikne na dugme za igru
 // Funkcija za slanje zahtjeva za igru
-let gameId = null; // ID igre
+let gameId = null; // ID trenutne igre
 let currentPlayer = 'X'; // Počinje igrač X
 let boardState = Array(9).fill(null); // Početno stanje table
 let isPlayerTurn = false; // Pratimo da li je red na trenutnog igrača
@@ -2003,18 +2003,21 @@ let isPlayerTurn = false; // Pratimo da li je red na trenutnog igrača
 function startTicTacToeGame() {
     const boardDiv = document.getElementById('tic-tac-toe-board');
     const cells = document.querySelectorAll('.cell');
-    boardDiv.style.display = 'block';
 
-    // Postavi osluškivač za poteze
+    boardDiv.style.display = 'block';
+    setupGameInFirestore(); // Postavi igru u Firestore-u
+
+    // Postavljanje slušatelja za poteze
     listenForGameUpdates();
 
+    // Dodaj događaj za svaki klik na polje
     cells.forEach(cell => {
         cell.addEventListener('click', async () => {
             const index = cell.getAttribute('data-index');
             if (!boardState[index] && isPlayerTurn) {
                 boardState[index] = currentPlayer;
                 cell.textContent = currentPlayer;
-                isPlayerTurn = false; // Onemogući potez dok ne dođe red na drugog igrača
+                isPlayerTurn = false; // Onemogućavanje poteza dok ne dođe red na drugog igrača
 
                 // Ažuriraj stanje igre u Firestore-u
                 await updateGameInFirestore(index, currentPlayer);
@@ -2031,52 +2034,50 @@ function startTicTacToeGame() {
     });
 }
 
-// Funkcija za slanje ažuriranja igre u Firestore
-async function updateGameInFirestore(index, player) {
-    if (gameId) {
-        // Ažuriraj postojeću igru
-        const gameRef = doc(db, 'ticTacToeGames', gameId);
-        await updateDoc(gameRef, {
-            boardState: boardState,
-            currentPlayer: player === 'X' ? 'O' : 'X' // Promijeni trenutnog igrača
-        });
-    } else {
-        // Kreiraj novu igru
+// Postavi igru u Firestore-u
+async function setupGameInFirestore() {
+    if (!gameId) {
+        // Ako igra ne postoji, kreiraj novu
         const gameDoc = await addDoc(collection(db, 'ticTacToeGames'), {
             boardState: boardState,
-            currentPlayer: 'X',
+            currentPlayer: currentPlayer,
             players: [username, selectedUserName],
             timestamp: new Date()
         });
-        gameId = gameDoc.id;
+        gameId = gameDoc.id; // Spremi ID igre
     }
 }
 
-// Osluškivanje promjena u Firestore-u
-function listenForGameUpdates() {
-    const gameRef = collection(db, 'ticTacToeGames');
-
-    onSnapshot(gameRef, (snapshot) => {
-        snapshot.docChanges().forEach(change => {
-            if (change.type === 'modified' || change.type === 'added') {
-                const data = change.doc.data();
-
-                // Provjeri da li su oba korisnika uključena u igru
-                if (data.players.includes(username)) {
-                    boardState = data.boardState;
-                    currentPlayer = data.currentPlayer;
-                    isPlayerTurn = (currentPlayer === username); // Provjeri da li je red na trenutnog igrača
-
-                    updateBoardUI();
-
-                    checkGameState();
-                }
-            }
+// Ažuriranje stanja igre u Firestore-u
+async function updateGameInFirestore(index, player) {
+    if (gameId) {
+        const gameRef = doc(db, 'ticTacToeGames', gameId);
+        await updateDoc(gameRef, {
+            boardState: boardState,
+            currentPlayer: player === 'X' ? 'O' : 'X'
         });
-    });
+    }
 }
 
-// Ažuriraj prikaz na tabli
+// Slušatelj za promjene u Firestore-u
+function listenForGameUpdates() {
+    if (gameId) {
+        const gameRef = doc(db, 'ticTacToeGames', gameId);
+        onSnapshot(gameRef, (docSnapshot) => {
+            const data = docSnapshot.data();
+            if (data) {
+                boardState = data.boardState;
+                currentPlayer = data.currentPlayer;
+                isPlayerTurn = (currentPlayer === username); // Provjerava čiji je red
+
+                updateBoardUI();
+                checkGameState();
+            }
+        });
+    }
+}
+
+// Ažuriraj prikaz table
 function updateBoardUI() {
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, index) => {
@@ -2110,8 +2111,7 @@ function checkGameState() {
 // Resetovanje table
 function resetBoard() {
     boardState = Array(9).fill(null);
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => (cell.textContent = ''));
+    updateBoardUI();
 }
 
 
