@@ -9,8 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.7.3/dist/web3.min.js"></script>
-
 
     <style>
 
@@ -482,135 +480,19 @@ textarea {
             <a href="#"><span class="material-icons">group</span> Team</a>
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
-            <a href="#" id="connect-metamask-desktop"><span class="material-icons">account_balance_wallet</span> MetaMask</a> <!-- Dodano -->
         </nav>
-        
+    
         <!-- Mobilni meni -->
         <nav id="toggle-menu">
             <a href="#"><span class="material-icons">home</span> Home</a>
             <a href="#"><span class="material-icons">group</span> Team</a>
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
-            <a href="#" id="connect-metamask-mobile"><span class="material-icons">account_balance_wallet</span> MetaMask</a> <!-- Dodano -->
         </nav>
-        
     </header>
 
 
-    <button id="mint-button">Mint 100 DeltaCoin</button>
-
-
-   <script>
-   document.addEventListener('DOMContentLoaded', () => {
-    // Dodaj funkcionalnost za dugme "Mint"
-    document.getElementById('mint-button').addEventListener('click', async () => {
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                // Povezivanje sa MetaMask-om
-                await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const web3 = new Web3(window.ethereum);
-                const accounts = await web3.eth.getAccounts();
-                
-                // Adresa pametnog ugovora DeltaCoin-a
-                const contractAddress = '0xd8b934580fcE35a11B58C6D73aDeE468a2833fa8'; // Zamijeni sa tvojom stvarnom adresom ugovora
-                
-                // ABI za pametni ugovor DeltaCoin-a
-                const contractABI = [
-                    {
-                        "constant": false,
-                        "inputs": [],
-                        "name": "userMint",
-                        "outputs": [],
-                        "type": "function"
-                    }
-                ];
-
-                // Inicijalizacija pametnog ugovora
-                const deltaCoinContract = new web3.eth.Contract(contractABI, contractAddress);
-
-                // Pozivanje funkcije userMint za mintanje 100 DeltaCoin-a
-                await deltaCoinContract.methods.userMint().send({
-                    from: accounts[0]
-                });
-
-                alert(`Uspješno ste mintali 100 DeltaCoin-a na vaš račun ${accounts[0]}.`);
-            } catch (error) {
-                console.error('Greška prilikom mintanja DeltaCoin-a:', error);
-                alert('Došlo je do greške prilikom mintanja DeltaCoin-a.');
-            }
-        } else {
-            alert('MetaMask nije pronađen. Instalirajte ekstenziju za MetaMask.');
-        }
-    });
-});
-
-
-
-   </script>
-
-
-
-
-<script>
-    // Povezivanje s MetaMask-om i pametnim ugovorom DeltaCoin
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Provjeri da li je MetaMask dostupan
-        if (window.ethereum) {
-            try {
-                // Povezivanje s MetaMaskom
-                await ethereum.request({ method: 'eth_requestAccounts' });
-                window.web3 = new Web3(window.ethereum);
-                const accounts = await web3.eth.getAccounts();
-                const userAccount = accounts[0];
-                console.log("Povezan sa MetaMask-om: ", userAccount);
-
-                // Adresa pametnog ugovora
-                const contractAddress = '0xd9145CCE52D386f254917e481eB44e9943F39138';
-                
-                // ABI za pametni ugovor (skraćeni primjer)
-                const contractABI = [
-                    // ABI funkcija za prijenos tokena
-                    {
-                        "constant": false,
-                        "inputs": [
-                            { "name": "to", "type": "address" },
-                            { "name": "value", "type": "uint256" }
-                        ],
-                        "name": "transfer",
-                        "outputs": [],
-                        "type": "function"
-                    }
-                ];
-
-                // Inicijaliziraj instancu ugovora
-                const deltaCoinContract = new web3.eth.Contract(contractABI, contractAddress);
-
-                // Dodaj event listener za "rudarski" klik na stranici
-                document.getElementById('dolar-icon').addEventListener('click', async () => {
-                    // Iznos koji se šalje korisniku (na primjer 1 DeltaCoin)
-                    const tokenAmount = web3.utils.toWei('1', 'ether'); // 1 DeltaCoin
-
-                    try {
-                        // Pozovi funkciju za prijenos tokena
-                        await deltaCoinContract.methods.transfer(userAccount, tokenAmount).send({
-                            from: userAccount
-                        });
-
-                        alert(`Uspješno dodijeljeno 1 DeltaCoin korisniku ${userAccount}`);
-                    } catch (error) {
-                        console.error("Greška prilikom prijenosa tokena: ", error);
-                        alert("Došlo je do greške pri prijenosu tokena.");
-                    }
-                });
-            } catch (error) {
-                console.error("Povezivanje s MetaMask-om nije uspjelo: ", error);
-            }
-        } else {
-            alert("MetaMask nije pronađen. Instalirajte MetaMask ekstenziju.");
-        }
-    });
-</script>
-
+   
 
     <div id="chat-modal">
         <div id="chat-header">
