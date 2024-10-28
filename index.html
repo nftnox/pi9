@@ -465,14 +465,25 @@ textarea {
         font-weight: bold; /* Podebljava naslov */
     }
 
-    #start-game {
-    width: 40px; 
-    height: 40px; 
-    font-size: 20px; 
-    background-color: rgba(0, 0, 0, 0.1); 
-    border: none;
-    border-radius: 5px; 
+    .board {
+    display: grid;
+    grid-template-columns: repeat(3, 60px);
+    gap: 5px;
+}
+
+.cell {
+    width: 60px;
+    height: 60px;
+    border: 1px solid #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
     cursor: pointer;
+}
+
+.cell:hover {
+    background-color: #f0f0f0;
 }
 
     </style>
@@ -527,11 +538,8 @@ textarea {
             <div id="messages" style="display: none;"></div> <!-- Skriveno dok ne odabereš korisnika -->
             <div id="message-input" style="display: none;">
                 <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
-          <!-- Add in the chat control bar -->
-<button id="start-game">
-    <span class="material-icons">sports_esports</span>
-</button>
-
+          
+                <button id="start-game"><span class="material-icons">sports_esports</span></button>
 
                 <button id="start-call"><span class="material-icons">videocam</span></button>
 
@@ -552,6 +560,27 @@ textarea {
 
 
 
+<div id="tic-tac-toe-board" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
+    <h3 style="text-align: center;">Tic Tac Toe</h3>
+    <div class="board">
+        <div class="row">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+        </div>
+        <div class="row">
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+        </div>
+        <div class="row">
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+    </div>
+    <button id="close-game" style="margin-top: 10px;">Zatvori igru</button>
+</div>
 
 
 
@@ -1985,180 +2014,143 @@ async function updateTotalCoinsSpent() {
 }
 
 
-// Event listener for starting the game
+
+
+///////////IGRA/////////////////
+
+// Funkcija za pokretanje poziva za igru
 document.getElementById('start-game').addEventListener('click', () => {
     if (!selectedUserId || !selectedUserName) {
-        console.error('No user selected for the game.');
+        console.error('Nema odabranog korisnika za igru.');
         return;
     }
     sendGameRequest(selectedUserId, selectedUserName);
 });
 
-// Function to send game request
+// Funkcija za slanje zahtjeva za igru
 async function sendGameRequest(userId, userName) {
     try {
-        const gameRequestsRef = collection(db, 'gameRequests');
-        const gameRequestDoc = await addDoc(gameRequestsRef, {
+        const gameRequestRef = collection(db, 'gameRequests');
+        await addDoc(gameRequestRef, {
             requester: username,
             recipientId: userId,
             recipientName: userName,
             accepted: false,
-            ongoing: false,
             timestamp: new Date()
         });
-        console.log(`Game request sent to ${userName}.`);
-
-        // Show game invitation notification for recipient
-        showGameInvitation(userName, gameRequestDoc.id);
+        console.log("Zahtjev za igru poslan.");
+        showGameNotification(`Čekate da ${userName} prihvati vaš poziv za igru.`);
     } catch (error) {
-        console.error('Error sending game request:', error);
+        console.error("Greška prilikom slanja zahtjeva za igru:", error);
     }
 }
 
-// Function to show incoming game invitation
-function showGameInvitation(requesterName, gameRequestId) {
-    const gameInviteOverlay = document.createElement('div');
-    gameInviteOverlay.classList.add('incoming-game-overlay');
-    gameInviteOverlay.innerHTML = 
-        `<div class="game-invite-content">
-            <p>${requesterName} wants to play Tic-Tac-Toe with you!</p>
-            <button id="accept-game-${gameRequestId}" style="background-color: green; color: white; padding: 10px; margin-right: 10px; border-radius: 5px;">Accept</button>
-            <button id="decline-game-${gameRequestId}" style="background-color: red; color: white; padding: 10px; border-radius: 5px;">Decline</button>
-        </div>`;
-    
-    gameInviteOverlay.style.position = 'fixed';
-    gameInviteOverlay.style.top = '0';
-    gameInviteOverlay.style.left = '0';
-    gameInviteOverlay.style.width = '100vw';
-    gameInviteOverlay.style.height = '100vh';
-    gameInviteOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-    gameInviteOverlay.style.display = 'flex';
-    gameInviteOverlay.style.justifyContent = 'center';
-    gameInviteOverlay.style.alignItems = 'center';
-    gameInviteOverlay.style.zIndex = '1000';
+// Prikaz notifikacije kada korisnik primi zahtjev za igru
+function showIncomingGameNotification(requesterName, gameId) {
+    const gameNotification = document.createElement('div');
+    gameNotification.classList.add('incoming-game-notification');
+    gameNotification.innerHTML = `
+        <p>${requesterName} vas poziva na igru Tic Tac Toe. Prihvatate li?</p>
+        <button id="accept-game-${gameId}" style="background-color: green; color: white;">Prihvati</button>
+        <button id="decline-game-${gameId}" style="background-color: red; color: white;">Odbij</button>
+    `;
 
-    document.body.appendChild(gameInviteOverlay);
+    document.body.appendChild(gameNotification);
 
-    // Event listeners for accept/decline
-    document.getElementById(`accept-game-${gameRequestId}`).addEventListener('click', () => {
-        acceptGameRequest(gameRequestId);
-        document.body.removeChild(gameInviteOverlay);
+    // Prihvatanje poziva za igru
+    document.getElementById(`accept-game-${gameId}`).addEventListener('click', () => {
+        acceptGameRequest(gameId);
+        document.body.removeChild(gameNotification);
     });
-    document.getElementById(`decline-game-${gameRequestId}`).addEventListener('click', () => {
-        document.body.removeChild(gameInviteOverlay);
+
+    // Odbijanje poziva za igru
+    document.getElementById(`decline-game-${gameId}`).addEventListener('click', () => {
+        document.body.removeChild(gameNotification);
     });
 }
 
-
-
-// Function to accept game request
-async function acceptGameRequest(gameRequestId) {
-    const gameRequestRef = doc(db, 'gameRequests', gameRequestId);
-    await updateDoc(gameRequestRef, { accepted: true, ongoing: true });
-
-    startTicTacToeGame(); // Show Tic-Tac-Toe board to both players
+// Prihvatanje zahtjeva za igru
+async function acceptGameRequest(gameId) {
+    const gameRef = doc(db, 'gameRequests', gameId);
+    await updateDoc(gameRef, { accepted: true });
+    console.log("Zahtjev za igru prihvaćen.");
+    startTicTacToeGame(); // Pokreni igru
 }
 
-// Function to show Tic-Tac-Toe game board
-function startTicTacToeGame() {
-    const ticTacToeOverlay = document.createElement('div');
-    ticTacToeOverlay.classList.add('tic-tac-toe-overlay');
-    ticTacToeOverlay.innerHTML = 
-        `<div class="tic-tac-toe-board">
-            <div class="row">
-                <div class="cell" data-index="0"></div>
-                <div class="cell" data-index="1"></div>
-                <div class="cell" data-index="2"></div>
-            </div>
-            <div class="row">
-                <div class="cell" data-index="3"></div>
-                <div class="cell" data-index="4"></div>
-                <div class="cell" data-index="5"></div>
-            </div>
-            <div class="row">
-                <div class="cell" data-index="6"></div>
-                <div class="cell" data-index="7"></div>
-                <div class="cell" data-index="8"></div>
-            </div>
-        </div>`;
-
-    ticTacToeOverlay.style.position = 'fixed';
-    ticTacToeOverlay.style.top = '0';
-    ticTacToeOverlay.style.left = '0';
-    ticTacToeOverlay.style.width = '100vw';
-    ticTacToeOverlay.style.height = '100vh';
-    ticTacToeOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-    ticTacToeOverlay.style.display = 'flex';
-    ticTacToeOverlay.style.justifyContent = 'center';
-    ticTacToeOverlay.style.alignItems = 'center';
-    ticTacToeOverlay.style.zIndex = '1000';
-
-    document.body.appendChild(ticTacToeOverlay);
-
-    // Add event listeners to cells
-    document.querySelectorAll('.cell').forEach(cell => {
-        cell.addEventListener('click', () => makeMove(cell));
-    });
-}
-
-
-
-let currentPlayer = 'X'; // Starting player
-let boardState = Array(9).fill(null); // Initial board state
-
-// Function to make a move
-function makeMove(cell) {
-    const cellIndex = cell.getAttribute('data-index');
-
-    if (!boardState[cellIndex]) {
-        boardState[cellIndex] = currentPlayer;
-        cell.textContent = currentPlayer;
-        syncMove(cellIndex, currentPlayer);
-        currentPlayer = currentPlayer === 'X' ? 'O' : 'X'; // Switch turn
-    }
-}
-
-// Function to sync moves using Firestore
-async function syncMove(cellIndex, player) {
-    const gameMovesRef = collection(db, 'ticTacToeMoves');
-    await addDoc(gameMovesRef, {
-        gameId: selectedUserId, // Unique game ID
-        cellIndex: cellIndex,
-        player: player,
-        timestamp: new Date()
-    });
-}
-
-// Real-time listener for game moves
-function listenForGameMoves() {
-    const gameMovesRef = collection(db, 'ticTacToeMoves');
-    const q = query(gameMovesRef, where('gameId', '==', selectedUserId));
-
-    onSnapshot(q, (snapshot) => {
+// Postavljanje osluškivača za dolazne zahtjeve za igru
+function setupIncomingGameListener() {
+    const gameRequestRef = collection(db, 'gameRequests');
+    onSnapshot(gameRequestRef, (snapshot) => {
         snapshot.docChanges().forEach(change => {
             if (change.type === 'added') {
-                const data = change.doc.data();
-                updateBoard(data.cellIndex, data.player);
+                const doc = change.doc;
+                const data = doc.data();
+                if (!data.accepted && data.recipientId === userId) {
+                    console.log('Dolazni zahtjev za igru od:', data.requester);
+                    showIncomingGameNotification(data.requester, doc.id);
+                }
             }
         });
     });
 }
 
-// Update the board based on opponent's move
-function updateBoard(cellIndex, player) {
-    const cell = document.querySelector(`.cell[data-index="${cellIndex}"]`);
-    if (!boardState[cellIndex]) {
-        boardState[cellIndex] = player;
-        cell.textContent = player;
+// Inicijalizacija osluškivača za dolazne zahtjeve za igru
+setupIncomingGameListener();
+
+
+
+function startTicTacToeGame() {
+    const boardDiv = document.getElementById('tic-tac-toe-board');
+    const cells = document.querySelectorAll('.cell');
+    let currentPlayer = 'X'; // Prvi igrač je uvijek X
+    let boardState = Array(9).fill(null);
+
+    boardDiv.style.display = 'block';
+
+    cells.forEach(cell => {
+        cell.addEventListener('click', () => {
+            const index = cell.getAttribute('data-index');
+            if (!boardState[index]) {
+                boardState[index] = currentPlayer;
+                cell.textContent = currentPlayer;
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                checkGameState(boardState);
+            }
+        });
+    });
+
+    document.getElementById('close-game').addEventListener('click', () => {
+        boardDiv.style.display = 'none';
+    });
+}
+
+function checkGameState(boardState) {
+    const winningCombinations = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+    ];
+
+    for (let combination of winningCombinations) {
+        const [a, b, c] = combination;
+        if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+            alert(`Pobjednik je ${boardState[a]}!`);
+            resetBoard();
+            return;
+        }
+    }
+
+    if (boardState.every(cell => cell)) {
+        alert("Neriješeno!");
+        resetBoard();
     }
 }
 
-// Start listening for game moves
-listenForGameMoves();
-
-
-
-
+function resetBoard() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => cell.textContent = '');
+    boardState = Array(9).fill(null);
+}
 
 
 
