@@ -10,6 +10,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
         const firebaseConfig = {
@@ -22,26 +23,20 @@
             measurementId: "G-JH9SDWTS9V"
         };
 
+        // Inicijalizacija Firebase-a
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
         const storage = getStorage(app);
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('register-button').addEventListener('click', () => {
-                document.getElementById('registration-box').style.display = 'none';
-                document.getElementById('form-container').style.display = 'block';
-                document.getElementById('form-title').innerText = "";
-                document.getElementById('registration-form').style.display = 'block';
-                document.getElementById('login-form').style.display = 'none';
-            });
-
-            document.getElementById('login-button').addEventListener('click', () => {
-                document.getElementById('registration-box').style.display = 'none';
-                document.getElementById('form-container').style.display = 'block';
-                document.getElementById('form-title').innerText = "Prijava";
-                document.getElementById('registration-form').style.display = 'none';
-                document.getElementById('login-form').style.display = 'block';
-            });
+            // Postavljanje reCAPTCHA verifikatora
+            window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+                'size': 'invisible',
+                'callback': (response) => {
+                    // reCAPTCHA riješen
+                }
+            }, auth);
 
             document.getElementById('submit-registration').addEventListener('click', async () => {
                 const ime = document.getElementById('ime').value;
@@ -53,35 +48,33 @@
                 const grad = document.getElementById('grad').value;
                 const adresa = document.getElementById('adresa').value;
                 const sifra = document.getElementById('sifra').value;
-                const referralCode = document.getElementById('referral-code').value; // Referal kod
-                const profilePicture = document.getElementById('profile-picture').files[0]; // File input for profile picture
+                const profilePicture = document.getElementById('profile-picture').files[0];
 
-                // Check for existing username and email
-                const usernameQuery = query(collection(db, 'network'), where("username", "==", username));
-                const usernameSnapshot = await getDocs(usernameQuery);
-                const emailQuery = query(collection(db, 'network'), where("email", "==", email));
-                const emailSnapshot = await getDocs(emailQuery);
-
-                if (!usernameSnapshot.empty) {
-                    alert("Username već postoji. Molimo izaberite drugi.");
+                if (!ime || !prezime || !email || !username || !brojTelefona || !sifra) {
+                    alert("Molimo popunite sva polja.");
                     return;
                 }
 
-                if (!emailSnapshot.empty) {
-                    alert("Email već postoji. Molimo izaberite drugi.");
-                    return;
-                }
+                const phoneNumber = `+${brojTelefona}`;
+                const appVerifier = window.recaptchaVerifier;
 
                 try {
+                    // Slanje SMS-a s kodom za verifikaciju
+                    const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+                    const code = prompt('Unesite kod koji ste primili putem SMS-a:');
+                    
+                    // Provjera koda
+                    await confirmationResult.confirm(code);
+
+                    // Ako je verifikacija uspješna, nastavlja se sa registracijom
                     let profilePictureUrl = '';
-                    // Upload profile picture to Firebase Storage and get URL
                     if (profilePicture) {
                         const storageRef = ref(storage, 'profilePictures/' + username + '_' + profilePicture.name);
                         const snapshot = await uploadBytes(storageRef, profilePicture);
-                        profilePictureUrl = await getDownloadURL(snapshot.ref); // Get the image URL
+                        profilePictureUrl = await getDownloadURL(snapshot.ref);
                     }
 
-                    // Save user data to Firestore, including the profile picture URL
+                    // Spremanje korisničkih podataka u Firestore
                     await addDoc(collection(db, 'network'), {
                         ime,
                         prezime,
@@ -92,77 +85,18 @@
                         grad,
                         adresa,
                         sifra,
-                        referralCode, // Dodavanje referal koda u bazu
-                        profilePictureUrl, // Save the image URL to Firestore
+                        profilePictureUrl,
                         amount: 0,
                         clickCount: 0
                     });
 
-                    // Notify the user of successful registration and redirect them to login
                     alert("Registracija uspješna! Možete se prijaviti.");
                     document.getElementById('login-button').click();
-                } catch (e) {
-                    console.error("Greška pri dodavanju dokumenta: ", e);
-                }
-
-                // Referral code logic (if any)
-                if (referralCode) {
-                    const existingUserQuery = query(collection(db, 'network'), where("username", "==", referralCode));
-                    const querySnapshot = await getDocs(existingUserQuery);
-
-                    if (!querySnapshot.empty) {
-                        querySnapshot.forEach(async (doc) => {
-                            const userId = doc.id;
-                            const userData = doc.data();
-
-                            // Update referral user's price
-                            let currentPrice = userData.currentPrice || 0.00;
-                            currentPrice += 0.01; // Povećanje cijene za 0.01
-                            await updateFirestore(userId, currentPrice, userData.lastClickTime); // Update Firestore
-                        });
-                    }
+                } catch (error) {
+                    console.error("Greška pri verifikaciji: ", error);
+                    alert("Verifikacija nije uspjela. Pokušajte ponovo.");
                 }
             });
-
-            document.getElementById('submit-login').addEventListener('click', async () => {
-                const identifier = document.getElementById('login-identifier').value;
-                const sifra = document.getElementById('login-sifra').value;
-
-                if (!identifier || !sifra) {
-                    alert("Molimo unesite username ili email i šifru.");
-                    return;
-                }
-
-                const qUsername = query(collection(db, 'network'), where("username", "==", identifier), where("sifra", "==", sifra));
-                const qEmail = query(collection(db, 'network'), where("email", "==", identifier), where("sifra", "==", sifra));
-
-                const usernameSnapshot = await getDocs(qUsername);
-
-                if (usernameSnapshot.empty) {
-                    const emailSnapshot = await getDocs(qEmail);
-                    if (emailSnapshot.empty) {
-                        alert("Pogrešno username/email ili šifra.");
-                    } else {
-                        const userData = emailSnapshot.docs[0].data();
-                        window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
-                    }
-                } else {
-                    const userData = usernameSnapshot.docs[0].data();
-                    window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
-                }
-            });
-
-            const togglePassword = (inputId, iconId) => {
-                const input = document.getElementById(inputId);
-                const icon = document.getElementById(iconId);
-                icon.addEventListener('click', () => {
-                    const type = input.type === 'password' ? 'text' : 'password';
-                    input.type = type;
-                    icon.textContent = type === 'password' ? 'visibility' : 'visibility_off';
-                });
-            };
-            togglePassword('login-sifra', 'toggle-login-sifra');
-            togglePassword('sifra', 'toggle-sifra');
         });
     </script>
 </head>
@@ -175,45 +109,26 @@
         </div>
     </header>
 
-    <div class="background blue"></div>
-    <div class="background purple"></div>
-
-    <div class="image-container">
-        <img src="images/upitnik.png" alt="Delta Image" class="responsive-image">
-    </div>
-
     <div id="form-container" style="display:none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); padding: 20px; z-index: 1000;">
-        <h2 id="form-title">Prijava</h2>
-        <div id="login-form">
-            <input type="text" id="login-identifier" placeholder="Username ili Email" required>
-            <div style="position: relative;">
-                <input type="password" id="login-sifra" placeholder="Šifra" required>
-                <span id="toggle-login-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span>
-            </div>
-            <button id="submit-login" style="color: black; display: block; margin: 0 auto; width: 108%;">Prijavi se</button>
-        </div>
-    
-        <div id="registration-form" style="display:none;">
-            <h2 id="form-title">Registracija</h2>
+        <h2 id="form-title">Registracija</h2>
+        <div id="registration-form">
             <input type="text" id="ime" placeholder="Ime" required>
             <input type="text" id="prezime" placeholder="Prezime" required>
             <input type="email" id="email" placeholder="Email" required>
             <input type="text" id="username" placeholder="Username" required>
-            <input type="text" id="brojTelefona" placeholder="Broj telefona" required>
+            <input type="text" id="brojTelefona" placeholder="Broj telefona (sa pozivnim brojem)" required>
             <input type="text" id="drzava" placeholder="Država" required>
             <input type="text" id="grad" placeholder="Grad" required>
             <input type="text" id="adresa" placeholder="Adresa" required>
-            <div style="position: relative;">
-                <input type="password" id="sifra" placeholder="Šifra" required>
-                <span id="toggle-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span>
-            </div>
-            <input type="text" id="referral-code" placeholder="Referal kod (opcionalno)">
-            <input type="file" id="profile-picture" accept="image/*"> <!-- Input for profile picture -->
+            <input type="password" id="sifra" placeholder="Šifra" required>
+            <input type="file" id="profile-picture" accept="image/*">
+            <div id="recaptcha-container"></div>
             <button id="submit-registration" style="color: black; display: block; margin: 0 auto; width: 108%;">Registruj se</button>
         </div>
     </div>
 </body>
 </html>
+
 
 
 
