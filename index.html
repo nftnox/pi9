@@ -2136,17 +2136,18 @@ function startTicTacToeGame(gameId) {
         if (gameStatus === 'finished') {
             if (winnerId === 'draw') {
                 alert('The game is a draw!');
-            } else if (winnerId === userId) {
-                alert('You won!');
             } else {
-                alert('You lost!');
+                if (winnerId === userId) {
+                    alert('You won!');
+                } else {
+                    alert('You lost!');
+                }
+                // Update currentPrice for the winner
+                updateCurrentPriceForWinner(winnerId);
             }
             boardDiv.style.display = 'none';
             resetBoard();
-            // Optionally: delete the game document from Firestore
-            // deleteDoc(gameDocRef);
         } else {
-            // You can display whose turn it is if you want
             if (currentPlayerId === userId) {
                 console.log('Your turn.');
             } else {
@@ -2154,6 +2155,7 @@ function startTicTacToeGame(gameId) {
             }
         }
     });
+
 
     // Add click events to each cell only once
     cells.forEach(cell => {
@@ -2255,6 +2257,30 @@ function resetBoard() {
 setupGameRequestListener();
 
 
+async function updateCurrentPriceForWinner(winnerUserId) {
+    const userDocRef = doc(db, 'network', winnerUserId);
+    try {
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            let currentPrice = userData.currentPrice || 0;
+            currentPrice += 100; // Add 100 to the currentPrice
+            await updateDoc(userDocRef, {
+                currentPrice: currentPrice
+            });
+            console.log('Updated currentPrice for winner:', winnerUserId);
+
+            // If the winner is the current user, update the displayed amount
+            if (winnerUserId === userId) {
+                document.getElementById('amount').innerText = currentPrice.toFixed(2);
+            }
+        } else {
+            console.error('User document not found for winner:', winnerUserId);
+        }
+    } catch (error) {
+        console.error('Error updating currentPrice for winner:', error);
+    }
+}
 
 
     // Učitaj proizvode nakon učitavanja stranice
