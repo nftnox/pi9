@@ -26,22 +26,24 @@
         document.getElementById('publish-product').addEventListener('click', async () => {
             const name = document.getElementById('product-name').value;
             const price = parseFloat(document.getElementById('product-price').value);
+            const cryptoPrice = parseFloat(document.getElementById('product-crypto-price').value); // Nova cijena u ETH
             const file = document.getElementById('product-image').files[0];
 
-            if (!name || !price || !file) {
+            if (!name || !price || !cryptoPrice || !file) {
                 alert('Molimo popunite sva polja.');
                 return;
             }
 
-            // Upload image to Firebase Storage
+            // Upload slike na Firebase Storage
             const storageRef = ref(storage, 'productImages/' + file.name);
             const snapshot = await uploadBytes(storageRef, file);
             const imageUrl = await getDownloadURL(snapshot.ref);
 
-            // Save product to Firestore
+            // Spremanje proizvoda u Firestore
             await addDoc(collection(db, 'products'), {
                 name,
                 price,
+                cryptoPrice, // Spremanje cijene u ETH
                 imageUrl
             });
 
@@ -53,7 +55,8 @@
     <h1>Dodaj novi proizvod</h1>
     <input type="file" id="product-image" accept="image/*"><br>
     <input type="text" id="product-name" placeholder="Naziv proizvoda"><br>
-    <input type="number" id="product-price" placeholder="Cijena proizvoda"><br>
+    <input type="number" id="product-price" placeholder="Cijena proizvoda (u fiat valuti)"><br>
+    <input type="number" step="0.01" id="product-crypto-price" placeholder="Cijena proizvoda (u ETH)"><br> <!-- Novo polje -->
     <button id="publish-product">Objavi</button>
 </body>
 </html>
