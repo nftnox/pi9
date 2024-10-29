@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
     <style>
 
@@ -2134,19 +2135,21 @@ function startTicTacToeGame(gameId) {
         });
 
         if (gameStatus === 'finished') {
-            if (winnerId === 'draw') {
-                alert('The game is a draw!');
-            } else {
-                if (winnerId === userId) {
-                    alert('You won!');
-                } else {
-                    alert('You lost!');
-                }
-                // Update currentPrice for the winner
-                updateCurrentPriceForWinner(winnerId);
-            }
-            boardDiv.style.display = 'none';
-            resetBoard();
+    if (winnerId === 'draw') {
+        alert('Neriješeno!');
+    } else {
+        if (winnerId === userId) {
+            alert('Pobijedili ste!');
+            // Prikaži konfete
+            showConfetti();
+        } else {
+            alert('Izgubili ste!');
+        }
+        // Ažuriraj currentPrice za pobjednika
+        updateCurrentPriceForWinner(winnerId);
+    }
+    boardDiv.style.display = 'none';
+    resetBoard();
         } else {
             if (currentPlayerId === userId) {
                 console.log('Your turn.');
@@ -2280,6 +2283,32 @@ async function updateCurrentPriceForWinner(winnerUserId) {
     } catch (error) {
         console.error('Error updating currentPrice for winner:', error);
     }
+}
+
+
+function showConfetti() {
+    var duration = 5 * 1000;
+    var animationEnd = Date.now() + duration;
+    var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 1000 };
+
+    function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    var interval = setInterval(function() {
+        var timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+            return clearInterval(interval);
+        }
+
+        var particleCount = 50 * (timeLeft / duration);
+        // Pokreni konfete iz nasumičnih pozicija
+        confetti(Object.assign({}, defaults, { 
+            particleCount, 
+            origin: { x: randomInRange(0, 1), y: Math.random() - 0.2 } 
+        }));
+    }, 250);
 }
 
 
