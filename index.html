@@ -889,6 +889,7 @@ async function loadProducts() {
     buyWithCryptoButton.style.marginTop = '10px';
 
    // Omogući MetaMask plaćanje
+// Omogući MetaMask plaćanje
 buyWithCryptoButton.addEventListener('click', async () => {
     if (typeof window.ethereum !== 'undefined') {
         // Povežite se sa MetaMask-om
@@ -896,41 +897,39 @@ buyWithCryptoButton.addEventListener('click', async () => {
         const web3 = new Web3(window.ethereum);
         const account = window.ethereum.selectedAddress;
 
-        // Provjeri i konvertuj cijenu proizvoda u wei
-        if (productData.cryptoPrice && !isNaN(productData.cryptoPrice)) {
-            const weiValue = web3.utils.toWei(productData.cryptoPrice.toString(), 'ether');
+        // Direktno koristi cijenu u ETH bez konverzije u wei
+        const ethValue = productData.cryptoPrice; // Koristi cijenu u ETH
 
-            // Provjera je li vrijednost ispravna
-            if (parseInt(weiValue) <= 0) {
-                alert('Cijena u ETH mora biti veća od nule.');
-                return;
-            }
-
-            const txParams = {
-                from: account,
-                to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Vaša Ethereum adresa
-                value: web3.utils.toHex(weiValue),
-                gas: '21000'
-            };
-
-            try {
-                const transactionHash = await window.ethereum.request({
-                    method: 'eth_sendTransaction',
-                    params: [txParams]
-                });
-
-                alert(`Uspješna uplata! Transakcija: ${transactionHash}`);
-            } catch (error) {
-                console.error('Greška prilikom MetaMask transakcije:', error);
-                alert('Došlo je do greške. Pokušajte ponovo.');
-            }
-        } else {
+        // Provjeri da li je cijena validna
+        if (!ethValue || ethValue <= 0) {
             alert('Nevažeća cijena u ETH.');
+            return;
+        }
+
+        // Pripremi parametre transakcije
+        const txParams = {
+            from: account,
+            to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Tvoja Ethereum adresa
+            value: web3.utils.toWei(ethValue.toString(), 'ether'), // Konvertuje se u wei
+            gas: '21000'
+        };
+
+        try {
+            const transactionHash = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [txParams]
+            });
+
+            alert(`Uspješna uplata! Transakcija: ${transactionHash}`);
+        } catch (error) {
+            console.error('Greška prilikom MetaMask transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
         }
     } else {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
+
 
 
 
