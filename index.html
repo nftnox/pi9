@@ -1992,11 +1992,7 @@ async function updateTotalCoinsSpent() {
 
 ///////////IGRA/////////////////
 
-// Pretpostavljam da već imate userId i username definirane
-
-
-// Pretpostavljam da već imate selectedUserId i selectedUserName definirane
-
+// Varijable za trenutnog korisnika i odabranog korisnika
 
 // Varijable za igru
 let gameId = null;
@@ -2040,19 +2036,19 @@ function listenForGameAcceptance(gameRequestId) {
                     [data.recipientId]: 'O'
                 },
                 boardState: Array(9).fill(null),
-                currentPlayer: userId, // ID igrača koji je na potezu
+                currentPlayer: userId, // Igrač koji je poslao zahtjev počinje
                 gameStatus: 'in_progress',
                 winner: null,
                 timestamp: new Date()
             });
             gameId = gameDocRef.id;
-            playerSymbol = 'X'; // Pošiljalac je uvijek 'X'
+            playerSymbol = 'X'; // Pošiljalac je 'X'
             startTicTacToeGame(gameId);
         }
     });
 }
 
-// Postavljanje osluškivača za dolazne zahtjeve za igru
+// Funkcija za postavljanje osluškivača za dolazne zahtjeve za igru
 function setupGameRequestListener() {
     const gameRequestRef = collection(db, 'gameRequests');
     onSnapshot(gameRequestRef, (snapshot) => {
@@ -2067,12 +2063,13 @@ function setupGameRequestListener() {
     });
 }
 
-// Funkcija za prikazivanje notifikacije kada korisnik primi zahtjev za igru
+// Funkcija za prikazivanje notifikacije za dolazni zahtjev za igru
 function showIncomingGameNotification(requesterName, requesterId, gameRequestId) {
     const notification = document.createElement('div');
     notification.classList.add('incoming-game-notification');
     notification.innerHTML = `
-        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
             <p>${requesterName} vas poziva na igru Tic Tac Toe. Prihvatate li?</p>
             <button id="accept-game" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px;">Prihvati</button>
             <button id="decline-game" style="background-color: red; color: white; padding: 10px 20px;">Odbij</button>
@@ -2080,7 +2077,7 @@ function showIncomingGameNotification(requesterName, requesterId, gameRequestId)
     `;
     document.body.appendChild(notification);
 
-    // Prihvatanje poziva za igru
+    // Prihvatanje igre
     document.getElementById('accept-game').addEventListener('click', async () => {
         await updateDoc(doc(db, 'gameRequests', gameRequestId), { accepted: true });
         document.body.removeChild(notification);
@@ -2093,17 +2090,17 @@ function showIncomingGameNotification(requesterName, requesterId, gameRequestId)
                 [userId]: 'O'
             },
             boardState: Array(9).fill(null),
-            currentPlayer: requesterId, // Pošiljalac počinje prvi
+            currentPlayer: requesterId, // Pošiljalac počinje
             gameStatus: 'in_progress',
             winner: null,
             timestamp: new Date()
         });
         gameId = gameDocRef.id;
-        playerSymbol = 'O'; // Primaoc je uvijek 'O'
+        playerSymbol = 'O'; // Primaoc je 'O'
         startTicTacToeGame(gameId);
     });
 
-    // Odbijanje poziva za igru
+    // Odbijanje igre
     document.getElementById('decline-game').addEventListener('click', () => {
         document.body.removeChild(notification);
     });
@@ -2113,64 +2110,99 @@ function showIncomingGameNotification(requesterName, requesterId, gameRequestId)
 function startTicTacToeGame(gameId) {
     const boardDiv = document.getElementById('tic-tac-toe-board');
     const cells = document.querySelectorAll('.cell');
-    let boardState = Array(9).fill(null);
-    let currentPlayer = null;
 
     boardDiv.style.display = 'block';
 
     const gameDocRef = doc(db, 'games', gameId);
 
-    // Postavite onSnapshot osluškivač na dokument igre
+    // Postavi osluškivač na dokument igre
     onSnapshot(gameDocRef, (docSnapshot) => {
         const data = docSnapshot.data();
         if (!data) return;
 
-        boardState = data.boardState;
-        currentPlayer = data.currentPlayer;
+        const boardState = data.boardState;
+        const currentPlayerId = data.currentPlayer;
+        const gameStatus = data.gameStatus;
+        const winnerId = data.winner;
 
-        // Ažurirajte prikaz table
+        // Ažuriraj prikaz table
         cells.forEach((cell, index) => {
             cell.textContent = boardState[index];
         });
 
-        // Provjerite da li je igra završena
-        if (data.gameStatus === 'finished') {
-            if (data.winner === 'Neriješeno') {
+        if (gameStatus === 'finished') {
+            if (winnerId === 'draw') {
                 alert('Igra je neriješena!');
+            } else if (winnerId === userId) {
+                alert('Pobjedili ste!');
             } else {
-                const winnerName = data.winner === userId ? 'Vi' : 'Protivnik';
-                alert(`Pobjednik je ${winnerName}!`);
+                alert('Izgubili ste!');
             }
             boardDiv.style.display = 'none';
             resetBoard();
             // Opcionalno: izbrišite dokument igre iz Firestore-a
             // deleteDoc(gameDocRef);
+        } else {
+            // Možete prikazati čiji je potez ako želite
+            if (currentPlayerId === userId) {
+                console.log('Vaš je potez.');
+            } else {
+                console.log('Protivnik je na potezu.');
+            }
         }
     });
 
-    // Dodajte event listener na svaku ćeliju
+    // Dodajte događaje klika na svaku ćeliju
     cells.forEach(cell => {
         cell.addEventListener('click', async () => {
             const index = cell.getAttribute('data-index');
 
-            // Provjerite da li je polje slobodno i da li je na potezu trenutni igrač
-            if (!boardState[index] && currentPlayer === userId) {
-                const symbol = playerSymbol;
-                boardState[index] = symbol;
+            const gameDoc = await getDoc(gameDocRef);
+            const data = gameDoc.data();
 
-                // Provjerite da li imamo pobjednika
-                const winner = checkGameState(boardState);
+            const boardState = data.boardState;
+            const currentPlayerId = data.currentPlayer;
+            const playerSymbols = data.playerSymbols;
 
-                // Ažurirajte stanje igre u Firestore-u
-                await updateDoc(gameDocRef, {
-                    boardState: boardState,
-                    currentPlayer: winner || currentPlayer === gameDocRef.data().players[0] ? gameDocRef.data().players[1] : gameDocRef.data().players[0],
-                    gameStatus: winner ? 'finished' : 'in_progress',
-                    winner: winner ? (winner === 'Neriješeno' ? 'Neriješeno' : userId) : null
-                });
-            } else {
-                alert('Nije vaš potez ili je polje zauzeto.');
+            if (boardState[index] || data.gameStatus !== 'in_progress') {
+                // Polje je već zauzeto ili je igra završena
+                alert('Polje je već zauzeto ili je igra završena.');
+                return;
             }
+
+            if (currentPlayerId !== userId) {
+                // Nije vaš potez
+                alert('Nije vaš potez.');
+                return;
+            }
+
+            // Napravite potez
+            boardState[index] = playerSymbols[userId];
+
+            // Provjerite da li imamo pobjednika ili je neriješeno
+            const winner = checkGameWinner(boardState);
+
+            let newGameStatus = 'in_progress';
+            let newWinnerId = null;
+            let nextPlayerId = data.players.find(id => id !== userId); // Drugi igrač
+
+            if (winner) {
+                newGameStatus = 'finished';
+                if (winner === 'draw') {
+                    newWinnerId = 'draw';
+                } else {
+                    newWinnerId = userId; // Trenutni igrač je pobjednik
+                }
+                nextPlayerId = null;
+            }
+
+            // Ažurirajte dokument igre
+            await updateDoc(gameDocRef, {
+                boardState: boardState,
+                currentPlayer: nextPlayerId,
+                gameStatus: newGameStatus,
+                winner: newWinnerId
+            });
         });
     });
 
@@ -2181,23 +2213,23 @@ function startTicTacToeGame(gameId) {
     });
 }
 
-// Funkcija za provjeru stanja igre
-function checkGameState(boardState) {
+// Funkcija za provjeru pobjednika ili neriješenog rezultata
+function checkGameWinner(boardState) {
     const winningCombinations = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Redovi
-        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Kolone
-        [0, 4, 8], [2, 4, 6]            // Dijagonale
+        [0,1,2], [3,4,5], [6,7,8], // Redovi
+        [0,3,6], [1,4,7], [2,5,8], // Kolone
+        [0,4,8], [2,4,6]           // Dijagonale
     ];
 
-    for (let combination of winningCombinations) {
-        const [a, b, c] = combination;
+    for (let combo of winningCombinations) {
+        const [a, b, c] = combo;
         if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
             return true; // Imamo pobjednika
         }
     }
 
     if (boardState.every(cell => cell !== null)) {
-        return 'Neriješeno'; // Neriješeno
+        return 'draw'; // Neriješeno
     }
 
     return null; // Igra nije završena
@@ -2206,12 +2238,14 @@ function checkGameState(boardState) {
 // Funkcija za resetovanje table
 function resetBoard() {
     const cells = document.querySelectorAll('.cell');
-    cells.forEach(cell => (cell.textContent = ''));
+    cells.forEach(cell => {
+        cell.textContent = '';
+    });
     gameId = null;
     playerSymbol = null;
 }
 
-// Postavi osluškivač za dolazne zahtjeve za igru
+// Postavite osluškivač za dolazne zahtjeve za igru
 setupGameRequestListener();
 
 
