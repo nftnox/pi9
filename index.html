@@ -471,7 +471,8 @@ textarea {
 
     <header>
         <div id="user-name">Pozdrav, <span id="ime"></span></div>
-        <div id="current-price">Your wallet: <span id="amount">0.00</span></div>
+        <div id="current-price">Your wallet: <span id="amount">0.00</span> &#948;</div>
+
     
         <!-- Toggle dugme za mobilne uređaje -->
         <button id="toggle-menu-button" class="toggle-button">☰</button>
@@ -868,7 +869,59 @@ async function loadProducts() {
         productName.textContent = productData.name;
 
         const productPrice = document.createElement('div');
-        productPrice.textContent = `Cijena: ${productData.price} Delta coin`;
+        productPrice.textContent = `Cijena: ${productData.price} δ`;
+
+
+
+  // Prikaži cijenu u ETH ako postoji
+  const productCryptoPrice = document.createElement('div');
+    if (productData.cryptoPrice) {
+        productCryptoPrice.textContent = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
+    }
+
+    const buyWithCryptoButton = document.createElement('button');
+    buyWithCryptoButton.textContent = 'Buy with Crypto';
+    buyWithCryptoButton.style.backgroundColor = 'purple';
+    buyWithCryptoButton.style.color = 'white';
+    buyWithCryptoButton.style.marginTop = '10px';
+
+    // Omogući MetaMask plaćanje
+    buyWithCryptoButton.addEventListener('click', async () => {
+        if (typeof window.ethereum !== 'undefined') {
+            try {
+                // Povežite se sa MetaMask-om
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const account = window.ethereum.selectedAddress;
+
+                // Konverzija cijene proizvoda u wei (1 ETH = 10^18 wei)
+                const weiValue = web3.utils.toWei(productData.cryptoPrice.toString(), 'ether');
+
+                // Inicirajte transakciju
+                const txParams = {
+                    from: account,
+                    to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Vaša adresa za primanje sredstava
+                    value: web3.utils.toHex(weiValue),
+                    gas: '21000'
+                };
+
+                // Pošaljite transakciju
+                const transactionHash = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [txParams]
+                });
+
+                alert(`Uspješna uplata! Transakcija: ${transactionHash}`);
+            } catch (error) {
+                console.error('Greška prilikom MetaMask transakcije:', error);
+                alert('Došlo je do greške. Pokušajte ponovo.');
+            }
+        } else {
+            alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
+        }
+    });
+
+
+
 
         const buyButton = document.createElement('button');
         buyButton.textContent = productData.sold ? 'Prodato' : 'Kupi';
@@ -959,7 +1012,7 @@ ownerDiv.addEventListener('click', () => {
 
                     productDiv.appendChild(ownerDiv);
 
-                    alert(`Kupili ste ${productData.name} za ${productData.price} Delta coin!`);
+                    alert(`Kupili ste ${productData.name} za ${productData.price} δ!`);
                 } catch (error) {
                     console.error('Greška prilikom ažuriranja Firestore-a:', error);
                     alert('Došlo je do greške. Pokušajte ponovo.');
@@ -973,6 +1026,10 @@ ownerDiv.addEventListener('click', () => {
         productDiv.appendChild(productName);
         productDiv.appendChild(productPrice);
         productDiv.appendChild(buyButton);
+        productDiv.appendChild(productCryptoPrice); // Prikaz cijene u ETH
+    productDiv.appendChild(buyWithCryptoButton); // Dodaj dugme za kripto plaćanje
+    
+
         productDiv.appendChild(ownerDiv); // Dodaj div za vlasnika
         productList.appendChild(productDiv);
     });
@@ -2139,7 +2196,7 @@ function startTicTacToeGame(gameId) {
         alert('Neriješeno!');
     } else {
         if (winnerId === userId) {
-            alert('You won 100 Delta Coin!');
+            alert('You won 100δ Delta Coin!');
             // Prikaži konfete
             showConfetti();
         } else {
@@ -2640,6 +2697,7 @@ function showConfetti() {
 <style>
     #current-price {
         transform: translateX(130px); /* Podesi ovu vrijednost prema željenom pomjeranju */
+        font-weight: bold;
 }
 
 @media only screen and (max-width: 768px) {
