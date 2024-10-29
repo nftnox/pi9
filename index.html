@@ -517,7 +517,10 @@ textarea {
             <div id="message-input" style="display: none;">
                 <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
           
-
+                <button id="start-game" style="width: 40px; height: 40px; font-size: 20px; background-color: rgba(0, 0, 0, 0.1); border: none; border-radius: 5px; cursor: pointer;">
+                    <span class="material-icons">sports_esports</span>
+                </button>
+                
                 <button id="start-call"><span class="material-icons">videocam</span></button>
 
 
@@ -538,6 +541,21 @@ textarea {
 
 
 
+<div id="tic-tac-toe-board" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
+    <h3 style="text-align: center;">Tic Tac Toe</h3>
+    <div class="board" style="display: grid; grid-template-columns: repeat(3, 100px); gap: 5px;">
+        <div class="cell" data-index="0" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="1" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="2" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="3" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="4" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="5" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="6" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="7" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+        <div class="cell" data-index="8" style="width: 100px; height: 100px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;"></div>
+    </div>
+    <button id="close-game" style="margin-top: 10px;">Zatvori igru</button>
+</div>
 
 
 
@@ -1974,6 +1992,203 @@ async function updateTotalCoinsSpent() {
 
 ///////////IGRA/////////////////
 
+// Dodatne varijable za igru
+let gameId = null;
+        let playerSymbol = null;
+
+        // Funkcija za slanje zahtjeva za igru
+        document.getElementById('start-game').addEventListener('click', async () => {
+            if (!selectedUserId || !selectedUserName) {
+                alert("Nije odabran korisnik za igru.");
+                return;
+            }
+            try {
+                const gameRequestRef = await addDoc(collection(db, 'gameRequests'), {
+                    requester: username,
+                    requesterId: userId, // Dodano
+                    recipientId: selectedUserId,
+                    recipientName: selectedUserName,
+                    accepted: false,
+                    timestamp: new Date()
+                });
+                console.log("Zahtjev za igru poslan:", gameRequestRef.id);
+                // Dodaj osluškivač za prihvatanje igre
+                listenForGameAcceptance(gameRequestRef.id);
+                alert(`Čekate da ${selectedUserName} prihvati vaš zahtjev za igru.`);
+            } catch (error) {
+                console.error("Greška prilikom slanja zahtjeva za igru:", error);
+            }
+        });
+
+        // Funkcija za osluškivanje prihvatanja zahtjeva za igru
+        function listenForGameAcceptance(gameRequestId) {
+            const gameRequestDocRef = doc(db, 'gameRequests', gameRequestId);
+            onSnapshot(gameRequestDocRef, async (docSnapshot) => {
+                const data = docSnapshot.data();
+                if (data.accepted) {
+                    // Kreiraj dokument igre
+                    const gameDocRef = await addDoc(collection(db, 'games'), {
+                        players: [userId, data.recipientId],
+                        boardState: Array(9).fill(null),
+                        currentPlayer: 'X',
+                        gameStatus: 'in_progress',
+                        winner: null,
+                        timestamp: new Date()
+                    });
+                    gameId = gameDocRef.id;
+                    playerSymbol = 'X'; // Pošiljalac je uvijek 'X'
+                    startTicTacToeGame(gameId);
+                }
+            });
+        }
+
+        // Postavljanje osluškivača za dolazne zahtjeve za igru
+        function setupGameRequestListener() {
+            const gameRequestRef = collection(db, 'gameRequests');
+            onSnapshot(gameRequestRef, (snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const data = change.doc.data();
+                        if (!data.accepted && data.recipientId === userId) {
+                            showIncomingGameNotification(data.requester, data.requesterId, change.doc.id);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Funkcija za prikazivanje notifikacije kada korisnik primi zahtjev za igru
+        function showIncomingGameNotification(requesterName, requesterId, gameRequestId) {
+            const notification = document.createElement('div');
+            notification.classList.add('incoming-game-notification');
+            notification.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
+                    <p>${requesterName} vas poziva na igru Tic Tac Toe. Prihvatate li?</p>
+                    <button id="accept-game" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px;">Prihvati</button>
+                    <button id="decline-game" style="background-color: red; color: white; padding: 10px 20px;">Odbij</button>
+                </div>
+            `;
+            document.body.appendChild(notification);
+
+            // Prihvatanje poziva za igru
+            document.getElementById('accept-game').addEventListener('click', async () => {
+                await updateDoc(doc(db, 'gameRequests', gameRequestId), { accepted: true });
+                document.body.removeChild(notification);
+
+                // Kreiraj dokument igre
+                const gameDocRef = await addDoc(collection(db, 'games'), {
+                    players: [requesterId, userId],
+                    boardState: Array(9).fill(null),
+                    currentPlayer: 'X',
+                    gameStatus: 'in_progress',
+                    winner: null,
+                    timestamp: new Date()
+                });
+                gameId = gameDocRef.id;
+                playerSymbol = 'O'; // Primaoc je uvijek 'O'
+                startTicTacToeGame(gameId);
+            });
+
+            // Odbijanje poziva za igru
+            document.getElementById('decline-game').addEventListener('click', () => {
+                document.body.removeChild(notification);
+            });
+        }
+
+        // Funkcija za pokretanje igre
+        function startTicTacToeGame(gameId) {
+            const boardDiv = document.getElementById('tic-tac-toe-board');
+            const cells = document.querySelectorAll('.cell');
+            let boardState = Array(9).fill(null);
+            let currentPlayer = 'X';
+
+            boardDiv.style.display = 'block';
+
+            const gameDocRef = doc(db, 'games', gameId);
+
+            // Postavite onSnapshot osluškivač na dokument igre
+            onSnapshot(gameDocRef, (docSnapshot) => {
+                const data = docSnapshot.data();
+                if (!data) return;
+
+                boardState = data.boardState;
+                currentPlayer = data.currentPlayer;
+
+                // Ažurirajte prikaz table
+                cells.forEach((cell, index) => {
+                    cell.textContent = boardState[index];
+                });
+
+                // Provjerite da li je igra završena
+                if (data.gameStatus === 'finished') {
+                    alert(`Pobjednik je ${data.winner}!`);
+                    boardDiv.style.display = 'none';
+                    resetBoard();
+                }
+            });
+
+            // Dodajte event listener na svaku ćeliju
+            cells.forEach(cell => {
+                cell.addEventListener('click', async () => {
+                    const index = cell.getAttribute('data-index');
+
+                    // Provjerite da li je polje slobodno i da li je na potezu trenutni igrač
+                    if (!boardState[index] && currentPlayer === playerSymbol) {
+                        boardState[index] = playerSymbol;
+
+                        // Provjerite da li imamo pobjednika
+                        const winner = checkGameState(boardState);
+
+                        // Ažurirajte stanje igre u Firestore-u
+                        await updateDoc(gameDocRef, {
+                            boardState: boardState,
+                            currentPlayer: playerSymbol === 'X' ? 'O' : 'X',
+                            gameStatus: winner ? 'finished' : 'in_progress',
+                            winner: winner || null
+                        });
+                    } else {
+                        alert('Nije vaš potez ili je polje zauzeto.');
+                    }
+                });
+            });
+
+            // Dugme za zatvaranje igre
+            document.getElementById('close-game').addEventListener('click', () => {
+                boardDiv.style.display = 'none';
+                resetBoard();
+            });
+        }
+
+        // Funkcija za provjeru stanja igre
+        function checkGameState(boardState) {
+            const winningCombinations = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+
+            for (let combination of winningCombinations) {
+                const [a, b, c] = combination;
+                if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+                    return boardState[a]; // Vraća 'X' ili 'O' kao pobjednika
+                }
+            }
+
+            if (boardState.every(cell => cell !== null)) {
+                return 'Neriješeno'; // Neriješeno
+            }
+
+            return null; // Igra nije završena
+        }
+
+        // Funkcija za resetovanje table
+        function resetBoard() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => (cell.textContent = ''));
+        }
+
+        // Postavi osluškivač za dolazne zahtjeve za igru
+        setupGameRequestListener();
 
 
 
