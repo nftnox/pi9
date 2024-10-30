@@ -878,23 +878,10 @@ async function loadProducts() {
 
 
   // Prikaži cijenu u ETH ako postoji
-  const productCryptoPrice = document.createElement('div');
-    if (productData.cryptoPrice) {
-        productCryptoPrice.textContent = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
-    }
-
-    const buyWithCryptoButton = document.createElement('button');
-    buyWithCryptoButton.textContent = 'Buy with Crypto';
-    buyWithCryptoButton.style.backgroundColor = 'purple';
-    buyWithCryptoButton.style.color = 'white';
-    buyWithCryptoButton.style.marginTop = '10px';
-
-    // Omogući MetaMask plaćanje
-    buyWithCryptoButton.addEventListener('click', async () => {
-    // Provjera da li je MetaMask instaliran
+  buyWithCryptoButton.addEventListener('click', async () => {
     if (typeof window.ethereum !== 'undefined') {
         try {
-            // Povežite se sa MetaMask-om i dobijte račune
+            // Povežite se sa MetaMask-om
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum); // Inicijalizacija web3 objekta
 
@@ -904,19 +891,15 @@ async function loadProducts() {
             console.log("Povezan račun:", account);
 
             // Provjera cijene u ETH
-            const ethPrice = productData.cryptoPrice;
+            const ethPrice = productData.cryptoPrice; // Cijena proizvoda u ETH
             console.log("Cijena u ETH:", ethPrice);
 
-            // Konverzija cijene u wei sa preciznom vrijednošću
-            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
-            console.log("Vrijednost u Wei:", weiValue);
-
-            // Inicijacija transakcije
+            // Inicijacija transakcije sa cijenom u ETH
             const txParams = {
                 from: account,
                 to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Vaša Ethereum adresa
-                value: web3.utils.toHex(weiValue), // Konvertovana vrijednost u Hex formatu
-                gas: '21000' // Minimalan gas za slanje
+                value: web3.utils.toHex(web3.utils.toWei(ethPrice.toString(), 'ether')), // Konverzija u Wei
+                gas: '21000'
             };
 
             // Slanje transakcije putem MetaMask-a
@@ -934,6 +917,7 @@ async function loadProducts() {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
+
 
 
 
