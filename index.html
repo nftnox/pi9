@@ -876,6 +876,7 @@ async function loadProducts() {
 
 
 
+
   // Prikaži cijenu u ETH ako postoji
   const productCryptoPrice = document.createElement('div');
     if (productData.cryptoPrice) {
@@ -888,49 +889,42 @@ async function loadProducts() {
     buyWithCryptoButton.style.color = 'white';
     buyWithCryptoButton.style.marginTop = '10px';
 
-   // Omogući MetaMask plaćanje
-// Omogući MetaMask plaćanje
-buyWithCryptoButton.addEventListener('click', async () => {
-    if (typeof window.ethereum !== 'undefined') {
-        // Povežite se sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-        const account = window.ethereum.selectedAddress;
+    // Omogući MetaMask plaćanje
+    buyWithCryptoButton.addEventListener('click', async () => {
+      // Provjera i inicijalizacija web3
+if (typeof window.ethereum !== 'undefined') {
+    // Povežite se sa MetaMask-om
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const web3 = new Web3(window.ethereum); // Inicijalizacija web3 objekta
+    const account = window.ethereum.selectedAddress;
 
-        // Direktno koristi cijenu u ETH bez konverzije u wei
-        const ethValue = productData.cryptoPrice; // Koristi cijenu u ETH
+    // Konverzija cijene proizvoda u wei (1 ETH = 10^18 wei)
+    const weiValue = web3.utils.toWei(productData.cryptoPrice.toString(), 'ether');
 
-        // Provjeri da li je cijena validna
-        if (!ethValue || ethValue <= 0) {
-            alert('Nevažeća cijena u ETH.');
-            return;
-        }
+    // Inicirajte transakciju
+    const txParams = {
+        from: account,
+        to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Vaša Ethereum adresa
+        value: web3.utils.toHex(weiValue),
+        gas: '21000'
+    };
 
-        // Pripremi parametre transakcije
-        const txParams = {
-            from: account,
-            to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Tvoja Ethereum adresa
-            value: web3.utils.toWei(ethValue.toString(), 'ether'), // Konvertuje se u wei
-            gas: '21000'
-        };
+    try {
+        const transactionHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [txParams]
+        });
 
-        try {
-            const transactionHash = await window.ethereum.request({
-                method: 'eth_sendTransaction',
-                params: [txParams]
-            });
-
-            alert(`Uspješna uplata! Transakcija: ${transactionHash}`);
-        } catch (error) {
-            console.error('Greška prilikom MetaMask transakcije:', error);
-            alert('Došlo je do greške. Pokušajte ponovo.');
-        }
-    } else {
-        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
+        alert(`Uspješna uplata! Transakcija: ${transactionHash}`);
+    } catch (error) {
+        console.error('Greška prilikom MetaMask transakcije:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
     }
-});
+} else {
+    alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
+}
 
-
+    });
 
 
 
@@ -1038,11 +1032,9 @@ ownerDiv.addEventListener('click', () => {
         productDiv.appendChild(productName);
         productDiv.appendChild(productPrice);
         productDiv.appendChild(buyButton);
-        productDiv.appendChild(productCryptoPrice); // Prikaz cijene u ETH
-    productDiv.appendChild(buyWithCryptoButton); // Dodaj dugme za kripto plaćanje
-    
-
         productDiv.appendChild(ownerDiv); // Dodaj div za vlasnika
+        productDiv.appendChild(productCryptoPrice); // Prikaz cijene u ETH
+        productDiv.appendChild(buyWithCryptoButton); // Dodaj dugme za kripto plaćanje
         productList.appendChild(productDiv);
     });
 }
