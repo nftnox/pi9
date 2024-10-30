@@ -243,13 +243,18 @@ textarea {
             gap: 10px;
             justify-content: center;
         }
+        #current-price-display {
+    font-weight: bold; /* Podebljava sav tekst unutar div-a */
+    padding-left: 40px;
+}
+
     </style>
 </head>
 <body>
 
     <header class="header-container">
         <div id="greeting">Pozdrav, <span id="logged-in-user"></span></div>
-        <div id="current-price-display">Trenutna cijena: <span id="current-price">0.00</span> Delta coin</div>
+        <div id="current-price-display">Your wallet: <span id="current-price">0.00</span> <span class="delta">&#948;</span></div>
         
         <!-- Toggle button for mobile devices -->
         <button id="toggle-menu-button" class="toggle-button">☰</button>
@@ -396,125 +401,153 @@ textarea {
         profileTitle.innerText = loggedInUserIme === profileName ? 'Vaš profil' : `Profil korisnika: ${profileName}`;
 
         // Učitaj proizvode korisnika
-        async function loadProfileProducts() {
-            const productCollection = collection(db, 'products');
-            const querySnapshot = await getDocs(productCollection);
-            const profileProducts = document.getElementById('profile-products');
-            profileProducts.innerHTML = '';
+       // Funkcija za učitavanje proizvoda na profilu
+async function loadProfileProducts() {
+    const productCollection = collection(db, 'products');
+    const querySnapshot = await getDocs(productCollection);
+    const profileProducts = document.getElementById('profile-products');
+    profileProducts.innerHTML = '';
 
-            querySnapshot.forEach(docSnap => {
-                const productData = docSnap.data();
+    querySnapshot.forEach(docSnap => {
+        const productData = docSnap.data();
 
-                if (productData.ownerName === profileName) {
-                    const productDiv = document.createElement('div');
-                    productDiv.classList.add('product');
+        if (productData.ownerName === profileName) {
+            const productDiv = document.createElement('div');
+            productDiv.classList.add('product');
 
-                    const productImg = document.createElement('img');
-                    productImg.src = productData.imageUrl;
-                    productDiv.appendChild(productImg);
+            const productImg = document.createElement('img');
+            productImg.src = productData.imageUrl;
+            productDiv.appendChild(productImg);
 
-                    const productName = document.createElement('div');
-                    productName.classList.add('product-name');
-                    productName.innerText = productData.name;
-                    productDiv.appendChild(productName);
+            const productName = document.createElement('div');
+            productName.classList.add('product-name');
+            productName.innerText = productData.name;
+            productDiv.appendChild(productName);
 
-                    const productPrice = document.createElement('div');
-                    productPrice.classList.add('product-price');
-                    productPrice.innerText = `Cijena: ${productData.price} Delta coin`;
-                    productDiv.appendChild(productPrice);
+            const productPrice = document.createElement('div');
+            productPrice.classList.add('product-price');
+            productPrice.innerText = `Cijena: ${productData.price} Delta coin`;
+            productDiv.appendChild(productPrice);
 
-                    if (profileName === loggedInUserIme) {
-                        // Dodaj opciju za postavljanje nove cijene
-                        const priceInput = document.createElement('input');
-                        priceInput.type = 'number';
-                        priceInput.placeholder = 'Nova cijena';
-                        priceInput.classList.add('input-price');
-
-                        const setPriceButton = document.createElement('button');
-                        setPriceButton.innerText = 'Postavi cijenu';
-                        setPriceButton.classList.add('set-price-button');
-                        setPriceButton.addEventListener('click', async () => {
-                            const novaCijena = parseFloat(priceInput.value);
-                            if (!isNaN(novaCijena) && novaCijena > 0) {
-                                await updateDoc(doc(db, 'products', docSnap.id), { price: novaCijena });
-                                alert('Nova cijena postavljena!');
-                                loadProfileProducts(); // Osvježi prikaz
-                            } else {
-                                alert('Unesite ispravnu cijenu!');
-                            }
-                        });
-
-                        productDiv.appendChild(priceInput);
-                        productDiv.appendChild(setPriceButton);
-                    } else {
-                        // Dodaj dugme za kupovinu proizvoda
-                        const buyButton = document.createElement('button');
-                        buyButton.innerText = 'Kupi';
-                        buyButton.classList.add('buy-button');
-                        buyButton.addEventListener('click', async () => {
-                            if (currentPrice >= productData.price) {
-                                await updateProductOwnership(docSnap.id, productData);
-                            } else {
-                                alert('Nemate dovoljno sredstava!');
-                            }
-                        });
-
-                        productDiv.appendChild(buyButton);
-                    }
-
-                    profileProducts.appendChild(productDiv);
-                }
-            });
-        }
-
-        // Ažuriranje vlasništva proizvoda
-        async function updateProductOwnership(productId, productData) {
-            // Dodavanje proizvoda u purchases novog vlasnika
-            const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
-            await addDoc(userPurchasesRef, {
-                name: productData.name,
-                imageUrl: productData.imageUrl,
-                price: productData.price,
-                purchaseTime: new Date()
-            });
-
-            // Oduzimanje cijene proizvoda od trenutne cijene novog vlasnika u Firestore-u
-            const userDocRef = doc(db, 'network', loggedInUserId);
-            currentPrice -= productData.price;
-            await updateDoc(userDocRef, { currentPrice: currentPrice });
-
-            document.getElementById('current-price').innerText = currentPrice.toFixed(2);
-
-            // Dodavanje cijene proizvoda na trenutnu cijenu prodavca
-            const sellerId = productData.owner; // ID prodavca
-            const sellerDocRef = doc(db, 'network', sellerId);
-            const sellerDocSnap = await getDoc(sellerDocRef);
-
-            if (sellerDocSnap.exists()) {
-                const sellerData = sellerDocSnap.data();
-                let sellerCurrentPrice = sellerData.currentPrice || 0;
-                sellerCurrentPrice += productData.price;
-
-                await updateDoc(sellerDocRef, { currentPrice: sellerCurrentPrice });
-
-                console.log(`Dodano ${productData.price} Delta coin korisniku ${productData.ownerName}. Nova cijena: ${sellerCurrentPrice.toFixed(2)}`);
-            } else {
-                console.error("Prodavac nije pronađen u Firestore-u.");
+            // Dodavanje cijene u ETH ako postoji
+            if (productData.cryptoPrice) {
+                const productCryptoPrice = document.createElement('div');
+                productCryptoPrice.classList.add('product-price');
+                productCryptoPrice.innerText = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
+                productDiv.appendChild(productCryptoPrice);
             }
 
-            // Ažuriranje proizvoda u glavnoj kolekciji
+            if (profileName === loggedInUserIme) {
+                // Dodaj opcije za postavljanje cijene
+                const priceInput = document.createElement('input');
+                priceInput.type = 'number';
+                priceInput.placeholder = 'Nova cijena (Delta coin)';
+                priceInput.classList.add('input-price');
+
+                const cryptoPriceInput = document.createElement('input');
+                cryptoPriceInput.type = 'number';
+                cryptoPriceInput.placeholder = 'Nova cijena (ETH)';
+                cryptoPriceInput.classList.add('input-price');
+
+                const setPriceButton = document.createElement('button');
+                setPriceButton.innerText = 'Postavi cijene';
+                setPriceButton.classList.add('set-price-button');
+                setPriceButton.addEventListener('click', async () => {
+                    const novaCijena = parseFloat(priceInput.value);
+                    const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+
+                    if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
+                        const updateData = {};
+                        if (!isNaN(novaCijena) && novaCijena > 0) {
+                            updateData.price = novaCijena;
+                        }
+                        if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
+                            updateData.cryptoPrice = novaCryptoCijena;
+                        }
+                        await updateDoc(doc(db, 'products', docSnap.id), updateData);
+                        alert('Nove cijene postavljene!');
+                        loadProfileProducts(); // Osvježi prikaz
+                    } else {
+                        alert('Unesite ispravne cijene!');
+                    }
+                });
+
+                productDiv.appendChild(priceInput);
+                productDiv.appendChild(cryptoPriceInput);
+                productDiv.appendChild(setPriceButton);
+            } else {
+                // Dodaj dugme za kupovinu Delta coinom
+                const buyButton = document.createElement('button');
+                buyButton.innerText = 'Kupi (Delta coin)';
+                buyButton.classList.add('buy-button');
+                buyButton.addEventListener('click', async () => {
+                    if (currentPrice >= productData.price) {
+                        await updateProductOwnership(docSnap.id, productData);
+                    } else {
+                        alert('Nemate dovoljno sredstava!');
+                    }
+                });
+                productDiv.appendChild(buyButton);
+
+                // Dodaj dugme za kupovinu putem kriptovalute
+                const buyWithCryptoButton = document.createElement('button');
+                buyWithCryptoButton.innerText = 'Kupi (ETH)';
+                buyWithCryptoButton.classList.add('buy-button');
+                buyWithCryptoButton.style.backgroundColor = 'purple';
+                buyWithCryptoButton.addEventListener('click', async () => {
+                    await handleCryptoPurchase(docSnap.id, productData);
+                });
+                productDiv.appendChild(buyWithCryptoButton);
+            }
+
+            profileProducts.appendChild(productDiv);
+        }
+    });
+}
+
+// Funkcija za rukovanje kripto kupovinom
+async function handleCryptoPurchase(productId, productData) {
+    if (typeof window.ethereum !== 'undefined') {
+        try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+
+            const accounts = await web3.eth.getAccounts();
+            const account = accounts[0];
+
+            const ethPrice = productData.cryptoPrice;
+            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
+
+            const txParams = {
+                from: account,
+                to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf',
+                value: weiValue,
+                gas: 21000
+            };
+
+            const transactionHash = await web3.eth.sendTransaction(txParams);
+
+            // Ažuriranje vlasništva proizvoda u Firestore-u
             await updateDoc(doc(db, 'products', productId), {
                 owner: loggedInUserId,
-                ownerName: loggedInUserIme, // Koristimo pravo ime korisnika za 'ownerName'
+                ownerName: loggedInUserIme,
                 sold: true
             });
 
-            alert(`Kupili ste ${productData.name} za ${productData.price} Delta coin!`);
+            alert(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
             loadProfileProducts(); // Osvježi prikaz
+        } catch (error) {
+            console.error('Greška prilikom MetaMask transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
         }
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
+    }
+}
 
-        // Pozovi funkciju za učitavanje proizvoda
-        loadProfileProducts();
+// Pozovi funkciju za učitavanje proizvoda
+loadProfileProducts();
+
     </script>
 
 
