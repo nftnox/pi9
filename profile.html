@@ -335,6 +335,13 @@ textarea {
 //kupljeni//
 <div class="profile-outline">
     <div id="profile-title" class="profile-title"></div>
+    
+    <div id="eth-account-section" style="display: none; margin-top: 20px; text-align: center; background-color: #ffcccc; padding: 10px; border-radius: 8px;">
+        <label for="eth-address-input" style="color: #800000; font-weight: bold;">Vaš MetaMask račun:</label>
+        <input type="text" id="eth-address-input" placeholder="Unesite vašu Ethereum adresu" style="margin-top: 10px; padding: 5px; width: 60%; border: 1px solid #800000;">
+        <button id="save-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer;">Spremi adresu</button>
+    </div>
+    
     <div id="profile-products" class="product-list-container"></div>
 </div>
 
@@ -402,6 +409,14 @@ textarea {
         // Prikaži naslov profila
         const profileTitle = document.getElementById('profile-title');
         profileTitle.innerText = loggedInUserIme === profileName ? 'Vaš profil' : `Profil korisnika: ${profileName}`;
+
+// Prikaži polje za unos Ethereum adrese ako je korisnik na svom profilu
+// Prikaži polje za unos Ethereum adrese ako je korisnik na svom profilu
+if (loggedInUserIme === profileName) {
+    document.getElementById('eth-account-section').style.display = 'block';
+}
+
+        
 
         // Učitaj proizvode korisnika
        // Funkcija za učitavanje proizvoda na profilu
@@ -568,9 +583,19 @@ async function handleCryptoPurchase(productId, productData) {
             const ethPrice = productData.cryptoPrice;
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
 
+            // Dohvati Ethereum adresu vlasnika proizvoda
+            const productOwnerRef = doc(db, 'network', productData.owner);
+            const productOwnerSnap = await getDoc(productOwnerRef);
+            const recipientAddress = productOwnerSnap.data().ethAddress;
+
+            if (!recipientAddress) {
+                alert('Vlasnik proizvoda nema postavljenu Ethereum adresu.');
+                return;
+            }
+
             const txParams = {
                 from: account,
-                to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Adresa prodavca ili pametnog ugovora
+                to: recipientAddress, // Dinamički primatelj
                 value: weiValue,
                 gas: 21000
             };
@@ -594,6 +619,44 @@ async function handleCryptoPurchase(productId, productData) {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 }
+
+
+
+
+// Prikaži polje za unos Ethereum adrese ako je vlasnik profila
+if (profileName === loggedInUserIme) {
+    document.getElementById('eth-account-section').style.display = 'block';
+
+    // Spremaj adresu u Firestore kada korisnik klikne na 'Spremi adresu'
+    // Spremaj adresu u Firestore kada korisnik klikne na 'Spremi adresu'
+document.getElementById('save-eth-address').addEventListener('click', async () => {
+    const ethAddressInput = document.getElementById('eth-address-input').value.trim();
+
+    // Proveri da li je Web3 inicijalizovan
+    if (typeof Web3 !== 'undefined') {
+        const web3 = new Web3(window.ethereum);
+
+        if (web3.utils.isAddress(ethAddressInput)) {
+            try {
+                // Ažuriraj korisnikov dokument u Firestore-u
+                const userDocRef = doc(db, 'network', loggedInUserId);
+                await updateDoc(userDocRef, { ethAddress: ethAddressInput });
+
+                alert('Ethereum adresa uspješno spremljena!');
+            } catch (error) {
+                console.error('Greška prilikom spremanja Ethereum adrese:', error);
+                alert('Došlo je do greške. Pokušajte ponovo.');
+            }
+        } else {
+            alert('Unesite ispravnu Ethereum adresu.');
+        }
+    } else {
+        alert('Web3 nije dostupan. Molimo vas da instalirate MetaMask.');
+    }
+});
+
+}
+
 
 // Pozovi funkciju za učitavanje proizvoda
 loadProfileProducts();
