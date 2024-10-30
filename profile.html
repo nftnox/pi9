@@ -180,6 +180,22 @@ textarea {
     }
 }
 
+#eth-account-section {
+    max-width: 400px; /* Ograničenje širine na desktopu */
+    margin: 0 auto; /* Centriranje na desktopu */
+}
+
+@media screen and (max-width: 768px) {
+    #eth-account-section {
+        max-width: 280px; /* Ograničenje širine za mobilne uređaje */
+        margin: 0 auto; /* Centriranje na mobilnim uređajima */
+    }
+
+    #eth-address-input {
+        width: 100%; /* Prilagođavanje širine polja za unos */
+    }
+}
+
         /* Container for individual products */
         .product {
             border: 5px solid;
@@ -338,9 +354,11 @@ textarea {
     
     <div id="eth-account-section" style="display: none; margin-top: 20px; text-align: center; background-color: #ffcccc; padding: 10px; border-radius: 8px;">
         <label for="eth-address-input" style="color: #800000; font-weight: bold;">Vaš MetaMask račun:</label>
-        <input type="text" id="eth-address-input" placeholder="Unesite vašu Ethereum adresu" style="margin-top: 10px; padding: 5px; width: 60%; border: 1px solid #800000;">
+        <input type="text" id="eth-address-input" placeholder="Unesite vašu Ethereum adresu" style="margin-top: 10px; padding: 5px; width: 60%; border: 1px solid #800000;" disabled>
         <button id="save-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer;">Spremi adresu</button>
+        <button id="edit-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer; display: none;">Promeni adresu</button>
     </div>
+    
     
     <div id="profile-products" class="product-list-container"></div>
 </div>
@@ -624,38 +642,62 @@ async function handleCryptoPurchase(productId, productData) {
 
 
 // Prikaži polje za unos Ethereum adrese ako je vlasnik profila
+// Prikaži polje za unos Ethereum adrese ako je vlasnik profila
 if (profileName === loggedInUserIme) {
     document.getElementById('eth-account-section').style.display = 'block';
 
-    // Spremaj adresu u Firestore kada korisnik klikne na 'Spremi adresu'
-    // Spremaj adresu u Firestore kada korisnik klikne na 'Spremi adresu'
-document.getElementById('save-eth-address').addEventListener('click', async () => {
-    const ethAddressInput = document.getElementById('eth-address-input').value.trim();
+    // Dohvati trenutnu Ethereum adresu iz Firestore-a
+    const userDocRef = doc(db, 'network', loggedInUserId);
+    const userDocSnap = await getDoc(userDocRef);
 
-    // Proveri da li je Web3 inicijalizovan
-    if (typeof Web3 !== 'undefined') {
-        const web3 = new Web3(window.ethereum);
+    if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        const ethAddressInput = document.getElementById('eth-address-input');
+        const saveEthAddressButton = document.getElementById('save-eth-address');
+        const editEthAddressButton = document.getElementById('edit-eth-address');
 
-        if (web3.utils.isAddress(ethAddressInput)) {
-            try {
-                // Ažuriraj korisnikov dokument u Firestore-u
-                const userDocRef = doc(db, 'network', loggedInUserId);
-                await updateDoc(userDocRef, { ethAddress: ethAddressInput });
-
-                alert('Ethereum adresa uspješno spremljena!');
-            } catch (error) {
-                console.error('Greška prilikom spremanja Ethereum adrese:', error);
-                alert('Došlo je do greške. Pokušajte ponovo.');
-            }
-        } else {
-            alert('Unesite ispravnu Ethereum adresu.');
+        if (userData.ethAddress) {
+            // Ako adresa već postoji, prikaži je i onemogući unos
+            ethAddressInput.value = userData.ethAddress;
+            ethAddressInput.disabled = true;
+            saveEthAddressButton.style.display = 'none'; // Sakrij dugme za spremanje
+            editEthAddressButton.style.display = 'inline-block'; // Prikaži dugme za promenu
         }
-    } else {
-        alert('Web3 nije dostupan. Molimo vas da instalirate MetaMask.');
-    }
-});
 
+        // Omogući unos nove adrese kada se klikne na "Promeni adresu"
+        editEthAddressButton.addEventListener('click', () => {
+            ethAddressInput.disabled = false;
+            ethAddressInput.value = ''; // Očisti polje za unos
+            ethAddressInput.placeholder = 'Unesite novu Ethereum adresu';
+            saveEthAddressButton.style.display = 'inline-block';
+            editEthAddressButton.style.display = 'none';
+        });
+
+        // Spremaj novu Ethereum adresu kada korisnik klikne na 'Spremi adresu'
+        saveEthAddressButton.addEventListener('click', async () => {
+            const newEthAddress = ethAddressInput.value.trim();
+
+            if (web3.utils.isAddress(newEthAddress)) {
+                try {
+                    // Ažuriraj korisnikov dokument u Firestore-u
+                    await updateDoc(userDocRef, { ethAddress: newEthAddress });
+
+                    alert('Ethereum adresa uspješno spremljena!');
+                    ethAddressInput.value = newEthAddress;
+                    ethAddressInput.disabled = true; // Ponovo onemogući unos
+                    saveEthAddressButton.style.display = 'none'; // Sakrij dugme za spremanje
+                    editEthAddressButton.style.display = 'inline-block'; // Prikaži dugme za promenu
+                } catch (error) {
+                    console.error('Greška prilikom spremanja Ethereum adrese:', error);
+                    alert('Došlo je do greške. Pokušajte ponovo.');
+                }
+            } else {
+                alert('Unesite ispravnu Ethereum adresu.');
+            }
+        });
+    }
 }
+
 
 
 // Pozovi funkciju za učitavanje proizvoda
