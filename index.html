@@ -910,8 +910,7 @@ buyWithCryptoButton.addEventListener('click', async () => {
         const txParams = {
             from: account,
             to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Tvoja Ethereum adresa
-            value: web3.utils.toHex(web3.utils.toWei(ethValue.toString(), 'ether')), // Pravilna konverzija u heksadecimalni format
-
+            value: web3.utils.toWei(ethValue.toString(), 'ether'), // Konvertuje se u wei
             gas: '21000'
         };
 
