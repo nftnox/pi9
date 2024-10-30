@@ -890,7 +890,8 @@ async function loadProducts() {
     buyWithCryptoButton.style.marginTop = '10px';
 
     // Omogući MetaMask plaćanje
-    buyWithCryptoButton.addEventListener('click', async () => {
+   // Omogući MetaMask plaćanje
+buyWithCryptoButton.addEventListener('click', async () => {
     // Provjera da li je MetaMask instaliran
     if (typeof window.ethereum !== 'undefined') {
         try {
@@ -907,15 +908,15 @@ async function loadProducts() {
             const ethPrice = productData.cryptoPrice;
             console.log("Cijena u ETH:", ethPrice);
 
-            // Konverzija cijene u wei sa preciznom vrijednošću
-            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
-            console.log("Vrijednost u Wei:", weiValue);
+            // Konverzija cijene u wei koristeći toBN za preciznu konverziju
+            const weiValue = web3.utils.toBN(web3.utils.toWei(ethPrice.toString(), 'ether'));
+            console.log("Vrijednost u Wei:", weiValue.toString());
 
             // Inicijacija transakcije
             const txParams = {
                 from: account,
                 to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Vaša Ethereum adresa
-                value: web3.utils.toHex(weiValue), // Konvertovana vrijednost u Hex formatu
+                value: weiValue.toString(), // Konvertovana vrijednost u string formatu
                 gas: '21000' // Minimalan gas za slanje
             };
 
@@ -934,6 +935,7 @@ async function loadProducts() {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
+
 
 
 
