@@ -505,7 +505,54 @@ async function loadProfileProducts() {
     });
 }
 
-// Funkcija za rukovanje kripto kupovinom
+// Ažuriranje vlasništva proizvoda kada se kupuje Delta coinom
+async function updateProductOwnership(productId, productData) {
+    try {
+        // Dodavanje proizvoda u kupovine novog vlasnika
+        const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
+        await addDoc(userPurchasesRef, {
+            name: productData.name,
+            imageUrl: productData.imageUrl,
+            price: productData.price,
+            purchaseTime: new Date()
+        });
+
+        // Oduzimanje cijene proizvoda od trenutne cijene novog vlasnika
+        const userDocRef = doc(db, 'network', loggedInUserId);
+        currentPrice -= productData.price;
+        await updateDoc(userDocRef, { currentPrice: currentPrice });
+        document.getElementById('current-price').innerText = currentPrice.toFixed(2);
+
+        // Dodavanje cijene proizvoda na trenutnu cijenu prodavca
+        const sellerId = productData.owner;
+        const sellerDocRef = doc(db, 'network', sellerId);
+        const sellerDocSnap = await getDoc(sellerDocRef);
+
+        if (sellerDocSnap.exists()) {
+            const sellerData = sellerDocSnap.data();
+            let sellerCurrentPrice = sellerData.currentPrice || 0;
+            sellerCurrentPrice += productData.price;
+            await updateDoc(sellerDocRef, { currentPrice: sellerCurrentPrice });
+        } else {
+            console.error("Prodavac nije pronađen u Firestore-u.");
+        }
+
+        // Ažuriranje vlasništva u Firestore-u
+        await updateDoc(doc(db, 'products', productId), {
+            owner: loggedInUserId,
+            ownerName: loggedInUserIme,
+            sold: true
+        });
+
+        alert(`Kupili ste ${productData.name} za ${productData.price} Delta coin!`);
+        loadProfileProducts(); // Osvježi prikaz
+    } catch (error) {
+        console.error('Greška prilikom kupovine:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
+    }
+}
+
+// Funkcija za rukovanje kripto kupovinom putem MetaMask-a
 async function handleCryptoPurchase(productId, productData) {
     if (typeof window.ethereum !== 'undefined') {
         try {
@@ -520,21 +567,21 @@ async function handleCryptoPurchase(productId, productData) {
 
             const txParams = {
                 from: account,
-                to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf',
+                to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Adresa prodavca ili pametnog ugovora
                 value: weiValue,
                 gas: 21000
             };
 
             const transactionHash = await web3.eth.sendTransaction(txParams);
+            alert(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
 
-            // Ažuriranje vlasništva proizvoda u Firestore-u
+            // Ažuriranje vlasništva u Firestore-u nakon uspješne transakcije
             await updateDoc(doc(db, 'products', productId), {
                 owner: loggedInUserId,
                 ownerName: loggedInUserIme,
                 sold: true
             });
 
-            alert(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
             loadProfileProducts(); // Osvježi prikaz
         } catch (error) {
             console.error('Greška prilikom MetaMask transakcije:', error);
