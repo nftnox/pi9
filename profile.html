@@ -162,6 +162,12 @@ textarea {
             margin: 0 auto; /* Center the container */
         }
 
+        .profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Razmak između naslova i slike */
+    margin-bottom: 20px;
+}
         /* Title styling within the large outline box */
         .profile-title {
     font-size: 24px; /* Vraćen originalni font za bolju vidljivost */
@@ -172,6 +178,7 @@ textarea {
     text-align: center;
     margin: 0 auto 20px auto; /* Centriranje naslova */
     max-width: 400px; /* Smanjena maksimalna širina */
+    transform: translateX(58px); /* Podesite vrijednost px po px */
 }
 
 @media screen and (max-width: 768px) {
@@ -266,6 +273,107 @@ textarea {
     font-weight: bold; /* Podebljava sav tekst unutar div-a */
     padding-left: 40px;
 }
+/* Main transaction history container */
+#transaction-history {
+    max-width: 800px;
+    padding: 15px;
+    background-color: #333;
+    border-radius: 10px;
+    margin: 20px auto;
+    color: white;
+}
+
+/* Each transaction item in a fixed-height, single-column list */
+.transaction-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #444;
+    border-radius: 5px;
+    height: 80px;
+    width: 100%;
+    position: relative; /* Enables absolute positioning within */
+}
+
+/* Image styling for a consistent size */
+.transaction-item img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 15px;
+}
+
+/* Transaction details container with more spacing between items */
+.transaction-details {
+    display: flex;
+    align-items: center;
+    color: white;
+    width: 100%;
+}
+
+/* Left-aligned name with fixed width */
+.transaction-name {
+    font-size: 14px;
+    font-weight: bold;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Centered price */
+.transaction-price {
+    font-size: 14px;
+    position: absolute;
+    left: 50%; /* Center in the middle */
+    transform: translateX(-50%); /* Adjusts to center perfectly */
+    white-space: nowrap;
+}
+
+/* Right-aligned date */
+.transaction-time {
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+    margin-left: auto; /* Pushes it to the right */
+}
+/* Hide date on screens smaller than 768px */
+@media (max-width: 768px) {
+    .transaction-time {
+        display: none;
+    }
+}
+@media (max-width: 768px) {
+    .transaction-price {
+        left: 80%; /* Moves the price further to the right on mobile */
+        transform: translateX(-50%);
+    }
+}
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 768px) {
+    .profile-title {
+        font-size: 18px; /* Smanjena veličina fonta za mobilne uređaje */
+        text-align: left; /* Poravnanje naslova ulijevo */
+        max-width: 45%; /* Uklanja ograničenje širine za mobilne uređaje */
+        transform: translateX(0); /* Vraća naslov u normalan položaj */
+    }
+}
+
 
     </style>
 </head>
@@ -348,20 +456,27 @@ textarea {
 
 
 
-//kupljeni//
-<div class="profile-outline">
-    <div id="profile-title" class="profile-title"></div>
+
+    <div class="profile-outline">
+        <div class="profile-header">
+            <div id="profile-title" class="profile-title"></div>
+            <div class="profile-picture" id="profile-picture"></div>
+        </div>
     
-    <div id="eth-account-section" style="display: none; margin-top: 20px; text-align: center; background-color: #ffcccc; padding: 10px; border-radius: 8px;">
-        <label for="eth-address-input" style="color: #800000; font-weight: bold;">Vaš MetaMask račun:</label>
-        <input type="text" id="eth-address-input" placeholder="Unesite vašu Ethereum adresu" style="margin-top: 10px; padding: 5px; width: 60%; border: 1px solid #800000;" disabled>
-        <button id="save-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer;">Spremi adresu</button>
-        <button id="edit-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer; display: none;">Promeni adresu</button>
+        <div id="eth-account-section" style="display: none; margin-top: 20px; text-align: center; background-color: #ffcccc; padding: 10px; border-radius: 8px;">
+            <label for="eth-address-input" style="color: #800000; font-weight: bold;">Vaš MetaMask račun:</label>
+            <input type="text" id="eth-address-input" placeholder="Unesite vašu Ethereum adresu" style="margin-top: 10px; padding: 5px; width: 60%; border: 1px solid #800000;" disabled>
+            <button id="save-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer;">Spremi adresu</button>
+            <button id="edit-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer; display: none;">Promeni adresu</button>
+        </div>
+        
+        <div id="profile-products" class="product-list-container"></div>
     </div>
     
+    <div id="transaction-history" class="product-list-container">
+        <div id="transaction-title" class="profile-title">Historija transakcija</div>
+    </div>
     
-    <div id="profile-products" class="product-list-container"></div>
-</div>
 
 
 
@@ -699,6 +814,103 @@ if (profileName === loggedInUserIme) {
 }
 
 
+// Funkcija za učitavanje historije transakcija određenog korisnika
+// Updated loadTransactionHistory function for list-style layout
+async function loadTransactionHistory() {
+    const userCollection = collection(db, 'network');
+    const q = query(userCollection, where('ime', '==', profileName));
+    const userSnapshot = await getDocs(q);
+
+    if (!userSnapshot.empty) {
+        let profileUserId = '';
+        userSnapshot.forEach(docSnap => {
+            profileUserId = docSnap.id;
+        });
+
+        const purchasesRef = collection(db, `network/${profileUserId}/purchases`);
+        const purchasesSnapshot = await getDocs(purchasesRef);
+        const transactionHistoryDiv = document.getElementById('transaction-history');
+        transactionHistoryDiv.innerHTML = '';
+
+        if (!purchasesSnapshot.empty) {
+            purchasesSnapshot.forEach(docSnap => {
+                const purchaseData = docSnap.data();
+
+                const transactionDiv = document.createElement('div');
+                transactionDiv.classList.add('transaction-item');
+
+                const productImg = document.createElement('img');
+                productImg.src = purchaseData.imageUrl;
+                transactionDiv.appendChild(productImg);
+
+                const transactionDetails = document.createElement('div');
+                transactionDetails.classList.add('transaction-details');
+
+                const productName = document.createElement('span');
+                productName.classList.add('transaction-name');
+                productName.innerText = purchaseData.name;
+
+                const purchasePrice = document.createElement('span');
+                purchasePrice.classList.add('transaction-price');
+                purchasePrice.innerText = `Cijena: ${purchaseData.price} Delta coin`;
+
+                const purchaseTime = document.createElement('span');
+                purchaseTime.classList.add('transaction-time');
+                purchaseTime.innerText = `Vrijeme kupovine: ${purchaseData.purchaseTime.toDate().toLocaleString()}`;
+
+                transactionDetails.appendChild(productName);
+                transactionDetails.appendChild(purchasePrice);
+                transactionDetails.appendChild(purchaseTime);
+                transactionDiv.appendChild(transactionDetails);
+
+                transactionHistoryDiv.appendChild(transactionDiv);
+            });
+        } else {
+            const noTransactionsMessage = document.createElement('div');
+            noTransactionsMessage.innerText = 'Nema transakcija.';
+            noTransactionsMessage.style.textAlign = 'center';
+            transactionHistoryDiv.appendChild(noTransactionsMessage);
+        }
+    } else {
+        console.error("Korisnik nije pronađen u Firestore-u.");
+    }
+}
+
+// Funkcija za učitavanje podataka korisnika čiji profil gledamo
+async function loadProfileOwnerData() {
+    const userCollection = collection(db, 'network');
+    const q = query(userCollection, where('ime', '==', profileName));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        querySnapshot.forEach(docSnap => {
+            const userData = docSnap.data();
+
+            // Prikaz profilne slike vlasnika profila ako postoji
+            if (userData.profilePictureUrl) {
+                const profilePictureDiv = document.getElementById('profile-picture');
+                profilePictureDiv.innerHTML = `<img src="${userData.profilePictureUrl}" alt="Profil korisnika" style="width: 120px; height: 120px; border-radius: 50%;">`;
+            } else {
+                // Prikaz praznog mjesta ako profilna slika ne postoji
+                const profilePictureDiv = document.getElementById('profile-picture');
+                profilePictureDiv.innerHTML = `<div style="width: 120px; height: 120px; border-radius: 50%; background-color: #ccc;"></div>`;
+            }
+
+            // Prikaži naslov profila
+            const profileTitle = document.getElementById('profile-title');
+            profileTitle.innerText = loggedInUserIme === profileName ? 'Vaš profil' : `Profil korisnika: ${profileName}`;
+        });
+    } else {
+        console.error("Korisnik nije pronađen u Firestore-u.");
+    }
+}
+
+// Pozovi funkciju za učitavanje podataka vlasnika profila
+loadProfileOwnerData();
+
+
+// Pozovi funkciju za učitavanje historije transakcija
+loadTransactionHistory();
 
 // Pozovi funkciju za učitavanje proizvoda
 loadProfileProducts();
