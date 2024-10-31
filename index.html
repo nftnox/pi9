@@ -468,6 +468,57 @@ textarea {
         margin-bottom: 20px; /* Dodaje razmak ispod naslova */
         font-weight: bold; /* Podebljava naslov */
     }
+
+    /* Exchange Modal Styles */
+#exchange-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4); /* Semi-transparent background */
+}
+
+.modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+    border-radius: 10px;
+}
+
+#exchange-modal h3 {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+#coin-amount, #usd-amount {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#send-request {
+    width: 100%;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#send-request:hover {
+    background-color: #45a049;
+}
+
     </style>
 </head>
 <body>
@@ -485,6 +536,8 @@ textarea {
             <a href="#"><span class="material-icons">group</span> Team</a>
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
+            <a href="#" id="exchange-link"><span class="material-icons">swap_horiz</span> Exchange</a>
+
         </nav>
     
         <!-- Mobilni meni -->
@@ -493,6 +546,7 @@ textarea {
             <a href="#"><span class="material-icons">group</span> Team</a>
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
+            <a href="#" id="exchange-link-mobile"><span class="material-icons">swap_horiz</span> Exchange</a>
         </nav>
     </header>
 
@@ -544,6 +598,24 @@ textarea {
 </div>
 
 
+<!-- Exchange Modal -->
+<div id="exchange-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="close-exchange-modal">&times;</span>
+        <h3>Exchange Delta Coins</h3>
+        
+<p style="font-size: 0.9em; color: gray;">1 Delta Coin = 0.05247 USD</p>
+
+        
+        <label for="coin-amount">How much Delta Coins you want to change:</label>
+        <input type="number" id="coin-amount" placeholder="Minimum 50" min="50" required>
+        
+        <p>How much money you will receive:</p>
+        <p id="usd-amount">0.00 USD</p>
+        
+        <button id="send-request">Send Request</button>
+    </div>
+</div>
 
 
 <div id="tic-tac-toe-board" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
@@ -1092,6 +1164,90 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 
 // Spremi ime prijavljenog korisnika u localStorage
 localStorage.setItem('loggedInUser', userParam);
+
+
+
+
+
+
+// Open and close modal for "Exchange"
+document.getElementById('exchange-link').addEventListener('click', () => {
+    document.getElementById('exchange-modal').style.display = 'block';
+});
+document.getElementById('exchange-link-mobile').addEventListener('click', () => {
+    document.getElementById('exchange-modal').style.display = 'block';
+});
+
+document.getElementById('close-exchange-modal').addEventListener('click', () => {
+    document.getElementById('exchange-modal').style.display = 'none';
+});
+
+// Exchange Rate Logic
+const coinAmountInput = document.getElementById('coin-amount');
+const usdAmountDisplay = document.getElementById('usd-amount');
+const exchangeRate = 0.05247; // 1 Delta Coin = 0.05247 USD
+
+coinAmountInput.addEventListener('input', () => {
+    const coinAmount = parseFloat(coinAmountInput.value);
+    if (coinAmount >= 50) {
+        const usdAmount = (coinAmount * exchangeRate).toFixed(2);
+        usdAmountDisplay.innerText = `${usdAmount} USD`;
+    } else {
+        usdAmountDisplay.innerText = "0.00 USD";
+    }
+});
+
+// Send Request to Firestore
+document.getElementById('send-request').addEventListener('click', async () => {
+    const coinAmount = parseFloat(coinAmountInput.value);
+    if (coinAmount < 50) {
+        alert("Please enter at least 50 Delta Coins.");
+        return;
+    }
+
+    // Calculate USD equivalent
+    const usdAmount = (coinAmount * exchangeRate).toFixed(2);
+
+    try {
+        // Fetch User ID and currentPrice from Firestore
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", userParam));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            const userId = userDoc.id;
+            const currentPrice = parseFloat(userDoc.data().currentPrice);  // Koristi currentPrice kao saldo
+
+            console.log("User Current Price:", currentPrice);
+            console.log("Requested Coin Amount:", coinAmount);
+
+            // Check if user has enough Delta Coins
+            if (isNaN(currentPrice) || currentPrice < coinAmount) {
+                alert(`You don't have enough Delta Coins. Your balance is ${currentPrice}.`);
+                return;
+            }
+
+            // Save Request to Firestore
+            const requestCollection = collection(db, 'request');
+            await addDoc(requestCollection, {
+                userId: userId,
+                coinAmount: coinAmount,
+                usdAmount: usdAmount,
+                requestDate: new Date()
+            });
+
+            alert(`Request sent: ${coinAmount} Delta Coins = ${usdAmount} USD`);
+            document.getElementById('exchange-modal').style.display = 'none';
+        } else {
+            console.error("User not found in Firestore.");
+        }
+    } catch (error) {
+        console.error("Error sending request:", error);
+        alert("An error occurred. Please try again.");
+    }
+});
+
 
 
 
