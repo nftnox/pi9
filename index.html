@@ -584,6 +584,20 @@ textarea {
     }
 }
 
+/* Stilovi za `How much...` i vrijednosti */
+#exchange-modal p, #buy-delta-modal p {
+    margin: 0; /* Uklanja margine između teksta i iznosa */
+    font-size: 1em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#usd-amount, #delta-amount-receive {
+    display: inline-block;
+    margin-left: 10px; /* Razmak između teksta i vrijednosti */
+    font-weight: bold;
+}
 
     </style>
 </head>
@@ -1825,6 +1839,11 @@ function listenForNewMessages() {
                 messageElement.classList.add('sender');
             } else {
                 messageElement.classList.add('recipient');
+
+                // Play the receive sound for new incoming messages only
+                if (querySnapshot.docChanges().some(change => change.type === 'added' && change.doc.data().sender !== username)) {
+                    receiveSound.play();
+                }
             }
 
             messagesDiv.appendChild(messageElement);
@@ -1881,6 +1900,10 @@ function resetChat() {
 
 
 // Funkcija za slanje poruke
+const sendSound = new Audio('sounds/send-sound.mp3');
+const receiveSound = new Audio('sounds/receive-sound.mp3');
+
+// Function to send a message
 async function sendMessage() {
     const messageInput = document.getElementById('chat-message');
     const messageText = messageInput.value.trim();
@@ -1896,6 +1919,9 @@ async function sendMessage() {
             });
             console.log("Poruka uspješno poslana:", messageText);
             messageInput.value = ''; // Očisti unos nakon slanja
+            
+            // Play the send sound
+            sendSound.play();
 
             // Automatsko skrolovanje na dno nakon slanja poruke
             scrollToBottom();
