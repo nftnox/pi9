@@ -519,6 +519,72 @@ textarea {
     background-color: #45a049;
 }
 
+/* Buy Delta Coin Modal Styles */
+#buy-delta-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4); /* Semi-transparent background */
+}
+
+#buy-delta-modal .modal-content {
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 400px;
+    border-radius: 10px;
+}
+
+#buy-delta-modal h3 {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+#usd-amount-buy, #delta-amount-receive {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#buy-delta-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #8A2BE2; /* Ljubičasta boja */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px; /* Opcionalno, postavlja veličinu teksta */
+}
+
+#buy-delta-button:hover {
+    background-color: #6a1bb5; /* Tamnija ljubičasta boja na hover */
+}
+@media screen and (min-width: 768px) {
+    #coin-amount, #usd-amount, #usd-amount-buy, #delta-amount-receive {
+        width: 80%;
+        font-size: 14px;
+        margin: 10px auto; /* Razmak između elemenata */
+        display: block; /* Osigurava prikaz jednog ispod drugog */
+    }
+
+    #exchange-modal .modal-content, #buy-delta-modal .modal-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center; /* Centriranje unosa u odnosu na okvir */
+    }
+}
+
+
     </style>
 </head>
 <body>
@@ -537,6 +603,7 @@ textarea {
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
             <a href="#" id="exchange-link"><span class="material-icons">swap_horiz</span> Exchange</a>
+            <a href="#" id="buy-delta-link"><span class="material-icons">attach_money</span> Buy Delta Coin</a>
 
         </nav>
     
@@ -547,6 +614,8 @@ textarea {
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
             <a href="#" id="exchange-link-mobile"><span class="material-icons">swap_horiz</span> Exchange</a>
+            <a href="#" id="buy-delta-link-mobile"><span class="material-icons">attach_money</span> Buy Delta Coin</a>
+
         </nav>
     </header>
 
@@ -614,6 +683,25 @@ textarea {
         <p id="usd-amount">0.00 USD</p>
         
         <button id="send-request">Send Request</button>
+    </div>
+</div>
+
+
+<!-- Buy Delta Coin Modal -->
+<div id="buy-delta-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" id="close-buy-delta-modal">&times;</span>
+        <h3>Buy Delta Coin</h3>
+        
+        <p style="font-size: 0.9em; color: gray;">1 USD = 19.06 Delta Coins</p> <!-- 1 / 0.05247 za izračun -->
+        
+        <label for="usd-amount-buy">How much money you want to change:</label>
+        <input type="number" id="usd-amount-buy" placeholder="Minimum 5 USD" min="5" required>
+        
+        <p>How much Delta Coins you will receive:</p>
+        <p id="delta-amount-receive">0.00 Delta Coins</p>
+        
+        <button id="buy-delta-button">Buy</button>
     </div>
 </div>
 
@@ -1249,6 +1337,34 @@ document.getElementById('send-request').addEventListener('click', async () => {
 });
 
 
+// Open and close modal for "Buy Delta Coin"
+document.getElementById('buy-delta-link').addEventListener('click', () => {
+    document.getElementById('buy-delta-modal').style.display = 'block';
+});
+document.getElementById('buy-delta-link-mobile').addEventListener('click', () => {
+    document.getElementById('buy-delta-modal').style.display = 'block';
+});
+document.getElementById('close-buy-delta-modal').addEventListener('click', () => {
+    document.getElementById('buy-delta-modal').style.display = 'none';
+});
+
+
+// Exchange rate for USD to Delta Coin
+const usdToDeltaRate = 1 / 0.05247; // 1 USD = 19.06 Delta Coins
+
+// Update Delta Coin amount based on USD input
+const usdAmountBuyInput = document.getElementById('usd-amount-buy');
+const deltaAmountReceiveDisplay = document.getElementById('delta-amount-receive');
+
+usdAmountBuyInput.addEventListener('input', () => {
+    const usdAmount = parseFloat(usdAmountBuyInput.value);
+    if (usdAmount >= 5) {
+        const deltaAmount = (usdAmount * usdToDeltaRate).toFixed(2);
+        deltaAmountReceiveDisplay.innerText = `${deltaAmount} Delta Coins`;
+    } else {
+        deltaAmountReceiveDisplay.innerText = "0.00 Delta Coins";
+    }
+});
 
 
 
