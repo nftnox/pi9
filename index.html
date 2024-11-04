@@ -599,6 +599,31 @@ textarea {
     font-weight: bold;
 }
 
+
+.user-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.user-item .profile-picture {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+
+
+
+/* Prilagođavanje za mobilne uređaje */
+@media (max-width: 600px) {
+    .user-item .status-icon {
+        bottom: 3px; /* Povećajte ili smanjite px za fino pomjeranje */
+        left: 40px; /* Povećajte ili smanjite px za fino pomjeranje */
+    }
+}
+
     </style>
 </head>
 <body>
@@ -1428,6 +1453,8 @@ async function fetchContacts() {
 }
 
 
+// Funkcija za prikaz korisnika i statusa
+// Funkcija za prikaz korisnika i statusa
 function displayUsers(users) {
     const usersListDiv = document.getElementById('users-list');
     usersListDiv.innerHTML = ''; // Očisti prethodnu listu
@@ -1435,6 +1462,14 @@ function displayUsers(users) {
     users.forEach(user => {
         const userElement = document.createElement('div');
         userElement.classList.add('user-item');
+        userElement.id = `user-${user.userId}`; // Postavi ID elementa
+        userElement.style.display = 'flex';
+        userElement.style.alignItems = 'center';
+        userElement.style.marginBottom = '10px';
+
+        // Omotač za profilnu sliku, omogućen relativnim pozicioniranjem
+        const imgWrapper = document.createElement('div');
+        imgWrapper.style.position = 'relative'; // Omogućava pozicioniranje ikone unutar slike
 
         // Profilna slika ili prazan krug s ikonom
         const imgElement = document.createElement('div');
@@ -1445,6 +1480,7 @@ function displayUsers(users) {
         imgElement.style.display = 'flex';
         imgElement.style.justifyContent = 'center';
         imgElement.style.alignItems = 'center';
+        imgElement.style.position = 'relative';
 
         if (user.profilePictureUrl) {
             imgElement.style.backgroundImage = `url(${user.profilePictureUrl})`;
@@ -1452,14 +1488,33 @@ function displayUsers(users) {
             imgElement.style.backgroundPosition = 'center';
         } else {
             imgElement.style.backgroundColor = '#e0e0e0'; // Svijetlo siva za prazan krug
-            imgElement.innerHTML = '<i class="fas fa-user" style="font-size: 20px; color: #7d7d7d;"></i>'; // Ikona korisnika
+            imgElement.innerHTML = '<i class="fas fa-user" style="font-size: 20px; color: #7d7d7d;"></i>';
         }
 
-        userElement.appendChild(imgElement);
+        // Status ikona postavljena unutar slike
+        const statusIcon = document.createElement('span');
+        statusIcon.classList.add('status-icon');
+        statusIcon.style.width = '12px';
+        statusIcon.style.height = '12px';
+        statusIcon.style.borderRadius = '50%';
+        statusIcon.style.backgroundColor = 'gray'; // Zadana boja prije učitavanja statusa
+        statusIcon.style.position = 'absolute';
+        statusIcon.style.bottom = '3px'; // Mali odmak od ruba slike
+        statusIcon.style.right = '3px'; // Mali odmak od ruba slike
+        statusIcon.style.border = '2px solid white'; // Bijeli obrub za bolju vidljivost na slici
+
+        // Postavi status na osnovu `lastClickTime`
+        updateUserStatus(user.userId, statusIcon);
+
+        // Dodaj status ikonu i sliku u omotač
+        imgWrapper.appendChild(imgElement);
+        imgWrapper.appendChild(statusIcon);
+        userElement.appendChild(imgWrapper);
 
         // Korisničko ime i zadnja poruka
         const userInfo = document.createElement('div');
         userInfo.classList.add('user-info');
+
         const userName = document.createElement('div');
         userName.classList.add('user-name');
         userName.textContent = user.userName;
@@ -1467,6 +1522,8 @@ function displayUsers(users) {
         const lastMessage = document.createElement('div');
         lastMessage.classList.add('last-message');
         lastMessage.textContent = user.lastMessage || 'Tap to preview';
+        lastMessage.style.fontSize = '12px';
+        lastMessage.style.color = '#7d7d7d';
 
         userInfo.appendChild(userName);
         userInfo.appendChild(lastMessage);
@@ -1480,6 +1537,43 @@ function displayUsers(users) {
         usersListDiv.appendChild(userElement);
     });
 }
+
+// Funkcija za ažuriranje statusa korisnika
+async function updateUserStatus(userId, statusIcon) {
+    const userDocRef = doc(db, 'network', userId);
+    const userDoc = await getDoc(userDocRef);
+
+    if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const lastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
+        const now = new Date();
+
+        if (lastClickTime) {
+            const timeElapsed = now - lastClickTime;
+
+            // Postavi boju ikone na osnovu statusa
+            if (timeElapsed < 60000) { // Manje od 1 minuta
+                statusIcon.style.backgroundColor = 'green'; // Online
+            } else if (timeElapsed < 600000) { // 1 do 10 minuta
+                statusIcon.style.backgroundColor = 'yellow'; // Odsutan
+            } else {
+                statusIcon.style.backgroundColor = 'red'; // Offline
+            }
+        } else {
+            statusIcon.style.backgroundColor = 'red'; // Offline
+        }
+    }
+}
+
+// Periodično ažuriranje statusa svakih 30 sekundi
+setInterval(() => {
+    const userElements = document.querySelectorAll('.user-item');
+    userElements.forEach(userElement => {
+        const userId = userElement.id.replace('user-', '');
+        const statusIcon = userElement.querySelector('.status-icon');
+        updateUserStatus(userId, statusIcon);
+    });
+}, 30000); // Ažuriranje svakih 30 sekundi
 
 
 
@@ -2717,6 +2811,12 @@ function showConfetti() {
         }));
     }, 250);
 }
+
+
+
+
+
+
 
 
     // Učitaj proizvode nakon učitavanja stranice
