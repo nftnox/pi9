@@ -2401,38 +2401,32 @@ const configuration = {
 };
 
 // When the user clicks the call button
-// When the user clicks the call button
+// Funkcija za pokretanje poziva
 document.getElementById('start-call').addEventListener('click', async () => {
-    try {
-        // Prikupi video i audio tok
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    
+    // Ako su definisani selectedUserId i selectedUserName, poziv ide jedan-na-jedan
+    if (selectedUserId && selectedUserName) {
+        await startCall(selectedUserId, selectedUserName, stream);
+    } else {
+        // Ako nema specificiranog korisnika, tretira se kao grupni poziv
+        const groupMembers = getGroupMembers(); // Pretpostavlja se da ova funkcija vraća ID-eve članova grupe
 
-        // Proveri da li je jedan-na-jedan poziv
-        if (selectedUserId && selectedUserName) {
-            // Pokreni jedan-na-jedan poziv sa izabranim korisnikom
-            await startCall(selectedUserId, selectedUserName, stream);
-        } else {
-            // Ako su selectedUserId i selectedUserName prazni, tretiraj kao grupni poziv
-            const groupMembers = getGroupMembers(); // Pretpostavljamo da ova funkcija vraća članove grupe
-
-            if (!groupMembers || groupMembers.length === 0) {
-                console.error('Nema članova grupe za poziv.');
-                return;
-            }
-
-            // Za svaki ID člana grupe, osim korisnika koji upućuje poziv, pokreni poziv
-            for (const member of groupMembers) {
-                if (member !== userId) { // Preskoči samog sebe
-                    await startCall(member, member.name, stream); // Pošalji zahtev kao u jedan-na-jedan
-                }
-            }
+        if (!groupMembers || groupMembers.length === 0) {
+            console.error('Nema članova grupe za poziv.');
+            return;
         }
 
-        // Prikaži lokalni video nakon što se poziv pokrene
-        addLocalVideo(stream);
-    } catch (error) {
-        console.error('Greška prilikom pokretanja poziva:', error);
+        // Šalji zahtev svakom članu grupe
+        groupMembers.forEach(async (member) => {
+            if (member !== userId) { // Ne pozivaj samog sebe
+                await startCall(member, member.name, stream);
+            }
+        });
     }
+
+    // Prikaži lokalni video
+    addLocalVideo(stream);
 });
 
 
