@@ -661,43 +661,54 @@ textarea {
 
    
 
-    <div id="chat-modal">
-        <div id="chat-header">
-            <span id="chat-header-title">Chat</span>
-            <button id="close-chat">✕</button>
-            <button id="back-to-users" style="display: none;">←</button> <!-- Dodajemo dugme za povratak -->
-            
-        </div>
-        
-        <div id="chat-box">
-            <div id="search-container">
-                <input type="text" id="user-search" placeholder="Search users...">
-                <button id="search-button">🔍</button>
-            </div>
-           
-            <div id="users-list"></div>
+    <!-- Vaš postojeći kod -->
 
-        
-            
-            <div id="users-list"></div> <!-- Prikaz korisnika u krugovima -->
-            <div id="messages" style="display: none;"></div> <!-- Skriveno dok ne odabereš korisnika -->
-            <div id="message-input" style="display: none;">
-                <button id="send-image">+</button> <!-- Dugme za dodavanje slike -->
-          
-                <button id="start-game" style="width: 40px; height: 40px; font-size: 20px; background-color: rgba(0, 0, 0, 0.1); border: none; border-radius: 5px; cursor: pointer;">
-                    <span class="material-icons">sports_esports</span>
-                </button>
-                
-                <button id="start-call"><span class="material-icons">videocam</span></button>
-
-
-                <input type="text" id="chat-message" placeholder="Unesite poruku">
-                <button id="send-message">Pošalji</button>
-            </div>
-            
-        </div>
-        
+<div id="chat-modal">
+    <div id="chat-header">
+        <span id="chat-header-title">Chat</span>
+        <button id="close-chat">✕</button>
+        <button id="back-to-users" style="display: none;">←</button>
     </div>
+    
+    <div id="chat-box">
+        <div id="search-container">
+            <input type="text" id="user-search" placeholder="Search users...">
+            <button id="search-button">🔍</button>
+            <button id="create-group-button"><span class="material-icons">group_add</span></button>
+        </div>
+       
+        <div id="users-list"></div>
+
+        <div id="messages" style="display: none;"></div>
+        <div id="message-input" style="display: none;">
+            <button id="send-image">+</button>
+            <button id="start-game" style="width: 40px; height: 40px; font-size: 20px; background-color: rgba(0, 0, 0, 0.1); border: none; border-radius: 5px; cursor: pointer;">
+                <span class="material-icons">sports_esports</span>
+            </button>
+            <button id="start-call"><span class="material-icons">videocam</span></button>
+            <input type="text" id="chat-message" placeholder="Unesite poruku">
+            <button id="send-message">Pošalji</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal za kreiranje grupnog chata -->
+<div id="create-group-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Kreiraj grupni chat</h3>
+        <div id="group-friends-list"></div>
+        <label for="group-name">Naziv grupe:</label>
+        <input type="text" id="group-name" placeholder="Unesite naziv grupe">
+        <button id="create-group-chat-button">Kreiraj grupu</button>
+        <button id="cancel-create-group">Otkaži</button>
+        <label for="group-image">Dodaj sliku grupe:</label>
+<input type="file" id="group-image" accept="image/*">
+
+    </div>
+</div>
+
+<!-- Ostatak vašeg postojećeg HTML koda -->
+
     
    <!-- Modal for full-screen image -->
 <div id="image-modal" class="image-modal">
@@ -1758,35 +1769,39 @@ async function acceptChatRequest(requestId) {
 
 
 // Event listener za desktop meni
+// Event listener za otvaranje chat modal prozora
 document.getElementById('chat-link').addEventListener('click', async () => {
     const chatModal = document.getElementById('chat-modal');
     chatModal.style.display = 'flex'; // Prikaz modalnog prozora
 
-    // Ako se chat otvara po prvi put, dohvatimo sve korisnike
     if (!isChatOpen) {
-        await fetchUsers(); // Pozovi funkciju za dobijanje korisnika
-        isChatOpen = true; // Postavljamo chat stanje kao otvoreno
+        await fetchUsers();       // Dohvati 1-na-1 kontakte
+        await fetchUserGroups();   // Dohvati grupe
+        isChatOpen = true;         // Postavi chat kao otvoren
     } else {
-        resetChat(); // Ako je chat već otvoren, resetuj na listu korisnika
+        resetChat(); // Resetuj ako je već otvoren
     }
 });
 
+
 // Dodaj event listener za chat link u mobilnom meniju
+// Event listener for mobile toggle menu to open chat modal with contacts and groups
 document.getElementById('toggle-menu').addEventListener('click', async (event) => {
     if (event.target.id === 'chat-link') {
-        document.getElementById('toggle-menu').style.display = 'none'; // Sakrij mobilni meni
+        document.getElementById('toggle-menu').style.display = 'none'; // Hide mobile menu
         const chatModal = document.getElementById('chat-modal');
-        chatModal.style.display = 'flex'; // Prikaz modalnog prozora
+        chatModal.style.display = 'flex'; // Display chat modal
 
-        // Ako se chat otvara po prvi put, dohvatimo sve korisnike
         if (!isChatOpen) {
-            await fetchUsers(); // Pozovi funkciju za dobijanje korisnika
-            isChatOpen = true; // Postavljamo chat stanje kao otvoreno
+            await fetchUsers();       // Fetch individual user contacts
+            await fetchUserGroups();   // Fetch group chats
+            isChatOpen = true;         // Mark chat as open
         } else {
-            resetChat(); // Ako je chat već otvoren, resetuj na listu korisnika
+            resetChat(); // Reset chat if it’s already open
         }
     }
 });
+
 
 
 
@@ -2047,51 +2062,328 @@ function openChatWithUser(userId) {
 }
 
 
+
+
+////////////////////GRUPNI CHAT//////////////////////
+
+// Otvaranje modalnog prozora za kreiranje grupe GRUPA
+document.getElementById('create-group-button').addEventListener('click', () => {
+    document.getElementById('create-group-modal').style.display = 'block';
+    loadFriendsList(); // Učitava prijatelje sa checkbox opcijom
+});
+
+// Zatvaranje modala za kreiranje grupe
+document.getElementById('cancel-create-group').addEventListener('click', () => {
+    document.getElementById('create-group-modal').style.display = 'none';
+});
+
+// Učitavanje liste prijatelja sa checkbox opcijom za odabir
+async function loadFriendsList() {
+    const friendsListDiv = document.getElementById('group-friends-list');
+    friendsListDiv.innerHTML = ''; // Očisti listu prije prikaza
+
+    const uniqueContacts = Array.from(contacts).map(item => JSON.parse(item));
+    uniqueContacts.forEach(friend => {
+        const friendElement = document.createElement('div');
+        friendElement.classList.add('friend-item');
+        friendElement.style.display = 'flex';
+        friendElement.style.alignItems = 'center';
+        friendElement.style.marginBottom = '10px';
+
+        // Checkbox za odabir prijatelja
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.classList.add('friend-checkbox');
+        checkbox.dataset.userId = friend.userId;
+        checkbox.dataset.userName = friend.userName;
+
+        // Ime korisnika pored checkboxa
+        const friendName = document.createElement('span');
+        friendName.textContent = friend.userName;
+        friendName.style.marginLeft = '10px';
+
+        friendElement.appendChild(checkbox);
+        friendElement.appendChild(friendName);
+        friendsListDiv.appendChild(friendElement);
+    });
+}
+
+// Kreiranje grupe i spremanje u Firestore
+document.getElementById('create-group-chat-button').addEventListener('click', async () => {
+    const selectedFriends = Array.from(document.querySelectorAll('.friend-checkbox:checked')).map(checkbox => ({
+        userName: checkbox.dataset.userName,
+        userId: checkbox.dataset.userId,
+    }));
+    const groupName = document.getElementById('group-name').value.trim();
+    const groupImageInput = document.getElementById('group-image');
+    let groupImageUrl = ''; // URL of the group image
+
+    if (!groupName || selectedFriends.length === 0) {
+        alert("Unesite naziv grupe i odaberite prijatelje koje želite dodati.");
+        return;
+    }
+
+    try {
+        // Check if a group image is provided; if not, use the default icon URL
+        if (groupImageInput.files[0]) {
+            const file = groupImageInput.files[0];
+            const storageRef = ref(storage, `groupImages/${groupName}_${file.name}`);
+            const snapshot = await uploadBytes(storageRef, file);
+            groupImageUrl = await getDownloadURL(snapshot.ref); // URL of the uploaded image
+        } else {
+            groupImageUrl = ''; // Indicate no image provided, so default will be used
+        }
+
+        // Save group data, including the image URL (or leave empty for the default)
+        const groupChatCollection = collection(db, 'groupChats');
+        const groupDoc = await addDoc(groupChatCollection, {
+            groupName,
+            groupImageUrl, // Save the image URL if provided
+            members: selectedFriends.concat({ userName: username, userId }), // Add current user to group
+            messages: []
+        });
+
+        displayGroupChat({ groupName, groupId: groupDoc.id, groupImageUrl, members: selectedFriends });
+        document.getElementById('create-group-modal').style.display = 'none';
+    } catch (error) {
+        console.error("Greška prilikom kreiranja grupe:", error);
+    }
+});
+
+
+
+// Prikaz grupe u listi chatova
+function displayGroupChat(group) {
+    const usersListDiv = document.getElementById('users-list');
+    const groupElement = document.createElement('div');
+    groupElement.classList.add('user-item');
+    groupElement.dataset.groupId = group.groupId;
+
+    // Dodajte sliku grupe ili default ikonu
+    const imgElement = document.createElement('div');
+    imgElement.style.width = '50px';
+    imgElement.style.height = '50px';
+    imgElement.style.borderRadius = '50%';
+    imgElement.style.marginRight = '10px';
+    imgElement.style.backgroundSize = 'cover';
+    imgElement.style.backgroundPosition = 'center';
+
+    // Provjera ima li grupa sliku; ako nema, prikaži defaultnu Google Material Icons ikonu 'group'
+    if (group.groupImageUrl && group.groupImageUrl !== 'default-group-icon-url') {
+        imgElement.style.backgroundImage = `url(${group.groupImageUrl})`;
+    } else {
+        imgElement.innerHTML = '<span class="material-icons" style="font-size: 40px; color: #5a99cd;">group</span>';
+        imgElement.style.display = 'flex';
+        imgElement.style.alignItems = 'center';
+        imgElement.style.justifyContent = 'center';
+        imgElement.style.backgroundColor = '#f0f0f0'; // Dodaj pozadinu za ikonicu
+    }
+
+    groupElement.appendChild(imgElement);
+
+    const groupNameElement = document.createElement('span');
+    groupNameElement.textContent = group.groupName;
+    groupElement.appendChild(groupNameElement);
+
+    groupElement.addEventListener('click', () => openGroupChat(group.groupId, group.groupName));
+    usersListDiv.appendChild(groupElement);
+}
+
+
+
+
+// Pravilno otvaranje grupnog chata u modalnom prozoru
+// Pravilno otvaranje grupnog chata u modalnom prozoru
+function openGroupChat(groupId, groupName) {
+    // Sakrij pretragu i listu korisnika
+    document.getElementById('search-container').style.display = 'none';
+    document.getElementById('users-list').style.display = 'none';
+
+    // Prikaži prozor za poruke, unos poruka i dugme za povratak
+    const messagesDiv = document.getElementById('messages');
+    const messageInputDiv = document.getElementById('message-input');
+    const backButton = document.getElementById('back-to-users');
+    messagesDiv.style.display = 'block';
+    messageInputDiv.style.display = 'flex';
+    backButton.style.display = 'block';
+
+    // Postavi naslov chata na ime grupe i čuvaj ID grupe
+    document.getElementById('chat-header-title').innerText = `Group: ${groupName}`;
+    document.getElementById('chat-header-title').dataset.groupId = groupId;
+
+    // Učitaj sve poruke za ovu grupu
+    loadGroupMessages(groupId);
+}
+
+// Događaj za dugme "Back" za povratak na listu korisnika
+document.getElementById('back-to-users').addEventListener('click', () => {
+    resetChat(); // Resetuj chat na listu korisnika
+});
+
+
+// Učitavanje poruka iz grupnog chata
+// Update loadGroupMessages to handle image messages
+function loadGroupMessages(groupId) {
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.innerHTML = '';
+
+    const groupChatDoc = doc(db, 'groupChats', groupId);
+    onSnapshot(groupChatDoc, (snapshot) => {
+        messagesDiv.innerHTML = '';
+        const messages = snapshot.data().messages || [];
+
+        messages.forEach((message) => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(message.sender === username ? 'sender' : 'recipient');
+
+            if (message.isImage) {
+                const imgElement = document.createElement('img');
+                imgElement.src = message.text;
+                imgElement.style.maxWidth = '200px';
+                imgElement.style.borderRadius = '10px';
+                imgElement.style.marginBottom = '10px';
+                messageElement.appendChild(imgElement);
+            } else {
+                messageElement.textContent = `${message.sender}: ${message.text}`;
+            }
+            messagesDiv.appendChild(messageElement);
+        });
+        scrollToBottom();
+    });
+}
+
+
+
+// Slanje poruke u grupni chat
+// Updated sendGroupMessage function to handle images
+async function sendGroupMessage(groupId) {
+    const messageInput = document.getElementById('chat-message');
+    const messageText = messageInput.value.trim();
+
+    if (messageText) {
+        const groupChatDoc = doc(db, 'groupChats', groupId);
+        const groupData = (await getDoc(groupChatDoc)).data();
+        const messages = groupData.messages || [];
+
+        messages.push({
+            sender: username,
+            text: messageText,
+            timestamp: new Date(),
+            isImage: false // Flag to indicate this is a text message
+        });
+
+        await updateDoc(groupChatDoc, { messages });
+        messageInput.value = ''; 
+        scrollToBottom();
+    }
+}
+
+// Handle image upload for group chat messages
+// Define a global variable for the input element
+let imageInput = null;
+
+// Event listener for the "Send Image" button in group chat
+// Event listener za dugme 'send-image' koji radi za oba tipa chata
 document.getElementById('send-image').addEventListener('click', () => {
-    // Otvori prozor za odabir slike
+    // Kreirajte prozor za odabir slike
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+
     input.onchange = async (event) => {
-        const file = event.target.files[0]; // Preuzimanje odabrane slike
-
+        const file = event.target.files[0];
+        
         if (file) {
+            // Provjerite tip chata
+            const isGroupChat = document.getElementById('chat-header-title').dataset.groupId !== undefined;
+            const currentGroupId = document.getElementById('chat-header-title').dataset.groupId; // Za grupni chat
+            const selectedUserName = 'USERNAME_PRIVATNI'; // Postavite ime primaoca za privatni chat
+
             try {
-                console.log('Slika je odabrana:', file.name);
-                
-                // Kreiranje reference za upload slike u Firebase Storage
-                const storageRef = ref(storage, 'chatImages/' + selectedUserName + '_' + file.name);
-                console.log('Kreirana je referenca za Storage.');
+                let imageUrl;
 
-                // Upload slike u Firebase Storage
-                const snapshot = await uploadBytes(storageRef, file);
-                console.log('Slika je uspješno učitana u Storage:', snapshot);
+                if (isGroupChat) {
+                    // Ako je grupni chat, kreirajte referencu za grupu
+                    const storageRef = ref(storage, 'groupChatImages/' + currentGroupId + '_' + file.name);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    imageUrl = await getDownloadURL(snapshot.ref);
 
-                // Dobijanje URL-a slike
-                const imageUrl = await getDownloadURL(snapshot.ref);
-                console.log('URL slike je dobijen:', imageUrl);
+                    // Spremanje poruke u Firestore za grupni chat
+                    const groupChatDoc = doc(db, 'groupChats', currentGroupId);
+                    const groupData = (await getDoc(groupChatDoc)).data();
+                    const messages = groupData.messages || [];
 
-                // Spremanje URL-a slike kao poruka u Firestore
-                const messagesCollection = collection(db, 'poruke');
-                await addDoc(messagesCollection, {
-                    sender: username, // Ime pošiljaoca
-                    recipient: selectedUserName, // Ime primaoca
-                    message: imageUrl, // URL slike kao poruka
-                    isImage: true, // Flag koji pokazuje da je poruka slika
-                    timestamp: new Date() // Vreme slanja
-                });
+                    messages.push({
+                        sender: username,
+                        text: imageUrl,
+                        timestamp: new Date(),
+                        isImage: true // Označava da je poruka slika
+                    });
 
-                console.log("Slika je uspješno poslana u Firestore:", imageUrl);
+                    await updateDoc(groupChatDoc, { messages });
+                    console.log("Slika uspješno poslana u grupni chat:", imageUrl);
+                } else {
+                    // Ako je privatni chat, kreirajte referencu za privatni chat
+                    const storageRef = ref(storage, 'chatImages/' + selectedUserName + '_' + file.name);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    imageUrl = await getDownloadURL(snapshot.ref);
+
+                    // Spremanje poruke u Firestore za privatni chat
+                    const messagesCollection = collection(db, 'poruke');
+                    await addDoc(messagesCollection, {
+                        sender: username,
+                        recipient: selectedUserName,
+                        message: imageUrl,
+                        isImage: true,
+                        timestamp: new Date()
+                    });
+
+                    console.log("Slika uspješno poslana u privatni chat:", imageUrl);
+                }
             } catch (error) {
                 console.error("Greška prilikom slanja slike:", error);
             }
         }
     };
-    input.click(); // Otvaranje prozora za odabir datoteke
+
+    // Otvori prozor za odabir datoteke
+    input.click();
 });
 
 
 
+
+
+// Event za dugme "Pošalji" u grupnom chatu
+document.getElementById('send-message').addEventListener('click', () => {
+    const currentGroupId = document.getElementById('chat-header-title').dataset.groupId;
+    if (currentGroupId) {
+        sendGroupMessage(currentGroupId);
+    } else {
+        sendMessage(); // Slanje privatne poruke
+    }
+});
+
+// Funkcija za dohvat grupa u kojima je korisnik član
+async function fetchUserGroups() {
+    const groupChatCollection = collection(db, 'groupChats');
+    const q = query(groupChatCollection, where('members', 'array-contains', { userName: username, userId: userId }));
+
+    const querySnapshot = await getDocs(q);
+
+    querySnapshot.forEach(doc => {
+        const groupData = doc.data();
+
+        // Prosljeđivanje 'groupImageUrl' kako bismo znali ima li grupa sliku
+        displayGroupChat({
+            groupName: groupData.groupName,
+            groupId: doc.id,
+            groupImageUrl: groupData.groupImageUrl, // Prosljeđujemo URL slike grupe
+            members: groupData.members,
+        });
+    });
+}
 
 
 
@@ -2489,7 +2781,7 @@ async function updateTotalCoinsSpent() {
     document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
 }
 
-
+////////////grupni poziv////////////
 
 
 ///////////IGRA/////////////////
