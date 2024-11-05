@@ -2401,35 +2401,40 @@ const configuration = {
 };
 
 // When the user clicks the call button
+// When the user clicks the call button
 document.getElementById('start-call').addEventListener('click', async () => {
     try {
+        // Prikupi video i audio tok
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-        // Ako su definisani selectedUserId i selectedUserName, pokreće se jedan-na-jedan poziv
+        // Proveri da li je jedan-na-jedan poziv
         if (selectedUserId && selectedUserName) {
+            // Pokreni jedan-na-jedan poziv sa izabranim korisnikom
             await startCall(selectedUserId, selectedUserName, stream);
         } else {
-            // Ako nisu postavljeni selectedUserId i selectedUserName, tretiramo to kao grupni poziv
-            const groupMembers = getGroupMembers(); // Pronađi članove grupe
+            // Ako su selectedUserId i selectedUserName prazni, tretiraj kao grupni poziv
+            const groupMembers = getGroupMembers(); // Pretpostavljamo da ova funkcija vraća članove grupe
 
             if (!groupMembers || groupMembers.length === 0) {
                 console.error('Nema članova grupe za poziv.');
                 return;
             }
 
-            // Pokreni poziv za svakog člana grupe
+            // Za svaki ID člana grupe, osim korisnika koji upućuje poziv, pokreni poziv
             for (const member of groupMembers) {
-                if (member !== userId) { // Pozovi svakog člana osim sebe
-                    await startCall(member, member.name, stream);
+                if (member !== userId) { // Preskoči samog sebe
+                    await startCall(member, member.name, stream); // Pošalji zahtev kao u jedan-na-jedan
                 }
             }
         }
 
-        addLocalVideo(stream); // Prikaz lokalnog videa
+        // Prikaži lokalni video nakon što se poziv pokrene
+        addLocalVideo(stream);
     } catch (error) {
         console.error('Greška prilikom pokretanja poziva:', error);
     }
 });
+
 
 
 
