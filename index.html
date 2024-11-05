@@ -2402,17 +2402,35 @@ const configuration = {
 
 // When the user clicks the call button
 document.getElementById('start-call').addEventListener('click', async () => {
-    if (!selectedUserId || !selectedUserName) {
-        console.error('selectedUserId ili selectedUserName nisu postavljeni');
-        return;
-    }
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        await startCall(selectedUserId, selectedUserName, stream);
+
+        // Ako su definisani selectedUserId i selectedUserName, pokreće se jedan-na-jedan poziv
+        if (selectedUserId && selectedUserName) {
+            await startCall(selectedUserId, selectedUserName, stream);
+        } else {
+            // Ako nisu postavljeni selectedUserId i selectedUserName, tretiramo to kao grupni poziv
+            const groupMembers = getGroupMembers(); // Pronađi članove grupe
+
+            if (!groupMembers || groupMembers.length === 0) {
+                console.error('Nema članova grupe za poziv.');
+                return;
+            }
+
+            // Pokreni poziv za svakog člana grupe
+            for (const member of groupMembers) {
+                if (member !== userId) { // Pozovi svakog člana osim sebe
+                    await startCall(member, member.name, stream);
+                }
+            }
+        }
+
+        addLocalVideo(stream); // Prikaz lokalnog videa
     } catch (error) {
         console.error('Greška prilikom pokretanja poziva:', error);
     }
 });
+
 
 
 // Function to start the call
