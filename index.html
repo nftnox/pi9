@@ -255,6 +255,19 @@ textarea {
     transition: background-color 0.3s ease; /* Animacija za hover */
 }
 
+
+#create-group-button {
+    background-color: #4CAF50; /* Zelena boja */
+    color: white; /* Bijela boja teksta */
+    border: none;
+    padding: 8.5px 13px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px; /* Razmak između polja za pretragu i dugmeta */
+    font-size: 16px;
+    transition: background-color 0.3s ease; /* Animacija za hover */
+}
+
 #search-button:hover {
     background-color: #45a049; /* Tamnija zelena kada se pređe mišem */
 }
@@ -686,10 +699,14 @@ textarea {
 
 <div id="chat-modal">
     <div id="chat-header">
-        <span id="chat-header-title">Chat</span>
+        <div id="chat-header-title-container">
+            <span id="chat-header-title">Chat</span>
+            <div id="group-members" style="font-size: smaller; color: rgba(0, 0, 0, 0.6);"></div>
+        </div>
         <button id="close-chat">✕</button>
         <button id="back-to-users" style="display: none;">←</button>
     </div>
+    
     
     <div id="chat-box">
         <div id="search-container">
@@ -1833,24 +1850,25 @@ document.getElementById('toggle-menu').addEventListener('click', async (event) =
 function openChat(userName) {
     selectedUserName = userName;
 
-    // Pronađite ID korisnika na osnovu imena
+    // Find user ID based on name
     const user = allUsers.find(u => u.userName === userName);
     if (user) {
         selectedUserId = user.userId;
     } else {
-        console.error('Korisnik nije pronađen');
+        console.error('User not found');
     }
 
-    // Sakrij pretragu korisnika
+    // Hide user search
     const searchContainer = document.getElementById('search-container');
     searchContainer.style.display = 'none';
 
-    // Postojeći kod za prikazivanje chata...
+    // Show messages and input
     const messagesDiv = document.getElementById('messages');
     const messageInputDiv = document.getElementById('message-input');
     const usersListDiv = document.getElementById('users-list');
     const backButton = document.getElementById('back-to-users');
     const chatHeaderTitle = document.getElementById('chat-header-title');
+    const groupMembersDiv = document.getElementById('group-members');
 
     usersListDiv.style.display = 'none';
     messagesDiv.style.display = 'block';
@@ -1859,10 +1877,21 @@ function openChat(userName) {
     chatHeaderTitle.innerText = `Chat with ${userName}`;
     backButton.style.display = 'block';
 
-    // Učitajte historiju poruka i počnite slušati nove poruke
+    // Hide and clear the 'group-members' div
+    if (groupMembersDiv) {
+        groupMembersDiv.innerText = '';
+        groupMembersDiv.style.display = 'none';
+    }
+
+    // Clear 'groupId' from chatHeaderTitle dataset
+    chatHeaderTitle.dataset.groupId = '';
+
+    // Load message history and start listening for new messages
     loadMessageHistory();
     listenForNewMessages();
 }
+
+
 
 
 
@@ -2014,16 +2043,29 @@ function resetChat() {
     const chatHeaderTitle = document.getElementById('chat-header-title');
     const backButton = document.getElementById('back-to-users');
     const searchContainer = document.getElementById('search-container');
+    const groupMembersDiv = document.getElementById('group-members');
 
-    usersListDiv.style.display = 'block'; // Prikaži listu korisnika
-    messagesDiv.style.display = 'none'; // Sakrij chat prozor
-    messageInputDiv.style.display = 'none'; // Sakrij unos poruka
-    chatHeaderTitle.innerText = 'Chat'; // Resetuj naslov na 'Chat'
-    backButton.style.display = 'none'; // Sakrij dugme za povratak
+    usersListDiv.style.display = 'block'; // Show user list
+    messagesDiv.style.display = 'none'; // Hide chat window
+    messageInputDiv.style.display = 'none'; // Hide message input
+    chatHeaderTitle.innerText = 'Chat'; // Reset title to 'Chat'
+    backButton.style.display = 'none'; // Hide back button
 
-    // Ponovo prikaži pretragu korisnika
-    searchContainer.style.display = 'block';
+    // Show the user search again with correct display property
+    searchContainer.style.display = 'flex'; // Set display to 'flex'
+
+    // Hide and clear the 'group-members' div
+    if (groupMembersDiv) {
+        groupMembersDiv.innerText = '';
+        groupMembersDiv.style.display = 'none';
+    }
+
+    // Clear 'groupId' from chatHeaderTitle dataset
+    chatHeaderTitle.dataset.groupId = '';
 }
+
+
+
 
 
 
@@ -2060,10 +2102,6 @@ async function sendMessage() {
         }
     }
 }
-
-
-    // Dodajte događaj za slanje poruke kada se klikne na dugme
-    document.getElementById('send-message').addEventListener('click', sendMessage);
 
 
 
@@ -2215,26 +2253,60 @@ function displayGroupChat(group) {
 
 // Pravilno otvaranje grupnog chata u modalnom prozoru
 // Pravilno otvaranje grupnog chata u modalnom prozoru
-function openGroupChat(groupId, groupName) {
-    // Sakrij pretragu i listu korisnika
+async function openGroupChat(groupId, groupName) {
+    // Hide search and user list
     document.getElementById('search-container').style.display = 'none';
     document.getElementById('users-list').style.display = 'none';
 
-    // Prikaži prozor za poruke, unos poruka i dugme za povratak
+    // Show messages and input
     const messagesDiv = document.getElementById('messages');
     const messageInputDiv = document.getElementById('message-input');
     const backButton = document.getElementById('back-to-users');
+    const chatHeaderTitle = document.getElementById('chat-header-title');
+    const groupMembersDiv = document.getElementById('group-members');
+
     messagesDiv.style.display = 'block';
     messageInputDiv.style.display = 'flex';
     backButton.style.display = 'block';
 
-    // Postavi naslov chata na ime grupe i čuvaj ID grupe
-    document.getElementById('chat-header-title').innerText = `Group: ${groupName}`;
-    document.getElementById('chat-header-title').dataset.groupId = groupId;
+    // Set chat header title and groupId
+    chatHeaderTitle.innerText = `Group: ${groupName}`;
+    chatHeaderTitle.dataset.groupId = groupId;
 
-    // Učitaj sve poruke za ovu grupu
+    // Show the 'group-members' div
+    if (groupMembersDiv) {
+        groupMembersDiv.style.display = 'block'; // Ensure it's visible
+    }
+
+    // Fetch group data to get member names
+    const groupChatDoc = doc(db, 'groupChats', groupId);
+    const groupSnapshot = await getDoc(groupChatDoc);
+    if (groupSnapshot.exists()) {
+        const groupData = groupSnapshot.data();
+        const members = groupData.members || [];
+
+        // Extract member names
+        const memberNames = members.map(member => member.userName).join(', ');
+
+        // Display member names in the header
+        if (groupMembersDiv) {
+            groupMembersDiv.innerText = `Members: ${memberNames}`;
+        }
+    } else {
+        console.error('Group does not exist');
+
+        // Hide and clear the 'group-members' div if group doesn't exist
+        if (groupMembersDiv) {
+            groupMembersDiv.innerText = '';
+            groupMembersDiv.style.display = 'none';
+        }
+    }
+
+    // Load messages for this group
     loadGroupMessages(groupId);
 }
+
+
 
 // Događaj za dugme "Back" za povratak na listu korisnika
 document.getElementById('back-to-users').addEventListener('click', () => {
