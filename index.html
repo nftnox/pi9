@@ -186,7 +186,7 @@ textarea {
     display: flex;
     gap: 10px;
     padding: 10px;
-    position: sticky; /* Fiksirano na dno, ali unutar tok dokumenta */
+    position: flex; /* Fiksirano na dno, ali unutar tok dokumenta */
     bottom: 0;
     width: 100%; /* Osigurava da unos zauzima cijelu širinu chata */
     background-color: white; /* Dodaj pozadinu */
@@ -2210,6 +2210,9 @@ function openChatWithUser(userId) {
 }
 
 
+document.getElementById('chat-message').addEventListener('focus', function(event) {
+    window.scrollTo(0, document.body.scrollHeight); // Sprečava automatski skok
+});
 
 
 ////////////////////GRUPNI CHAT//////////////////////
