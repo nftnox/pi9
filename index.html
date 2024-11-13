@@ -2500,7 +2500,7 @@ document.getElementById('start-call').addEventListener('click', async () => {
         return;
     }
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
         await startCall(selectedUserId, selectedUserName, stream);
     } catch (error) {
         console.error('Greška prilikom pokretanja poziva:', error);
@@ -2773,7 +2773,7 @@ function showIncomingCallNotification(callerName, callId) {
 
     // Event for accepting the call
     document.getElementById(`answer-call-${callId}`).addEventListener('click', async () => {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
         await acceptCall(callId, stream);
         document.body.removeChild(incomingCallOverlay); // Remove overlay
     });
