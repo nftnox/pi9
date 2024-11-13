@@ -1848,11 +1848,10 @@ document.getElementById('toggle-menu').addEventListener('click', async (event) =
 
 
 
-// Funkcija za otvaranje chat-a
 function openChat(userName) {
     selectedUserName = userName;
 
-    // Find user ID based on name
+    // Pronađite ID korisnika na osnovu imena
     const user = allUsers.find(u => u.userName === userName);
     if (user) {
         selectedUserId = user.userId;
@@ -1860,11 +1859,11 @@ function openChat(userName) {
         console.error('User not found');
     }
 
-    // Hide user search
+    // Sakrijte pretragu korisnika
     const searchContainer = document.getElementById('search-container');
     searchContainer.style.display = 'none';
 
-    // Show messages and input
+    // Prikažite poruke i unos poruka
     const messagesDiv = document.getElementById('messages');
     const messageInputDiv = document.getElementById('message-input');
     const usersListDiv = document.getElementById('users-list');
@@ -1876,22 +1875,59 @@ function openChat(userName) {
     messagesDiv.style.display = 'block';
     messageInputDiv.style.display = 'flex';
 
-    chatHeaderTitle.innerText = `Chat with ${userName}`;
+    // Postavljanje naslova u zaglavlju chata
+    chatHeaderTitle.innerHTML = `Chat with ${userName} 
+        <button id="start-audio-call" title="Audio Call" style="margin-left: 10px;">
+            <span class="material-icons">call</span>
+        </button>
+        <button id="start-call" title="Video Call" style="margin-left: 5px;">
+            <span class="material-icons">videocam</span>
+        </button>
+    `;
+
     backButton.style.display = 'block';
 
-    // Hide and clear the 'group-members' div
+    // Sakrij i očisti 'group-members' div
     if (groupMembersDiv) {
         groupMembersDiv.innerText = '';
         groupMembersDiv.style.display = 'none';
     }
 
-    // Clear 'groupId' from chatHeaderTitle dataset
+    // Prazan 'groupId' u zaglavlju
     chatHeaderTitle.dataset.groupId = '';
 
-    // Load message history and start listening for new messages
+    // Učitajte historiju poruka i postavite osluškivanje za nove poruke
     loadMessageHistory();
     listenForNewMessages();
+
+    // Dodajte event listenere za dugmad za audio i video poziv
+    document.getElementById('start-audio-call').addEventListener('click', async () => {
+        if (!selectedUserId || !selectedUserName) {
+            console.error('selectedUserId ili selectedUserName nisu postavljeni');
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            await startAudioCall(selectedUserId, selectedUserName, stream);
+        } catch (error) {
+            console.error('Greška prilikom pokretanja audio poziva:', error);
+        }
+    });
+
+    document.getElementById('start-call').addEventListener('click', async () => {
+        if (!selectedUserId || !selectedUserName) {
+            console.error('selectedUserId ili selectedUserName nisu postavljeni');
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            await startCall(selectedUserId, selectedUserName, stream);
+        } catch (error) {
+            console.error('Greška prilikom pokretanja video poziva:', error);
+        }
+    });
 }
+
 
 
 
