@@ -723,6 +723,9 @@ textarea {
             <button id="start-game" style="width: 40px; height: 40px; font-size: 20px; background-color: rgba(0, 0, 0, 0.1); border: none; border-radius: 5px; cursor: pointer;">
                 <span class="material-icons">sports_esports</span>
             </button>
+            <!-- Add Audio Call Button -->
+<button id="start-audio-call"><span class="material-icons">phone</span></button>
+
             <button id="start-call"><span class="material-icons">videocam</span></button>
             <input type="text" id="chat-message" placeholder="Unesite poruku">
             <button id="send-message">Pošalji</button>
@@ -3216,6 +3219,219 @@ function showConfetti() {
     };
     </script>
 
+
+<script>
+    // When the user clicks the audio call button
+document.getElementById('start-audio-call').addEventListener('click', async () => {
+    if (!selectedUserId || !selectedUserName) {
+        console.error('selectedUserId or selectedUserName are not set');
+        return;
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+        await startAudioCall(selectedUserId, selectedUserName, stream);
+    } catch (error) {
+        console.error('Error initiating audio call:', error);
+    }
+});
+
+// Function to start the audio call
+async function startAudioCall(userId, userName, stream) {
+    const callRef = collection(db, 'calls');
+    const callDoc = await addDoc(callRef, {
+        caller: username,
+        recipientId: userId,
+        recipientName: userName,
+        answered: false,
+        ongoing: true,
+        timestamp: new Date(),
+        offer: null,
+        answer: null,
+        type: "audio" // Indicate this is an audio call
+    });
+
+    showCallingNotification(userName);
+    console.log(`Calling user ${userName} for an audio call.`);
+
+    const peerConnection = new RTCPeerConnection(configuration);
+    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+    const remoteStream = new MediaStream();
+    addRemoteAudio(remoteStream);
+
+    const callerCandidatesCollection = collection(callDoc, 'callerCandidates');
+    peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            addDoc(callerCandidatesCollection, event.candidate.toJSON());
+        }
+    };
+
+    peerConnection.ontrack = event => {
+        event.streams[0].getTracks().forEach(track => {
+            remoteStream.addTrack(track);
+        });
+    };
+
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    await updateDoc(callDoc, { offer: { type: offer.type, sdp: offer.sdp } });
+
+    onSnapshot(callDoc, (docSnapshot) => {
+        const data = docSnapshot.data();
+        if (data.answer && !peerConnection.currentRemoteDescription) {
+            const answerDescription = new RTCSessionDescription(data.answer);
+            peerConnection.setRemoteDescription(answerDescription);
+            showEndCallButton(callDoc.id, peerConnection);
+        }
+    });
+
+    const calleeCandidatesCollection = collection(callDoc, 'calleeCandidates');
+    onSnapshot(calleeCandidatesCollection, snapshot => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+                const candidate = new RTCIceCandidate(change.doc.data());
+                peerConnection.addIceCandidate(candidate).catch(e => {
+                    console.error('Error adding received ICE candidate', e);
+                });
+            }
+        });
+    });
+
+    console.log("Audio call established at caller.");
+}
+
+// Function to accept the audio call
+async function acceptAudioCall(callId, stream) {
+    const callRef = doc(db, 'calls', callId);
+    await updateDoc(callRef, { answered: true });
+
+    const peerConnection = new RTCPeerConnection(configuration);
+    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+    addLocalAudio(stream);
+
+    const remoteStream = new MediaStream();
+    addRemoteAudio(remoteStream);
+
+    const calleeCandidatesCollection = collection(callRef, 'calleeCandidates');
+    peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            addDoc(calleeCandidatesCollection, event.candidate.toJSON());
+        }
+    };
+
+    peerConnection.ontrack = event => {
+        event.streams[0].getTracks().forEach(track => {
+            remoteStream.addTrack(track);
+        });
+    };
+
+    const callDataDoc = await getDoc(callRef);
+    const callData = callDataDoc.data();
+
+    if (callData.offer) {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        await updateDoc(callRef, { answer: { type: answer.type, sdp: answer.sdp } });
+        showEndCallButton(callId, peerConnection);
+    }
+
+    const callerCandidatesCollection = collection(callRef, 'callerCandidates');
+    onSnapshot(callerCandidatesCollection, snapshot => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+                const candidate = new RTCIceCandidate(change.doc.data());
+                peerConnection.addIceCandidate(candidate).catch(e => {
+                    console.error('Error adding received ICE candidate', e);
+                });
+            }
+        });
+    });
+
+    console.log("Audio call established at callee.");
+}
+
+// Function to add local audio
+function addLocalAudio(stream) {
+    let localAudio = document.getElementById('localAudio');
+    if (!localAudio) {
+        localAudio = document.createElement('audio');
+        localAudio.id = 'localAudio';
+        localAudio.autoplay = true;
+        localAudio.muted = true;
+        document.body.appendChild(localAudio);
+    }
+    localAudio.srcObject = stream;
+}
+
+// Function to add remote audio
+function addRemoteAudio(stream) {
+    let remoteAudio = document.getElementById('remoteAudio');
+    if (!remoteAudio) {
+        remoteAudio = document.createElement('audio');
+        remoteAudio.id = 'remoteAudio';
+        remoteAudio.autoplay = true;
+        document.body.appendChild(remoteAudio);
+    }
+    remoteAudio.srcObject = stream;
+}
+
+// Modify incoming call listener to distinguish between video and audio calls
+function setupIncomingCallListener() {
+    const callRef = collection(db, 'calls');
+    onSnapshot(callRef, (snapshot) => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+                const doc = change.doc;
+                const data = doc.data();
+                if (!data.answered && data.recipientId === userId) {
+                    if (data.type === "audio") {
+                        showIncomingCallNotification(data.caller, doc.id, 'Audio Call');
+                    } else {
+                        showIncomingCallNotification(data.caller, doc.id, 'Video Call');
+                    }
+                }
+            }
+        });
+    });
+}
+
+// Modify `showIncomingCallNotification` to display the call type
+function showIncomingCallNotification(callerName, callId, callType) {
+    const incomingCallOverlay = document.createElement('div');
+    incomingCallOverlay.classList.add('incoming-call-overlay');
+    incomingCallOverlay.innerHTML = 
+        `<div class="incoming-call-content">
+            <p>${callerName} is calling you (${callType})...</p>
+            <div class="incoming-call-buttons">
+                <button id="answer-call-${callId}" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px; border-radius: 5px;">Accept</button>
+                <button id="decline-call-${callId}" style="background-color: red; color: white; padding: 10px 20px; border-radius: 5px;">Decline</button>
+            </div>
+        </div>`;
+
+    document.body.appendChild(incomingCallOverlay);
+
+    // Event for accepting the audio or video call
+    document.getElementById(`answer-call-${callId}`).addEventListener('click', async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: callType !== 'Audio Call', audio: true });
+        if (callType === 'Audio Call') {
+            await acceptAudioCall(callId, stream);
+        } else {
+            await acceptCall(callId, stream);
+        }
+        document.body.removeChild(incomingCallOverlay);
+    });
+
+    document.getElementById(`decline-call-${callId}`).addEventListener('click', () => {
+        document.body.removeChild(incomingCallOverlay);
+    });
+}
+
+// Initialize listener for incoming calls
+setupIncomingCallListener();
+
+</script>
 </body>
 </html>
 
