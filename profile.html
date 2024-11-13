@@ -778,12 +778,6 @@ if (profileName === loggedInUserIme) {
             saveEthAddressButton.style.display = 'none'; // Sakrij dugme za spremanje
             editEthAddressButton.style.display = 'inline-block'; // Prikaži dugme za promenu
         }
-        else {
-    // Ako adresa ne postoji, omogućite unos
-    ethAddressInput.disabled = false;
-    saveEthAddressButton.style.display = 'inline-block'; // Prikaži dugme za spremanje
-    editEthAddressButton.style.display = 'none'; // Sakrij dugme za promjenu
-}
 
         // Omogući unos nove adrese kada se klikne na "Promeni adresu"
         editEthAddressButton.addEventListener('click', () => {
