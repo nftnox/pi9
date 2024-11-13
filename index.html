@@ -65,6 +65,19 @@ textarea {
     }
 }
 
+
+#chat-header-title-container {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+}
+
+#chat-header-title {
+    font-size: 16px;
+    font-weight: bold;
+    line-height: 2.2; /* Dodaje blagi prostor između redova za vertikalno centriranje */
+}
+
         /* Gornji dio sa X dugmetom za zatvaranje */
         #chat-header {
             display: flex;
@@ -118,6 +131,14 @@ textarea {
 }
 
 
+#back-to-users {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    margin-right: 10px;
+    color: #ffffff;
+}
 
 /* User info styling */
 .user-info {
@@ -137,6 +158,9 @@ textarea {
     text-overflow: ellipsis; /* Truncate long messages */
     white-space: nowrap; /* Prevent text from wrapping */
 }
+
+
+
 
         /* Poruke u chat prozoru */
         #messages {
@@ -658,6 +682,31 @@ textarea {
     }
 }
 
+
+#start-audio-call .material-icons,
+#start-call .material-icons {
+    color: #800080; /* Ljubičasta boja */
+    font-size: 24px; /* Veličina ikone */
+    cursor: pointer;
+    background: none; /* Bez pozadine */
+    border: none; /* Bez ivice */
+    padding: 0; /* Bez paddinga */
+    outline: none; /* Ukloni outline kod fokusa */
+}
+
+#start-audio-call:hover .material-icons,
+#start-call:hover .material-icons {
+    color: #a64ca6; /* Svjetlija ljubičasta za hover efekt */
+}
+
+
+
+
+#message-input #start-audio-call,
+#message-input #start-call {
+    display: none;
+}
+
     </style>
 </head>
 <body>
@@ -699,13 +748,14 @@ textarea {
 
 <div id="chat-modal">
     <div id="chat-header">
+        <button id="back-to-users" style="display: none;">←</button>
         <div id="chat-header-title-container">
-            <span id="chat-header-title">Chat</span>
+            <span id="chat-header-title">Chat with [User]</span>
             <div id="group-members" style="font-size: smaller; color: rgba(0, 0, 0, 0.6);"></div>
         </div>
         <button id="close-chat">✕</button>
-        <button id="back-to-users" style="display: none;">←</button>
     </div>
+    
     
     
     <div id="chat-box">
@@ -1877,13 +1927,14 @@ function openChat(userName) {
 
     // Postavljanje naslova u zaglavlju chata
     chatHeaderTitle.innerHTML = `Chat with ${userName} 
-        <button id="start-audio-call" title="Audio Call" style="margin-left: 10px;">
-            <span class="material-icons">call</span>
-        </button>
-        <button id="start-call" title="Video Call" style="margin-left: 5px;">
-            <span class="material-icons">videocam</span>
-        </button>
-    `;
+    <span id="start-audio-call" title="Audio Call" style="margin-left: 10px; cursor: pointer;">
+        <span class="material-icons">call</span>
+    </span>
+    <span id="start-call" title="Video Call" style="margin-left: 5px; cursor: pointer;">
+        <span class="material-icons">videocam</span>
+    </span>
+`;
+
 
     backButton.style.display = 'block';
 
