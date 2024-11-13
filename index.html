@@ -2884,20 +2884,22 @@ async function updateTotalCoinsSpent() {
 ////////////AUDIO POZIV////////////
 
 // When the user clicks the audio call button
+// Kada korisnik klikne dugme za audio poziv
 document.getElementById('start-audio-call').addEventListener('click', async () => {
     if (!selectedUserId || !selectedUserName) {
-        console.error('selectedUserId or selectedUserName not set');
+        console.error('selectedUserId ili selectedUserName nisu postavljeni');
         return;
     }
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+        // Tražimo samo mikrofon za audio poziv
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         await startAudioCall(selectedUserId, selectedUserName, stream);
     } catch (error) {
-        console.error('Error starting audio call:', error);
+        console.error('Greška prilikom pokretanja audio poziva:', error);
     }
 });
 
-// Function to start the audio call
+// Funkcija za pokretanje audio poziva
 async function startAudioCall(userId, userName, stream) {
     const callRef = collection(db, 'calls');
     const callDoc = await addDoc(callRef, {
@@ -2909,7 +2911,7 @@ async function startAudioCall(userId, userName, stream) {
         timestamp: new Date(),
         offer: null,
         answer: null,
-        isAudioOnly: true // Indicate this is an audio-only call
+        isAudioOnly: true // Oznaka da je poziv samo audio
     });
 
     showCallingNotification(userName);
@@ -2917,14 +2919,14 @@ async function startAudioCall(userId, userName, stream) {
 
     const peerConnection = new RTCPeerConnection(configuration);
 
-    // Add audio tracks to peer connection
+    // Dodajemo samo audio trake u peer konekciju
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
-    // Create remote audio stream
+    // Kreiranje remote audio streama
     const remoteAudio = new Audio();
     remoteAudio.autoplay = true;
 
-    // Handle ICE candidates from the caller
+    // Rukovanje ICE kandidatima od pozivatelja
     const callerCandidatesCollection = collection(callDoc, 'callerCandidates');
     peerConnection.onicecandidate = event => {
         if (event.candidate) {
@@ -2932,21 +2934,21 @@ async function startAudioCall(userId, userName, stream) {
         }
     };
 
-    // Handle remote audio tracks
+    // Rukovanje remote audio trakama
     peerConnection.ontrack = event => {
         event.streams[0].getTracks().forEach(track => {
             remoteAudio.srcObject = event.streams[0];
         });
     };
 
-    // Create offer and set local description
+    // Kreiranje ponude i postavljanje lokalnog opisa
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    // Update the call document with the offer
+    // Ažuriranje dokumenta poziva s ponudom
     await updateDoc(callDoc, { offer: { type: offer.type, sdp: offer.sdp } });
 
-    // Listen for answer
+    // Slušanje odgovora
     onSnapshot(callDoc, (docSnapshot) => {
         const data = docSnapshot.data();
         if (data.answer && !peerConnection.currentRemoteDescription) {
@@ -2956,21 +2958,22 @@ async function startAudioCall(userId, userName, stream) {
         }
     });
 
-    // Listen for callee's ICE candidates
+    // Slušanje ICE kandidata primatelja
     const calleeCandidatesCollection = collection(callDoc, 'calleeCandidates');
     onSnapshot(calleeCandidatesCollection, snapshot => {
         snapshot.docChanges().forEach(change => {
             if (change.type === 'added') {
                 const candidate = new RTCIceCandidate(change.doc.data());
                 peerConnection.addIceCandidate(candidate).catch(e => {
-                    console.error('Error adding received ICE candidate', e);
+                    console.error('Greška prilikom dodavanja primljenog ICE kandidata', e);
                 });
             }
         });
     });
 
-    console.log("Audio call established.");
+    console.log("Audio poziv uspostavljen.");
 }
+
 
 
 
