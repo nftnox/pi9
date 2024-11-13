@@ -2592,22 +2592,31 @@ async function startCall(userId, userName, stream) {
 // Function to accept the call
 async function acceptCall(callId, stream) {
     const callRef = doc(db, 'calls', callId);
+    const callData = (await getDoc(callRef)).data();
     await updateDoc(callRef, { answered: true });
 
     const peerConnection = new RTCPeerConnection(configuration);
 
-    // Add local tracks to peer connection
+    // Dodajemo samo audio za audio poziv
+    if (callData.isAudioOnly) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } else {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    }
+
+    // Dodaj lokalne trake u peer connection
     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
-    // Add local video
-    addLocalVideo(stream);
+    // Dodavanje lokalnog videa (samo za video poziv)
+    if (!callData.isAudioOnly) {
+        addLocalVideo(stream);
+    }
 
-    // Create remote stream
+    // Kreiranje remote streama
     const remoteStream = new MediaStream();
-    // Add remote stream to video element
     addRemoteVideo(remoteStream);
 
-    // Handle ICE candidates from the callee
+    // Podnošenje ICE kandidata od primatelja
     const calleeCandidatesCollection = collection(callRef, 'calleeCandidates');
     peerConnection.onicecandidate = event => {
         if (event.candidate) {
@@ -2615,42 +2624,38 @@ async function acceptCall(callId, stream) {
         }
     };
 
-    // Handle remote tracks
+    // Rukovanje remote trakama
     peerConnection.ontrack = event => {
         event.streams[0].getTracks().forEach(track => {
             remoteStream.addTrack(track);
         });
     };
 
-    // Get the offer
-    const callDataDoc = await getDoc(callRef);
-    const callData = callDataDoc.data();
+    // Postavljanje remote opisa i kreiranje odgovora
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
 
-    if (callData.offer) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        // Update the call document with the answer
-        await updateDoc(callRef, { answer: { type: answer.type, sdp: answer.sdp } });
-        // Show "End Call" button for callee
-        showEndCallButton(callId, peerConnection);
-    }
+    // Ažuriranje dokumenta poziva sa odgovorom
+    await updateDoc(callRef, { answer: { type: answer.type, sdp: answer.sdp } });
+    showEndCallButton(callId, peerConnection);
 
-    // Listen for caller's ICE candidates
+    // Slušanje ICE kandidata pozivatelja
     const callerCandidatesCollection = collection(callRef, 'callerCandidates');
     onSnapshot(callerCandidatesCollection, snapshot => {
         snapshot.docChanges().forEach(change => {
             if (change.type === 'added') {
                 const candidate = new RTCIceCandidate(change.doc.data());
                 peerConnection.addIceCandidate(candidate).catch(e => {
-                    console.error('Error adding received ICE candidate', e);
+                    console.error('Greška prilikom dodavanja primljenog ICE kandidata', e);
                 });
             }
         });
     });
 
-    console.log("Call established at callee.");
+    console.log("Poziv uspostavljen kod primatelja.");
 }
+
 
 // Function to add local video
 function addLocalVideo(stream) {
@@ -2876,7 +2881,8 @@ async function updateTotalCoinsSpent() {
     document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
 }
 
-////////////grupni poziv////////////
+////////////AUDIO POZIV////////////
+
 // When the user clicks the audio call button
 document.getElementById('start-audio-call').addEventListener('click', async () => {
     if (!selectedUserId || !selectedUserName) {
@@ -2965,6 +2971,7 @@ async function startAudioCall(userId, userName, stream) {
 
     console.log("Audio call established.");
 }
+
 
 
 ///////////IGRA/////////////////
