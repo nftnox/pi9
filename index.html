@@ -707,6 +707,22 @@ textarea {
     display: none;
 }
 
+
+
+
+/* Styles for mobile display */
+@media (max-width: 768px) {
+    #product-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Two columns */
+        gap: 10px; /* Space between products */
+    }
+
+    .product {
+        width: 100%; /* Make each product take full width of its grid cell */
+    }
+}
+
     </style>
 </head>
 <body>
@@ -1180,7 +1196,7 @@ async function loadProducts() {
   // Prikaži cijenu u ETH ako postoji
   const productCryptoPrice = document.createElement('div');
     if (productData.cryptoPrice) {
-        productCryptoPrice.textContent = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
+        productCryptoPrice.textContent = `Cijena: ${productData.cryptoPrice} ETH`;
     }
 
     const buyWithCryptoButton = document.createElement('button');
@@ -2391,10 +2407,68 @@ async function openGroupChat(groupId, groupName) {
         }
     }
 
+
+    chatHeaderTitle.innerHTML = `Group: ${groupName} 
+    <span id="start-group-audio-call" title="Audio Call" style="margin-left: 10px; cursor: pointer;">
+        <span class="material-icons">call</span>
+    </span>
+    <span id="start-group-video-call" title="Video Call" style="margin-left: 5px; cursor: pointer;">
+        <span class="material-icons">videocam</span>
+    </span>`;
+
+
+    document.getElementById('start-group-audio-call').addEventListener('click', () => {
+    startGroupAudioCall(groupId);
+});
+
+document.getElementById('start-group-video-call').addEventListener('click', () => {
+    startGroupVideoCall(groupId);
+});
+
     // Load messages for this group
     loadGroupMessages(groupId);
 }
 
+///////////////grupni poziv//////
+
+async function startGroupAudioCall(groupId) {
+    const groupChatDoc = doc(db, 'groupChats', groupId);
+    const groupData = (await getDoc(groupChatDoc)).data();
+    const members = groupData.members || [];
+    
+    members.forEach(async (member) => {
+        if (member.userId !== userId) { // Poziva sve osim trenutnog korisnika
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                await startAudioCall(member.userId, member.userName, stream); // Koristimo postojecu funkciju
+            } catch (error) {
+                console.error(`Greška prilikom pokretanja audio poziva za ${member.userName}:`, error);
+            }
+        }
+    });
+}
+
+async function startGroupVideoCall(groupId) {
+    const groupChatDoc = doc(db, 'groupChats', groupId);
+    const groupData = (await getDoc(groupChatDoc)).data();
+    const members = groupData.members || [];
+    
+    const streams = []; // Lista za sve streams
+    members.forEach(async (member) => {
+        if (member.userId !== userId) { // Poziva sve osim trenutnog korisnika
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                streams.push(stream); // Dodaj stream za prikaz svih korisnika
+                await startCall(member.userId, member.userName, stream);
+            } catch (error) {
+                console.error(`Greška prilikom pokretanja video poziva za ${member.userName}:`, error);
+            }
+        }
+    });
+
+    // Nakon što se svi streamovi učitaju, podijelite ekran na četiri dijela
+    setupGridVideoDisplay(streams);
+}
 
 
 // Događaj za dugme "Back" za povratak na listu korisnika
