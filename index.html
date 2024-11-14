@@ -149,6 +149,7 @@ textarea {
 .user-info .user-name {
     font-weight: bold; /* Bold the username */
     margin-bottom: 5px; /* Add space below the name */
+    color: #000;
 }
 
 .user-info .last-message {
@@ -432,17 +433,19 @@ textarea {
 /* Main container for all products */
 .marketplace-outline {
     padding: 20px;
-    border: 2px solid #ccc; /* Outer border for the entire marketplace */
-    background-color: #fff; /* White background */
+    border: 3px solid; /* Adjust border thickness */
+    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Same gradient as .product */
+    background-color: #000000; /* Background color */
     border-radius: 10px;
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto; /* Center the container */
 }
 
+
 /* Container for individual products */
 .product {
-        border: 5px solid; /* Postavite debljinu obruba */
-        border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+        border: 3px solid; /* Postavite debljinu obruba */
+        border-image: linear-gradient(to right, #ffffff, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
         border-radius: 8px; /* Zaobljeni uglovi */
         padding: 10px; /* Unutarnji razmak */
         margin: 10px; /* Vanjski razmak između proizvoda */
@@ -937,14 +940,11 @@ document.getElementById('close-image-modal').addEventListener('click', function(
         </div>
         
         <!-- Dodavanje ikone za broj referral koda ispod trenutne cijene -->
-        <div id="referral-info">
-            <span class="material-icons" style="vertical-align: middle;">group</span> 
-            <span id="referral-count">0/10</span> <!-- Prikaz broja referral koda -->
-        </div>
+      
 
         <!-- Ikona za dijeljenje -->
         <button id="share-icon">
-            <span class="material-icons">share</span> Pozovi prijatelje
+            <span class="material-icons">share</span> Call friends
         </button>
     </div>
 
@@ -1189,7 +1189,7 @@ async function loadProducts() {
         productName.textContent = productData.name;
 
         const productPrice = document.createElement('div');
-        productPrice.textContent = `Cijena: ${productData.price} δ`;
+        productPrice.textContent = `Price: ${productData.price} δ`;
 
 
 
@@ -1197,7 +1197,7 @@ async function loadProducts() {
   // Prikaži cijenu u ETH ako postoji
   const productCryptoPrice = document.createElement('div');
     if (productData.cryptoPrice) {
-        productCryptoPrice.textContent = `Cijena: ${productData.cryptoPrice} ETH`;
+        productCryptoPrice.textContent = `Price: ${productData.cryptoPrice} ETH`;
     }
 
     const buyWithCryptoButton = document.createElement('button');
@@ -1267,7 +1267,7 @@ buyWithCryptoButton.addEventListener('click', async () => {
 
             // Prikaz novog vlasnika ispod 'Prodato'
             ownerDiv.textContent = `Novi vlasnik: ${username}`;
-            ownerDiv.style.color = 'blue';
+            ownerDiv.style.color = 'white';
             ownerDiv.style.cursor = 'pointer';
 
             // Klikom na ime vlasnika otvara se njegov profil
@@ -1295,7 +1295,7 @@ buyWithCryptoButton.addEventListener('click', async () => {
 
 
         const buyButton = document.createElement('button');
-        buyButton.textContent = productData.sold ? 'Prodato' : 'Kupi';
+        buyButton.textContent = productData.sold ? 'Sold' : 'Buy';
         buyButton.style.backgroundColor = productData.sold ? 'red' : 'green';
         buyButton.style.color = 'white';
         buyButton.style.marginTop = '10px';
@@ -1305,7 +1305,7 @@ buyWithCryptoButton.addEventListener('click', async () => {
         const ownerDiv = document.createElement('div');
         if (productData.sold && productData.ownerName) {
             ownerDiv.textContent = `Novi vlasnik: ${productData.ownerName}`;
-            ownerDiv.style.color = 'blue';
+            ownerDiv.style.color = 'white';
             ownerDiv.style.cursor = 'pointer';
 
             // Klikom na ime vlasnika otvara se njegov profil
@@ -1365,13 +1365,13 @@ buyWithCryptoButton.addEventListener('click', async () => {
                     document.getElementById('amount').innerText = currentPrice.toFixed(2);
 
                     // Promjena boje dugmeta na crvenu i teksta na 'Prodato'
-                    buyButton.textContent = 'Prodato';
+                    buyButton.textContent = 'Sold';
                     buyButton.style.backgroundColor = 'red';
                     buyButton.disabled = true;
 
                     // Prikaz novog vlasnika ispod "Prodato"
                     ownerDiv.textContent = `Novi vlasnik: ${username}`;
-                    ownerDiv.style.color = 'blue';
+                    ownerDiv.style.color = 'white';
                     ownerDiv.style.cursor = 'pointer';
 
                     // Klikom na ime vlasnika otvara se njegov profil
@@ -2347,8 +2347,11 @@ function displayGroupChat(group) {
     groupElement.appendChild(imgElement);
 
     const groupNameElement = document.createElement('span');
-    groupNameElement.textContent = group.groupName;
-    groupElement.appendChild(groupNameElement);
+groupNameElement.textContent = group.groupName;
+groupNameElement.style.color = 'black'; // Set the text color to black
+groupNameElement.style.fontWeight = 'bold'; // Make the text bold
+groupElement.appendChild(groupNameElement);
+
 
     groupElement.addEventListener('click', () => openGroupChat(group.groupId, group.groupName));
     usersListDiv.appendChild(groupElement);
@@ -2409,22 +2412,6 @@ async function openGroupChat(groupId, groupName) {
     }
 
 
-    chatHeaderTitle.innerHTML = `Group: ${groupName} 
-    <span id="start-group-audio-call" title="Audio Call" style="margin-left: 10px; cursor: pointer;">
-        <span class="material-icons">call</span>
-    </span>
-    <span id="start-group-video-call" title="Video Call" style="margin-left: 5px; cursor: pointer;">
-        <span class="material-icons">videocam</span>
-    </span>`;
-
-
-    document.getElementById('start-group-audio-call').addEventListener('click', () => {
-    startGroupAudioCall(groupId);
-});
-
-document.getElementById('start-group-video-call').addEventListener('click', () => {
-    startGroupVideoCall(groupId);
-});
 
     // Load messages for this group
     loadGroupMessages(groupId);
@@ -3531,6 +3518,7 @@ function showConfetti() {
 <style>
     body {
         font-family: 'Roboto', sans-serif; /* Promjena fonta */
+        color: #ffffff;
         margin: 0;
         padding: 0;
         background-color: black;
@@ -3693,7 +3681,7 @@ function showConfetti() {
         border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* gradijentni obrub s lijeva na desno */
         padding: 20px; /* razmak unutar boxa */
         margin: 20px auto; /* razmak iznad i ispod boxa, centrirano */
-        max-width: 600px; /* maksimalna širina boxa */
+        max-width: 1000px; /* maksimalna širina boxa */
         text-align: justify; /* opravdanje teksta */
         background-color: #000; /* crna pozadina */
         color: #fff; /* bijela boja teksta */
