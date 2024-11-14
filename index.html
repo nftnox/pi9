@@ -556,6 +556,7 @@ textarea {
     text-align: center;
     font-weight: bold;
     margin-bottom: 20px;
+    color: #000;
 }
 
 #coin-amount, #usd-amount {
@@ -564,6 +565,7 @@ textarea {
     margin-bottom: 15px;
     border-radius: 5px;
     border: 1px solid #ccc;
+    color: #000;
 }
 
 #send-request {
@@ -606,6 +608,7 @@ textarea {
     text-align: center;
     font-weight: bold;
     margin-bottom: 20px;
+    color: #000;
 }
 
 #usd-amount-buy, #delta-amount-receive {
@@ -614,6 +617,7 @@ textarea {
     margin-bottom: 15px;
     border-radius: 5px;
     border: 1px solid #ccc;
+    color: #000;
 }
 
 #buy-delta-button {
@@ -836,11 +840,12 @@ textarea {
 <p style="font-size: 0.9em; color: gray;">1 Delta Coin = 0.05247 USD</p>
 
         
-        <label for="coin-amount">How much Delta Coins you want to change:</label>
-        <input type="number" id="coin-amount" placeholder="Minimum 50" min="50" required>
-        
-        <p>How much money you will receive:</p>
-        <p id="usd-amount">0.00 USD</p>
+<label for="coin-amount" style="color: black;">How much Delta Coins you want to change:</label>
+<input type="number" id="coin-amount" placeholder="Minimum 50" min="50" required>
+
+<p style="color: black;">How much money you will receive:</p>
+<p id="usd-amount">0.00 USD</p>
+
         
         <button id="send-request">Send Request</button>
     </div>
@@ -855,11 +860,12 @@ textarea {
         
         <p style="font-size: 0.9em; color: gray;">1 USD = 19.06 Delta Coins</p> <!-- 1 / 0.05247 za izračun -->
         
-        <label for="usd-amount-buy">How much money you want to change:</label>
-        <input type="number" id="usd-amount-buy" placeholder="Minimum 5 USD" min="5" required>
-        
-        <p>How much Delta Coins you will receive:</p>
-        <p id="delta-amount-receive">0.00 Delta Coins</p>
+        <label for="usd-amount-buy" style="color: black;">How much money you want to change:</label>
+<input type="number" id="usd-amount-buy" placeholder="Minimum 5 USD" min="5" required>
+
+<p style="color: black;">How much Delta Coins you will receive:</p>
+<p id="delta-amount-receive">0.00 Delta Coins</p>
+
         
         <button id="buy-delta-button">Buy</button>
     </div>
@@ -944,7 +950,7 @@ document.getElementById('close-image-modal').addEventListener('click', function(
 
         <!-- Ikona za dijeljenje -->
         <button id="share-icon">
-            <span class="material-icons">share</span> Call friends
+            <span class="material-icons">share</span> Invite friends
         </button>
     </div>
 
@@ -2899,7 +2905,6 @@ function showCallingNotification(recipientName) {
     document.body.appendChild(callingOverlay);
 }
 
-// Function to show incoming call notification (callee side)
 // Function to show incoming call notification (callee side)
 function showIncomingCallNotification(callerName, callId) {
     const incomingCallOverlay = document.createElement('div');
