@@ -1207,10 +1207,12 @@ async function loadProducts() {
     }
 
     const buyWithCryptoButton = document.createElement('button');
-    buyWithCryptoButton.textContent = 'Buy with Crypto';
-    buyWithCryptoButton.style.backgroundColor = 'purple';
-    buyWithCryptoButton.style.color = 'white';
-    buyWithCryptoButton.style.marginTop = '10px';
+buyWithCryptoButton.textContent = 'Buy with Crypto';
+buyWithCryptoButton.style.backgroundColor = 'purple';
+buyWithCryptoButton.style.color = 'white';
+buyWithCryptoButton.style.marginTop = '10px';
+buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
+
 
     // Omogući MetaMask plaćanje
    // Omogući MetaMask plaćanje
@@ -1300,12 +1302,13 @@ buyWithCryptoButton.addEventListener('click', async () => {
 
 
 
-        const buyButton = document.createElement('button');
-        buyButton.textContent = productData.sold ? 'Sold' : 'Buy';
-        buyButton.style.backgroundColor = productData.sold ? 'red' : 'green';
-        buyButton.style.color = 'white';
-        buyButton.style.marginTop = '10px';
-        buyButton.disabled = productData.sold; // Onemogućava dugme ako je proizvod prodan
+const buyButton = document.createElement('button');
+buyButton.textContent = productData.sold ? 'Sold' : 'Buy';
+buyButton.style.backgroundColor = productData.sold ? 'red' : 'green';
+buyButton.style.color = 'white';
+buyButton.style.marginTop = '10px';
+buyButton.style.fontSize = '16px'; // Set font size to 16px
+buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         // Element za prikaz novog vlasnika
         const ownerDiv = document.createElement('div');
