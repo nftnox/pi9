@@ -716,6 +716,7 @@ textarea {
         display: grid;
         grid-template-columns: 1fr 1fr; /* Two columns */
         gap: 10px; /* Space between products */
+        transform: translateX(-10px); /* Shift the product list slightly to the left */
     }
 
     .product {
@@ -1196,7 +1197,7 @@ async function loadProducts() {
   // Prikaži cijenu u ETH ako postoji
   const productCryptoPrice = document.createElement('div');
     if (productData.cryptoPrice) {
-        productCryptoPrice.textContent = `Cijena: ${productData.cryptoPrice} ETH`;
+        productCryptoPrice.textContent = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
     }
 
     const buyWithCryptoButton = document.createElement('button');
