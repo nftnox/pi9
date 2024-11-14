@@ -1197,7 +1197,7 @@ async function loadProducts() {
   // Prikaži cijenu u ETH ako postoji
   const productCryptoPrice = document.createElement('div');
     if (productData.cryptoPrice) {
-        productCryptoPrice.textContent = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
+        productCryptoPrice.textContent = `Cijena: ${productData.cryptoPrice} ETH`;
     }
 
     const buyWithCryptoButton = document.createElement('button');
