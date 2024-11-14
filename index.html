@@ -23,9 +23,6 @@ textarea {
     
 }
 
-html, body {
-    overscroll-behavior-y: contain; /* Sprečava automatski skok na unos */
-}
 
       
         /* Chat modal, smješten u donji desni ugao za desktop, full screen za mobilne uređaje */
@@ -1145,7 +1142,7 @@ document.getElementById('close-image-modal').addEventListener('click', function(
 
         
 
-// TRZNICA//
+//////////////////////////////// TRZNICA/////////////////////////////////
 // Ažuriraj funkciju za učitavanje proizvoda
 async function loadProducts() {
     const productCollection = collection(db, 'products');
@@ -1511,7 +1508,7 @@ usdAmountBuyInput.addEventListener('input', () => {
 
 
 
-/////////////////CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAT//////////////////////////////
+/////////////////CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAT///////////////////////////////////////////////////////////////////////////////////////////////////////
 
         let isChatOpen = false; // Pratimo da li je chat otvoren
 let selectedUserName = ''; // Čuvamo ime trenutno odabranog korisnika
@@ -2574,7 +2571,7 @@ async function fetchUserGroups() {
 
 
 
-///////////////////////VIDEOPOZIV///////////////////////////////
+//////////////////////////////////////////////VIDEOPOZIV///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Configuration for WebRTC
 const configuration = {
@@ -2884,6 +2881,7 @@ function showIncomingCallNotification(callerName, callId) {
 
 // Function to show "End Call" button
 // Funkcija za prikaz "End Call" dugmeta kao crvenog kruga sa bijelim "X"
+// Function to show "End Call" button
 function showEndCallButton(callId, peerConnection) {
     const endCallButton = document.createElement('div');
     endCallButton.id = 'end-call';
@@ -2901,7 +2899,7 @@ function showEndCallButton(callId, peerConnection) {
     endCallButton.style.zIndex = '10001';
     endCallButton.style.cursor = 'pointer';
 
-    // Dodaj bijelo "X" unutar crvenog kruga
+    // Add white "X" inside red circle
     const xIcon = document.createElement('div');
     xIcon.style.color = 'white';
     xIcon.style.fontSize = '24px';
@@ -2912,12 +2910,43 @@ function showEndCallButton(callId, peerConnection) {
     document.body.appendChild(endCallButton);
 
     endCallButton.addEventListener('click', async () => {
-        peerConnection.close();
-        await updateDoc(doc(db, 'calls', callId), { ongoing: false });
-        document.body.removeChild(endCallButton);
-        console.log("Call ended.");
+        peerConnection.close();  // End the peer connection
+        await updateDoc(doc(db, 'calls', callId), { ongoing: false });  // Update the call document in Firestore
+        cleanupCallElements();  // Cleanup the UI elements
+    });
+
+    // Listen for updates to the call document to handle the end for both users
+    const callRef = doc(db, 'calls', callId);
+    onSnapshot(callRef, (docSnapshot) => {
+        const data = docSnapshot.data();
+        if (data && !data.ongoing) {
+            cleanupCallElements();  // Cleanup if the call has ended
+        }
     });
 }
+
+// Function to clean up call-related elements on the page
+function cleanupCallElements() {
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const remoteVideoBlur = document.getElementById('remoteVideoBlur');
+    const callingOverlay = document.querySelector('.calling-overlay');
+    const incomingCallOverlay = document.querySelector('.incoming-call-overlay');
+    const endCallButton = document.getElementById('end-call');
+
+    if (localVideo) localVideo.srcObject.getTracks().forEach(track => track.stop()); // Stop local video tracks
+    if (remoteVideo) remoteVideo.srcObject.getTracks().forEach(track => track.stop()); // Stop remote video tracks
+
+    if (localVideo) document.body.removeChild(localVideo);
+    if (remoteVideo) document.body.removeChild(remoteVideo);
+    if (remoteVideoBlur) document.body.removeChild(remoteVideoBlur);
+    if (callingOverlay) document.body.removeChild(callingOverlay);
+    if (incomingCallOverlay) document.body.removeChild(incomingCallOverlay);
+    if (endCallButton) document.body.removeChild(endCallButton);
+
+    console.log("Call has been fully terminated and cleaned up.");
+}
+
 
 
 // Function to set up listening for incoming calls
@@ -2971,7 +3000,7 @@ async function updateTotalCoinsSpent() {
     document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
 }
 
-////////////AUDIO POZIV////////////
+////////////////////////////////////////////////////////////////////////////////////////////////AUDIO POZIV/////////////////////////////////////////////////////////////////////////
 
 // When the user clicks the audio call button
 // Kada korisnik klikne dugme za audio poziv
@@ -3067,7 +3096,7 @@ async function startAudioCall(userId, userName, stream) {
 
 
 
-///////////IGRA/////////////////
+///////////////////////////////////////////////////////////////////////////////////IGRA///////////////////////////////////////////////////////////////////////
 
 // Variables for the game
 let gameId = null;
