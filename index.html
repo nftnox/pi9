@@ -2910,41 +2910,50 @@ function showEndCallButton(callId, peerConnection) {
     document.body.appendChild(endCallButton);
 
     endCallButton.addEventListener('click', async () => {
-        peerConnection.close();  // End the peer connection
-        await updateDoc(doc(db, 'calls', callId), { ongoing: false });  // Update the call document in Firestore
-        cleanupCallElements();  // Cleanup the UI elements
-    });
-
-    // Listen for updates to the call document to handle the end for both users
-    const callRef = doc(db, 'calls', callId);
-    onSnapshot(callRef, (docSnapshot) => {
-        const data = docSnapshot.data();
-        if (data && !data.ongoing) {
-            cleanupCallElements();  // Cleanup if the call has ended
-        }
+        peerConnection.close();  // Close the peer connection
+        await updateDoc(doc(db, 'calls', callId), { ongoing: false });  // Update call status in Firestore
+        removeCallInterface();  // Remove the call interface elements
+        console.log("Call ended.");
     });
 }
 
-// Function to clean up call-related elements on the page
-function cleanupCallElements() {
+// Function to remove call-related elements from the page
+function removeCallInterface() {
+    // Stop and remove local video
     const localVideo = document.getElementById('localVideo');
+    if (localVideo) {
+        const localStream = localVideo.srcObject;
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());  // Stop all tracks
+        }
+        document.body.removeChild(localVideo);  // Remove video element from DOM
+    }
+
+    // Stop and remove remote video and blurred background
     const remoteVideo = document.getElementById('remoteVideo');
     const remoteVideoBlur = document.getElementById('remoteVideoBlur');
+    if (remoteVideo) {
+        const remoteStream = remoteVideo.srcObject;
+        if (remoteStream) {
+            remoteStream.getTracks().forEach(track => track.stop());  // Stop all tracks
+        }
+        document.body.removeChild(remoteVideo);  // Remove video element from DOM
+    }
+    if (remoteVideoBlur) {
+        document.body.removeChild(remoteVideoBlur);  // Remove blurred background
+    }
+
+    // Remove overlays (e.g., calling and incoming call notifications)
     const callingOverlay = document.querySelector('.calling-overlay');
     const incomingCallOverlay = document.querySelector('.incoming-call-overlay');
-    const endCallButton = document.getElementById('end-call');
-
-    if (localVideo) localVideo.srcObject.getTracks().forEach(track => track.stop()); // Stop local video tracks
-    if (remoteVideo) remoteVideo.srcObject.getTracks().forEach(track => track.stop()); // Stop remote video tracks
-
-    if (localVideo) document.body.removeChild(localVideo);
-    if (remoteVideo) document.body.removeChild(remoteVideo);
-    if (remoteVideoBlur) document.body.removeChild(remoteVideoBlur);
     if (callingOverlay) document.body.removeChild(callingOverlay);
     if (incomingCallOverlay) document.body.removeChild(incomingCallOverlay);
+
+    // Remove end call button
+    const endCallButton = document.getElementById('end-call');
     if (endCallButton) document.body.removeChild(endCallButton);
 
-    console.log("Call has been fully terminated and cleaned up.");
+    console.log("All call-related elements have been removed from the page.");
 }
 
 
