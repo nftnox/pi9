@@ -2900,13 +2900,14 @@ function showCallingNotification(recipientName) {
 }
 
 // Function to show incoming call notification (callee side)
+// Function to show incoming call notification (callee side)
 function showIncomingCallNotification(callerName, callId) {
     const incomingCallOverlay = document.createElement('div');
     incomingCallOverlay.classList.add('incoming-call-overlay');
     incomingCallOverlay.innerHTML = 
         `<div class="incoming-call-content">
             <p>${callerName} is calling you...</p>
-            <div class="incoming-call-buttons">
+            <div class="incoming-call-buttons-container" style="background-color: white; padding: 10px; border-radius: 8px; margin-top: 10px;">
                 <button id="answer-call-${callId}" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px; border-radius: 5px;">Accept</button>
                 <button id="decline-call-${callId}" style="background-color: red; color: white; padding: 10px 20px; border-radius: 5px;">Decline</button>
             </div>
@@ -2941,6 +2942,7 @@ function showIncomingCallNotification(callerName, callId) {
         // Optionally, update call document to indicate call was declined
     });
 }
+
 
 // Function to show "End Call" button
 // Funkcija za prikaz "End Call" dugmeta kao crvenog kruga sa bijelim "X"
