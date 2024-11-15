@@ -738,10 +738,6 @@ textarea {
     <header>
         <div id="user-name">Pozdrav, <span id="ime"></span></div>
         <div id="current-price">Your wallet: <span id="amount">0.00</span> &#948;</div>
-        <button id="transfer-to-metamask" style="background-color: green; color: white; padding: 10px; border: none; border-radius: 5px;">
-            Transfer to MetaMask
-        </button>
-        
 
     
         <!-- Toggle dugme za mobilne uređaje -->
@@ -1536,9 +1532,9 @@ usdAmountBuyInput.addEventListener('input', () => {
     }
 });
 
-document.getElementById('transfer-to-metamask').addEventListener('click', async () => {
+async function transferToMetaMask(amount) {
     if (typeof window.ethereum === 'undefined') {
-        alert('MetaMask nije instaliran. Instalirajte MetaMask ekstenziju.');
+        alert('MetaMask nije instaliran.');
         return;
     }
 
@@ -1546,29 +1542,10 @@ document.getElementById('transfer-to-metamask').addEventListener('click', async 
         // Povezivanje s MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const accounts = await ethereum.request({ method: 'eth_accounts' });
-        const userAddress = accounts[0]; // Adresa korisnika iz MetaMask-a
-        console.log(`Korisnikova MetaMask adresa: ${userAddress}`);
-
-        // Dobijanje trenutnog salda iz Firestore-a
-        const userDocRef = doc(db, 'network', userId);
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-            alert('Korisnik ne postoji u Firestore-u.');
-            return;
-        }
-
-        const currentPrice = userDoc.data().currentPrice || 0;
-
-        if (currentPrice <= 0) {
-            alert('Nemate dovoljno Delta Coin-a za prijenos.');
-            return;
-        }
-
-        console.log(`Trenutni saldo korisnika (DeltaCoin): ${currentPrice}`);
+        const userAddress = accounts[0]; // Trenutno povezana MetaMask adresa
 
         // DeltaCoin kontrakt adresa i ABI
-        const deltaCoinAddress = '0x1aFd4C6E19a0BF4dB2684c897A2A58C0d36d8Ff9'; // Tvoja DeltaCoin adresa
+        const deltaCoinAddress = '0x1aFd4C6E19a0BF4dB2684c897A2A58C0d36d8Ff9'; // Zamijeniti sa stvarnom adresom DeltaCoin kontrakta
         const deltaCoinABI = [
             {
                 "constant": false,
@@ -1582,31 +1559,46 @@ document.getElementById('transfer-to-metamask').addEventListener('click', async 
             }
         ];
 
+        // Inicijalizacija web3 instance i kontrakta
         const web3 = new Web3(window.ethereum);
         const deltaCoinContract = new web3.eth.Contract(deltaCoinABI, deltaCoinAddress);
 
-        // Konvertuj currentPrice u wei (18 decimala)
-        const weiAmount = web3.utils.toWei(currentPrice.toString(), 'ether');
+        // Pretvori iznos u wei (18 decimala)
+        const weiAmount = web3.utils.toWei(amount.toString(), 'ether');
 
-        // Iniciraj transakciju
-        const transaction = await deltaCoinContract.methods.transfer(userAddress, weiAmount).send({
-            from: '0xVašaGlavnaAdresa' // Adresa vlasnika DeltaCoin-a
+        // Pozovi transakciju za prijenos tokena
+        const tx = await deltaCoinContract.methods.transfer(userAddress, weiAmount).send({
+            from: userAddress
         });
 
-        console.log('Transakcija uspješna:', transaction);
+        alert(`Uspješno preneseno ${amount} Delta Coin-a u MetaMask.`);
+        console.log('Transaction hash:', tx.transactionHash);
 
-        // Ažuriraj stanje u Firestore-u
-        await updateDoc(userDocRef, {
-            currentPrice: 0 // Resetiraj korisnikov saldo nakon transfera
-        });
+        // Ažuriraj prikaz "Your Wallet" salda
+        const walletAmountElement = document.getElementById('amount');
+        const currentWalletBalance = parseFloat(walletAmountElement.innerText);
+        walletAmountElement.innerText = (currentWalletBalance - amount).toFixed(2);
 
-        alert(`Uspješno ste prebacili ${currentPrice} Delta Coin-a na svoju MetaMask adresu!`);
-        document.getElementById('amount').innerText = '0.00'; // Ažuriraj prikaz korisnikovog salda
     } catch (error) {
-        console.error('Greška prilikom transfera:', error);
-        alert('Došlo je do greške. Pokušajte ponovo.');
+        console.error('Greška prilikom prijenosa:', error);
+        alert('Došlo je do greške prilikom prijenosa tokena.');
+    }
+}
+
+// Dodaj dugme za prijenos
+const transferButton = document.createElement('button');
+transferButton.innerText = 'Transfer to MetaMask';
+transferButton.addEventListener('click', () => {
+    const walletAmount = parseFloat(document.getElementById('amount').innerText);
+    if (walletAmount > 0) {
+        transferToMetaMask(walletAmount);
+    } else {
+        alert('Nemate dovoljno Delta Coin-a u Wallet-u.');
     }
 });
+
+// Dodaj dugme u DOM
+document.getElementById('current-price').appendChild(transferButton);
 
 
 /////////////////CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAT///////////////////////////////////////////////////////////////////////////////////////////////////////
