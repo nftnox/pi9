@@ -445,7 +445,7 @@ textarea {
 /* Container for individual products */
 .product {
         border: 3px solid; /* Postavite debljinu obruba */
-        border-image: linear-gradient(to right, #ffffff, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+        border-image: linear-gradient(to right, #d3d3d3, #d6d6d6) 1; /* Gradijentni obrub s lijeva na desno */
         border-radius: 8px; /* Zaobljeni uglovi */
         padding: 10px; /* Unutarnji razmak */
         margin: 10px; /* Vanjski razmak između proizvoda */
@@ -1119,7 +1119,7 @@ document.getElementById('close-image-modal').addEventListener('click', function(
                 const userReferralBonus = docSnap.data().referralBonus || 0.01;
 
                 document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
-                document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus + "/h" : "0.00/h";
+             document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus.toFixed(2) + "/h" : "0.00/h";
 
                 const now = new Date();
                 const twentyFourHours = 24 * 60 * 60 * 1000;
@@ -1211,7 +1211,7 @@ buyWithCryptoButton.textContent = 'Buy with Crypto';
 buyWithCryptoButton.style.backgroundColor = 'purple';
 buyWithCryptoButton.style.color = 'white';
 buyWithCryptoButton.style.marginTop = '10px';
-buyWithCryptoButton.style.fontSize = '15px'; // Set font size to 14px
+buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
 
 
     // Omogući MetaMask plaćanje
@@ -1793,7 +1793,8 @@ function showChatRequestPrompt(userName, userId) {
     chatRequestPrompt.style.zIndex = '1000'; // Osiguravamo da je prozor iznad svih ostalih elemenata
 
     chatRequestPrompt.innerHTML = `
-        <p>Želite li započeti chat sa ${userName}?</p>
+       <p style="color: black;">Želite li započeti chat sa ${userName}?</p>
+
         <button id="accept-chat-request">Da</button>
         <button id="decline-chat-request">Ne</button>
     `;
@@ -1832,7 +1833,8 @@ function showAcceptChatPrompt(requesterName, requestId) {
     chatAcceptPrompt.style.zIndex = '1000'; // Osiguravamo da je prozor iznad svih ostalih elemenata
 
     chatAcceptPrompt.innerHTML = `
-        <p>Korisnik ${requesterName} želi da započne chat sa vama. Prihvatate li?</p>
+       <p style="color: black;">Korisnik ${requesterName} želi da započne chat sa vama. Prihvatate li?</p>
+
         <button id="accept-chat-${requestId}">Prihvati</button>
         <button id="decline-chat-${requestId}">Odbij</button>
     `;
