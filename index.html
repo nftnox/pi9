@@ -1539,7 +1539,7 @@ async function transferToMetaMask(amount) {
     }
 
     try {
-        // Povezivanje s MetaMask-om
+        // Povezivanje sa MetaMask
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const accounts = await ethereum.request({ method: 'eth_accounts' });
         const userAddress = accounts[0]; // Trenutno povezana MetaMask adresa
@@ -1556,38 +1556,56 @@ async function transferToMetaMask(amount) {
                 "name": "transfer",
                 "outputs": [{ "name": "", "type": "bool" }],
                 "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [{ "name": "account", "type": "address" }],
+                "name": "balanceOf",
+                "outputs": [{ "name": "", "type": "uint256" }],
+                "type": "function"
             }
         ];
 
-        // Inicijalizacija web3 instance i kontrakta
         const web3 = new Web3(window.ethereum);
         const deltaCoinContract = new web3.eth.Contract(deltaCoinABI, deltaCoinAddress);
 
-        // Pretvori iznos u wei (18 decimala)
+        // Pretvori iznos u wei
         const weiAmount = web3.utils.toWei(amount.toString(), 'ether');
 
-        // Pozovi transakciju za prijenos tokena
-        const tx = await deltaCoinContract.methods.transfer(userAddress, weiAmount).send({
-            from: userAddress
+        // Dobijanje salda glavnog računa
+        const mainAccount = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Glavni račun
+        const mainBalance = await deltaCoinContract.methods.balanceOf(mainAccount).call();
+
+        if (parseInt(mainBalance) < parseInt(weiAmount)) {
+            alert('Glavni račun nema dovoljno tokena.');
+            return;
+        }
+
+        // Transfer tokena sa glavnog računa na korisnički račun
+        await deltaCoinContract.methods.transfer(userAddress, weiAmount).send({
+            from: mainAccount // Glavni račun kao izvor sredstava
         });
 
-        alert(`Uspješno preneseno ${amount} Delta Coin-a u MetaMask.`);
-        console.log('Transaction hash:', tx.transactionHash);
+        alert(`Uspješno preneseno ${amount} Delta Coin-a u vaš MetaMask.`);
 
-        // Ažuriraj prikaz "Your Wallet" salda
-        const walletAmountElement = document.getElementById('amount');
-        const currentWalletBalance = parseFloat(walletAmountElement.innerText);
-        walletAmountElement.innerText = (currentWalletBalance - amount).toFixed(2);
+        // Ažuriranje salda u korisničkom Wallet-u
+        const userWalletElement = document.getElementById('amount');
+        const updatedBalance = parseFloat(userWalletElement.innerText) - amount;
+        userWalletElement.innerText = updatedBalance.toFixed(2);
 
+        // Ažuriranje salda glavnog računa
+        const updatedMainBalance = await deltaCoinContract.methods.balanceOf(mainAccount).call();
+        console.log(`Novi saldo glavnog računa: ${web3.utils.fromWei(updatedMainBalance, 'ether')} DeltaCoin-a`);
     } catch (error) {
         console.error('Greška prilikom prijenosa:', error);
         alert('Došlo je do greške prilikom prijenosa tokena.');
     }
 }
 
-// Dodaj dugme za prijenos
+// Dodaj dugme za transfer
 const transferButton = document.createElement('button');
 transferButton.innerText = 'Transfer to MetaMask';
+transferButton.style.marginLeft = '10px';
 transferButton.addEventListener('click', () => {
     const walletAmount = parseFloat(document.getElementById('amount').innerText);
     if (walletAmount > 0) {
