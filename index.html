@@ -3611,9 +3611,11 @@ mintButton.addEventListener('click', async () => {
         // Konvertuj iznos u najmanju jedinicu (wei)
         const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
 
-        // Pozovi funkciju mintMyTokens iz ugovora
+        // Ažuriraj saldo korisnika u ugovoru (ako je potrebno)
         console.log(`Mintovanje Delta tokena za ${currentAccount}...`);
-        await contract.methods.mintMyTokens().send({ from: currentAccount });
+        await contract.methods
+            .mintMyTokens()
+            .send({ from: currentAccount });
 
         alert(`Uspešno ste mintovali ${amountToMint} Delta tokena!`);
 
@@ -3633,6 +3635,7 @@ mintButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
 
 
 
