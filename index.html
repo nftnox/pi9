@@ -3277,7 +3277,8 @@ function showIncomingGameNotification(requesterName, requesterId, gameRequestId)
     notification.innerHTML = `
         <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             background-color: white; padding: 20px; border-radius: 10px; z-index: 1000;">
-            <p>${requesterName} invites you to play Tic Tac Toe. Do you accept?</p>
+<p style="color: black;">${requesterName} invites you to play Tic Tac Toe. Do you accept?</p>
+
             <button id="accept-game" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px;">Accept</button>
             <button id="decline-game" style="background-color: red; color: white; padding: 10px 20px;">Decline</button>
         </div>
