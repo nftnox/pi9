@@ -1113,67 +1113,45 @@ document.getElementById('close-image-modal').addEventListener('click', function(
         }
 
         async function loadUserData() {                 //glavni dio za trenutnu cijenu//
-    const docRef = doc(db, 'network', userId);
-    const docSnap = await getDoc(docRef);
+            const docRef = doc(db, 'network', userId);
+            const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-        currentPrice = docSnap.data().currentPrice || 0.00;
-        lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
-        const userReferralBonus = docSnap.data().referralBonus || 0.01;
+            if (docSnap.exists()) {
+                currentPrice = docSnap.data().currentPrice || 0.00;
+                lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
+                const userReferralBonus = docSnap.data().referralBonus || 0.01;
 
-        document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
-        document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus.toFixed(2) + "/h" : "0.00/h";
+                document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+             document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus.toFixed(2) + "/h" : "0.00/h";
 
-        const now = new Date();
-        const twentyFourHours = 24 * 60 * 60 * 1000;
+                const now = new Date();
+                const twentyFourHours = 24 * 60 * 60 * 1000;
 
-        if (lastClickTime) {
-            const elapsed = now - lastClickTime;
-            const increments = Math.floor(elapsed / 5000); // Broj novih rudarskih ciklusa
-            const newCoins = increments * userReferralBonus; // Novi iznos coina za dodati
+                if (lastClickTime) {
+                    const elapsed = now - lastClickTime;
+                    const increments = Math.floor(elapsed / 5000);
+                    currentPrice += increments * userReferralBonus;
+                    document.getElementById('amount').innerText = currentPrice.toFixed(2);
+                    lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+                    await updateFirestore(currentPrice, lastClickTime);
+                }
 
-            if (newCoins > 0) {
-                currentPrice += newCoins; // Ažuriraj trenutni saldo
+                document.getElementById('dolar-icon').addEventListener('click', async () => {
+                    const now = new Date();
 
-                // Ažuriraj ukupno izrudareno (totalMined)
-                const userTotalMined = docSnap.data().totalMined || 0; // Dohvati trenutno izrudareno
-                await updateDoc(docRef, {
-                    totalMined: userTotalMined + newCoins // Dodaj nove coine na ukupno izrudareno
+                    if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                        lastClickTime = now;
+                        currentPrice += userReferralBonus;
+                        document.querySelector('.amount').innerText = userReferralBonus + "/h";
+                        await updateFirestore(currentPrice, lastClickTime);
+                    } else {
+                        alert("Možete kliknuti samo jednom svakih 24 sata.");
+                    }
                 });
-
-                console.log(`Dodano ${newCoins} coina u totalMined za korisnika ${userId}.`);
-            }
-
-            document.getElementById('amount').innerText = currentPrice.toFixed(2);
-            lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
-            await updateFirestore(currentPrice, lastClickTime);
-        }
-
-        document.getElementById('dolar-icon').addEventListener('click', async () => {
-            const now = new Date();
-
-            if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
-                lastClickTime = now;
-                currentPrice += userReferralBonus;
-
-                // Ažuriraj ukupno izrudareno (totalMined) i saldo korisnika
-                const userTotalMined = docSnap.data().totalMined || 0;
-                await updateDoc(docRef, {
-                    totalMined: userTotalMined + userReferralBonus
-                });
-
-                console.log(`Dodano ${userReferralBonus} coina u totalMined za korisnika ${userId}.`);
-                document.querySelector('.amount').innerText = userReferralBonus + "/h";
-                await updateFirestore(currentPrice, lastClickTime);
             } else {
-                alert("Možete kliknuti samo jednom svakih 24 sata.");
+                console.error("Korisnik ne postoji u Firestore-u.");
             }
-        });
-    } else {
-        console.error("Korisnik ne postoji u Firestore-u.");
-    }
-}
-
+        }
 
         async function updateFirestore(currentPrice, lastClickTime) {
             const docRef = doc(db, 'network', userId);
@@ -3097,15 +3075,19 @@ document.addEventListener('DOMContentLoaded', () => {
 async function updateTotalCoinsSpent() {
     const userCollection = collection(db, 'network');
     const querySnapshot = await getDocs(userCollection);
+
     let totalCoinsSpent = 0;
 
     querySnapshot.forEach(doc => {
         const userData = doc.data();
-        const userTotalMined = userData.totalMined || 0; // Koristi totalMined umjesto currentPrice
-        totalCoinsSpent += userTotalMined;
+        totalCoinsSpent += userData.currentPrice || 0; // Saberi iznose iz wallet-a svih korisnika
     });
 
-    // Ažurirajte prikaz na stranici
+    // Pohrani ukupni iznos u Firestore ako je potrebno
+    const totalDocRef = doc(db, 'networkStats', 'totalDeltaCoins');
+    await setDoc(totalDocRef, { totalDeltaCoinsMinted: totalCoinsSpent }, { merge: true });
+
+    // Ažuriraj prikaz na stranici
     document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
 }
 
@@ -3596,7 +3578,7 @@ mintButton.addEventListener('click', async () => {
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Dohvati iznos iz Your wallet
+        // Dohvati iznos iz Your Wallet
         const amountElement = document.getElementById('amount');
         const amountToMint = parseFloat(amountElement.innerText);
 
@@ -3610,9 +3592,7 @@ mintButton.addEventListener('click', async () => {
 
         // Ažuriraj saldo korisnika u ugovoru
         console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
-        await contract.methods
-            .updateBalance(currentAccount, amountInWei)
-            .send({ from: currentAccount });
+        await contract.methods.updateBalance(currentAccount, amountInWei).send({ from: currentAccount });
 
         // Pozovi funkciju mintMyTokens iz ugovora
         console.log(`Mintovanje LUNA tokena za ${currentAccount}...`);
@@ -3620,17 +3600,13 @@ mintButton.addEventListener('click', async () => {
 
         alert(`Uspešno ste mintovali ${amountToMint} LUNA tokena!`);
 
-        // Resetujte currentPrice varijablu na 0.00
+        // Resetujte currentPrice varijablu na 0.00 samo za korisnika
         currentPrice = 0.00;
 
-        // Resetuj iznos u virtuelnom novčaniku na 0
+        // Resetuj iznos u korisničkom wallet-u
         amountElement.innerText = '0.00';
 
-        // Ažuriraj Firestore bazu podataka (samo currentPrice korisnika)
-        await updateFirestore(currentPrice, lastClickTime);
-
-        // Napomena: Broj Delta Coins Majning ostaje isti
-        console.log('Delta Coins Majning se ne menja jer prikazuje ukupan broj izdatih tokena.');
+        // Napomena: **Delta Coins Majning** ostaje nepromijenjen
 
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
@@ -3646,14 +3622,20 @@ mintButton.addEventListener('click', async () => {
 
     // Učitaj proizvode nakon učitavanja stranice
     window.onload = () => {
-        loadUserId();
+    loadUserId();
+    loadUserData();
+    loadProducts();
+
+    // Ažuriranje Delta Coins Majning
+    updateTotalCoinsSpent();
+
+    // Ažuriraj prikaz svakih 5 sekundi
+    setInterval(() => {
         loadUserData();
-        loadProducts();
-        setInterval(() => {
-            loadUserData();
-            updateTotalCoinsSpent(); // Ažuriranje svakih 5 sekundi
-        }, 5000);
-    };
+        updateTotalCoinsSpent();
+    }, 5000);
+};
+
     </script>
 
 </body>
