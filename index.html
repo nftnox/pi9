@@ -951,8 +951,9 @@ document.getElementById('close-image-modal').addEventListener('click', function(
         <!-- Dodavanje ikone za broj referral koda ispod trenutne cijene -->
       
         <button id="mint-my-coin">
-            <span class="material-icons">monetization_on</span> Mint My Coins
+            <span class="material-icons">rocket_launch</span> Mint My Coins
         </button>
+        
         
         <!-- Ikona za dijeljenje -->
         <button id="share-icon">
@@ -1427,10 +1428,118 @@ localStorage.setItem('loggedInUser', userParam);
 
 
 
+///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const contractAddress = "0xCf4687eE794128026f0CC1a80c0a6788a38039a4"; // Nova adresa ugovora
+const contractABI = [
+    {
+        "inputs": [],
+        "name": "mintMyTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBalance",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "earnedBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+
+const mintButton = document.getElementById('mint-my-coin');
+
+mintButton.addEventListener('click', async () => {
+    try {
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
+        // Povezivanje sa MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
+
+        // Dohvati trenutni račun iz MetaMask-a
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+
+        // Poveži se sa ugovorom
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+        // Dohvati iznos iz Your wallet
+        const amountElement = document.getElementById('amount');
+        const amountToMint = parseFloat(amountElement.innerText);
+
+        if (amountToMint <= 0) {
+            alert('Nemate dovoljno sredstava za mintovanje.');
+            return;
+        }
+
+        // Konvertuj iznos u najmanju jedinicu (wei)
+        const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
+
+        // Ažuriraj saldo korisnika u ugovoru
+        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
+        await contract.methods
+            .updateBalance(currentAccount, amountInWei)
+            .send({ from: currentAccount });
+
+        // Pozovi funkciju mintMyTokens iz ugovora
+        console.log(`Mintovanje LUNA tokena za ${currentAccount}...`);
+        await contract.methods.mintMyTokens().send({ from: currentAccount });
+
+        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
+
+        // Resetujte `currentPrice` varijablu na 0.00
+        currentPrice = 0.00;
+
+        // Resetuj iznos u virtuelnom novčaniku na 0
+        amountElement.innerText = '0.00';
+
+        // Ažuriraj Firestore bazu podataka
+        await updateFirestore(currentPrice, lastClickTime);
+
+        // Ažuriraj prikaz u MetaMask-u (opcionalno)
+    } catch (error) {
+        console.error('Greška prilikom mintovanja:', error);
+        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+    }
+});
 
 
 
-// Open and close modal for "Exchange"
+////////////////////////////////// Open and close modal for "Exchange"///////////////////////////////////////
 document.getElementById('exchange-link').addEventListener('click', () => {
     document.getElementById('exchange-modal').style.display = 'block';
 });
@@ -3508,114 +3617,6 @@ function showConfetti() {
 }
 
 
-///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const contractAddress = "0xCf4687eE794128026f0CC1a80c0a6788a38039a4"; // Nova adresa ugovora
-const contractABI = [
-    {
-        "inputs": [],
-        "name": "mintMyTokens",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateBalance",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "earnedBalance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-];
-
-const mintButton = document.getElementById('mint-my-coin');
-
-mintButton.addEventListener('click', async () => {
-    try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
-        }
-
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // Dohvati trenutni račun iz MetaMask-a
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-
-        // Poveži se sa ugovorom
-        const contract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Dohvati iznos iz Your wallet
-        const amountElement = document.getElementById('amount');
-        const amountToMint = parseFloat(amountElement.innerText);
-
-        if (amountToMint <= 0) {
-            alert('Nemate dovoljno sredstava za mintovanje.');
-            return;
-        }
-
-        // Konvertuj iznos u najmanju jedinicu (wei)
-        const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
-
-        // Ažuriraj saldo korisnika u ugovoru
-        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
-        await contract.methods
-            .updateBalance(currentAccount, amountInWei)
-            .send({ from: currentAccount });
-
-        // Pozovi funkciju mintMyTokens iz ugovora
-        console.log(`Mintovanje LUNA tokena za ${currentAccount}...`);
-        await contract.methods.mintMyTokens().send({ from: currentAccount });
-
-        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
-
-        // Resetujte `currentPrice` varijablu na 0.00
-        currentPrice = 0.00;
-
-        // Resetuj iznos u virtuelnom novčaniku na 0
-        amountElement.innerText = '0.00';
-
-        // Ažuriraj Firestore bazu podataka
-        await updateFirestore(currentPrice, lastClickTime);
-
-        // Ažuriraj prikaz u MetaMask-u (opcionalno)
-    } catch (error) {
-        console.error('Greška prilikom mintovanja:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
-    }
-});
 
 
 
@@ -3807,6 +3808,7 @@ mintButton.addEventListener('click', async () => {
     font-size: 22px;
     cursor: pointer;
     position: relative;
+    left: -700px; /* Pomjera ulijevo za 10px */
     background: transparent; /* Prozirna pozadina */
     color: white; /* Bijela boja teksta */
     border: 2px solid transparent; /* Prozirni obrub (outline) */
@@ -3814,6 +3816,36 @@ mintButton.addEventListener('click', async () => {
 
 
 }
+
+
+@media (max-width: 768px) {
+    #mint-my-coin {
+        position: relative; /* Obavezno za korištenje left i top */
+        
+        left: 1px;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        display: flex;
+        flex-direction: row; /* Elementi ostaju u istom redu */
+        justify-content: space-between; /* Ravnomjeran razmak između elemenata */
+        align-items: center; /* Centriranje elemenata vertikalno */
+        gap: 10px; /* Minimalan razmak između elemenata */
+        position: relative; /* Omogućava pomjeranje */
+        top: -50px; /* Pomjera cijelu grupu elemenata prema gore za 10px */
+    }
+
+    .icon, #mint-my-coin, #share-icon {
+        width: auto; /* Zadržava njihovu širinu */
+        text-align: center; /* Poravnanje teksta centrirano */
+    }
+}
+
+
+
+
 </style>
 
 
@@ -3940,7 +3972,7 @@ mintButton.addEventListener('click', async () => {
 @media (max-width: 768px) {
     .image-container {
         align-items: flex-start; /* Gornji dio */
-        transform: translateY(10px); /* Pomakni prema dolje na mobilnim uređajima */
+        transform: translateY(-30px); /* Pomakni prema dolje na mobilnim uređajima */
     }
 }
 
