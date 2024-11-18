@@ -3505,7 +3505,6 @@ function showConfetti() {
 
 
 
-// Adresa ugovora i ABI
 const contractAddress = "0x93b337F5C6919958Af9B16636772bd03Bd2cca7e"; // Adresa ugovora
 const contractABI = [
     {
@@ -3519,77 +3518,18 @@ const contractABI = [
         "inputs": [
             {
                 "internalType": "address",
-                "name": "spender",
+                "name": "user",
                 "type": "address"
             },
             {
                 "internalType": "uint256",
-                "name": "value",
+                "name": "amount",
                 "type": "uint256"
             }
         ],
-        "name": "approve",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
+        "name": "updateBalance",
+        "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "from",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "transferFrom",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "owner",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "spender",
-                "type": "address"
-            }
-        ],
-        "name": "allowance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -3610,26 +3550,11 @@ const contractABI = [
         ],
         "stateMutability": "view",
         "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalMinted",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
     }
 ];
 
-// Povezivanje dugmeta za mintovanje
 const mintButton = document.getElementById('mint-my-coin');
 
-// Funkcija za mintovanje tokena
 mintButton.addEventListener('click', async () => {
     try {
         if (typeof window.ethereum === 'undefined') {
@@ -3648,15 +3573,35 @@ mintButton.addEventListener('click', async () => {
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
+        // Dohvati iznos iz `Your wallet`
+        const amountElement = document.getElementById('amount');
+        const amountToMint = parseFloat(amountElement.innerText);
+
+        if (amountToMint <= 0) {
+            alert('Nemate dovoljno sredstava za mintovanje.');
+            return;
+        }
+
+        // Ažuriraj saldo korisnika u ugovoru
+        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
+        await contract.methods
+            .updateBalance(currentAccount, web3.utils.toWei(amountToMint.toString(), 'ether'))
+            .send({ from: currentAccount });
+
         // Pozovi funkciju `mintMyTokens` iz ugovora
+        console.log(`Minting ORCA tokena za ${currentAccount}...`);
         await contract.methods.mintMyTokens().send({ from: currentAccount });
 
-        alert('Tokeni uspješno mintovani!');
+        alert(`Uspješno ste mintovali ${amountToMint} ORCA tokena!`);
+
+        // Resetuj iznos u virtuelnom novčaniku na 0
+        amountElement.innerText = '0.00';
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
 
 
 
