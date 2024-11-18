@@ -3506,7 +3506,7 @@ function showConfetti() {
 
 
 // Adresa ugovora i ABI
-const contractAddress = "0x93b337F5C6919958Af9B16636772bd03Bd2cca7e"; // Adresa ugovora
+const contractAddress = "0x93b337F5C6919958Af9B16636772bd03Bd2cca7e";
 const contractABI = [
     {
         "inputs": [],
@@ -3517,91 +3517,57 @@ const contractABI = [
     },
     {
         "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
+            { "internalType": "address", "name": "user", "type": "address" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" }
         ],
         "name": "updateBalance",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "earnedBalance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
     }
 ];
 
-const mintButton = document.getElementById('mint-my-coin');
-
-mintButton.addEventListener('click', async () => {
+// Funkcija za mintovanje tokena
+async function mintTokens() {
     try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+        if (typeof window.ethereum === "undefined") {
+            alert("MetaMask nije instaliran! Molimo vas da ga instalirate.");
             return;
         }
 
         // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        await window.ethereum.request({ method: "eth_requestAccounts" });
         const web3 = new Web3(window.ethereum);
 
-        // Dohvati trenutni račun iz MetaMask-a
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
-
-        // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Dohvati iznos iz `Your wallet`
-        const amountElement = document.getElementById('amount');
-        const amountToMint = parseFloat(amountElement.innerText);
-
-        if (amountToMint <= 0) {
-            alert('Nemate dovoljno sredstava za mintovanje.');
+        // Dohvati iznos iz "Your Wallet"
+        const yourWalletAmount = parseFloat(document.getElementById("amount").innerText);
+        if (yourWalletAmount <= 0) {
+            alert("Nemate dovoljno sredstava za mintovanje.");
             return;
         }
 
-        // Ažuriraj saldo korisnika u ugovoru
-        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
-        await contract.methods
-            .updateBalance(currentAccount, web3.utils.toWei(amountToMint.toString(), 'ether'))
-            .send({ from: currentAccount });
+        console.log(`Ažuriranje balansa sa ${yourWalletAmount} za ${currentAccount}...`);
+        await contract.methods.updateBalance(currentAccount, yourWalletAmount).send({ from: currentAccount });
 
-        // Pozovi funkciju `mintMyTokens` iz ugovora
-        console.log(`Minting ORCA tokena za ${currentAccount}...`);
+        console.log(`Mintovanje ORCA tokena za ${currentAccount}...`);
         await contract.methods.mintMyTokens().send({ from: currentAccount });
 
-        alert(`Uspješno ste mintovali ${amountToMint} ORCA tokena!`);
+        alert(`Uspešno ste mintovali ${yourWalletAmount} ORCA tokena!`);
 
-        // Resetuj iznos u virtuelnom novčaniku na 0
-        amountElement.innerText = '0.00';
+        // Resetujte "Your Wallet"
+        document.getElementById("amount").innerText = "0.00";
     } catch (error) {
-        console.error('Greška prilikom mintovanja:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+        console.error("Greška prilikom mintovanja:", error);
+        alert("Došlo je do greške prilikom mintovanja. Pokušajte ponovo.");
     }
-});
+}
+
+// Povežite dugme za mintovanje sa funkcijom
+document.getElementById("mint-my-coin").addEventListener("click", mintTokens);
 
 
 
