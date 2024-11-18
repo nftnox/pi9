@@ -3597,8 +3597,14 @@ mintButton.addEventListener('click', async () => {
 
         alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
 
+        // Resetujte `currentPrice` varijablu na 0.00
+        currentPrice = 0.00;
+
         // Resetuj iznos u virtuelnom novčaniku na 0
         amountElement.innerText = '0.00';
+
+        // Ažuriraj Firestore bazu podataka
+        await updateFirestore(currentPrice, lastClickTime);
 
         // Ažuriraj prikaz u MetaMask-u (opcionalno)
     } catch (error) {
@@ -3606,6 +3612,7 @@ mintButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
 
 
 
