@@ -3506,12 +3506,29 @@ function showConfetti() {
 
 
 // Adresa ugovora i ABI
-// Adresa ugovora i ABI
-const contractAddress = "0x93b337F5C6919958Af9B16636772bd03Bd2cca7e";
+const contractAddress = "0x93b337F5C6919958Af9B16636772bd03Bd2cca7e"; // Adresa ugovora
 const contractABI = [
     {
         "inputs": [],
         "name": "mintMyTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBalance",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -3537,7 +3554,6 @@ const contractABI = [
     }
 ];
 
-// Dugme za mintovanje
 const mintButton = document.getElementById('mint-my-coin');
 
 mintButton.addEventListener('click', async () => {
@@ -3567,9 +3583,14 @@ mintButton.addEventListener('click', async () => {
             return;
         }
 
-        // Ažuriraj saldo u pametnom ugovoru
-        console.log(`Minting ${amountToMint} ORCA tokens...`);
+        // Ažuriraj saldo korisnika u ugovoru
+        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
+        await contract.methods
+            .updateBalance(currentAccount, web3.utils.toWei(amountToMint.toString(), 'ether'))
+            .send({ from: currentAccount });
 
+        // Pozovi funkciju `mintMyTokens` iz ugovora
+        console.log(`Minting ORCA tokena za ${currentAccount}...`);
         await contract.methods.mintMyTokens().send({ from: currentAccount });
 
         alert(`Uspješno ste mintovali ${amountToMint} ORCA tokena!`);
