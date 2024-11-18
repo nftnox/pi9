@@ -3505,7 +3505,7 @@ function showConfetti() {
 
 
 
-const contractAddress = "0x93b337F5C6919958Af9B16636772bd03Bd2cca7e"; // Adresa ugovora
+const contractAddress = "0xCf4687eE794128026f0CC1a80c0a6788a38039a4"; // Nova adresa ugovora
 const contractABI = [
     {
         "inputs": [],
@@ -3573,7 +3573,7 @@ mintButton.addEventListener('click', async () => {
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Dohvati iznos iz `Your wallet`
+        // Dohvati iznos iz Your wallet
         const amountElement = document.getElementById('amount');
         const amountToMint = parseFloat(amountElement.innerText);
 
@@ -3582,26 +3582,30 @@ mintButton.addEventListener('click', async () => {
             return;
         }
 
+        // Konvertuj iznos u najmanju jedinicu (wei)
+        const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
+
         // Ažuriraj saldo korisnika u ugovoru
         console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
         await contract.methods
-            .updateBalance(currentAccount, web3.utils.toWei(amountToMint.toString(), 'ether'))
+            .updateBalance(currentAccount, amountInWei)
             .send({ from: currentAccount });
 
-        // Pozovi funkciju `mintMyTokens` iz ugovora
-        console.log(`Minting ORCA tokena za ${currentAccount}...`);
+        // Pozovi funkciju mintMyTokens iz ugovora
+        console.log(`Mintovanje LUNA tokena za ${currentAccount}...`);
         await contract.methods.mintMyTokens().send({ from: currentAccount });
 
-        alert(`Uspješno ste mintovali ${amountToMint} ORCA tokena!`);
+        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
 
         // Resetuj iznos u virtuelnom novčaniku na 0
         amountElement.innerText = '0.00';
+
+        // Ažuriraj prikaz u MetaMask-u (opcionalno)
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
-
 
 
 
