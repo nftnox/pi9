@@ -3076,19 +3076,39 @@ async function updateTotalCoinsSpent() {
     const userCollection = collection(db, 'network');
     const querySnapshot = await getDocs(userCollection);
 
-    let totalCoinsSpent = 0;
+    let totalMintedTokens = 0;
 
     querySnapshot.forEach(doc => {
         const userData = doc.data();
-        totalCoinsSpent += userData.currentPrice || 0; // Saberi iznose iz wallet-a svih korisnika
+        const userTotalMinted = userData.totalMintedTokens || 0; // Koristi samo totalMintedTokens
+        totalMintedTokens += userTotalMinted;
     });
 
-    // Pohrani ukupni iznos u Firestore ako je potrebno
-    const totalDocRef = doc(db, 'networkStats', 'totalDeltaCoins');
-    await setDoc(totalDocRef, { totalDeltaCoinsMinted: totalCoinsSpent }, { merge: true });
-
     // Ažuriraj prikaz na stranici
-    document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
+    document.getElementById('coins-spent').innerText = totalMintedTokens.toFixed(2);
+}
+
+async function initializeTotalMintedTokens() {
+    const userCollection = collection(db, 'network');
+    const querySnapshot = await getDocs(userCollection);
+
+    let initialTotalMinted = 0;
+
+    querySnapshot.forEach(async (docSnap) => {
+        const userData = docSnap.data();
+        const userCurrentPrice = userData.currentPrice || 0;
+
+        // Dodaj trenutni iznos korisnika na inicijalnu sumu
+        initialTotalMinted += userCurrentPrice;
+
+        // Postavi početnu vrijednost totalMintedTokens za svakog korisnika
+        const userDocRef = doc(db, 'network', docSnap.id);
+        await updateDoc(userDocRef, {
+            totalMintedTokens: userCurrentPrice // Postavi trenutni iznos
+        });
+    });
+
+    console.log(`Inicijalizovana ukupna vrijednost izdatih tokena: ${initialTotalMinted}`);
 }
 
 
@@ -3560,6 +3580,7 @@ const contractABI = [
 
 const mintButton = document.getElementById('mint-my-coin');
 
+// Funkcija mintovanja
 mintButton.addEventListener('click', async () => {
     try {
         if (typeof window.ethereum === 'undefined') {
@@ -3590,23 +3611,22 @@ mintButton.addEventListener('click', async () => {
         // Konvertuj iznos u najmanju jedinicu (wei)
         const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
 
-        // Ažuriraj saldo korisnika u ugovoru
-        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
-        await contract.methods.updateBalance(currentAccount, amountInWei).send({ from: currentAccount });
-
         // Pozovi funkciju mintMyTokens iz ugovora
-        console.log(`Mintovanje LUNA tokena za ${currentAccount}...`);
+        console.log(`Mintovanje Delta tokena za ${currentAccount}...`);
         await contract.methods.mintMyTokens().send({ from: currentAccount });
 
-        alert(`Uspešno ste mintovali ${amountToMint} LUNA tokena!`);
+        alert(`Uspešno ste mintovali ${amountToMint} Delta tokena!`);
 
-        // Resetujte currentPrice varijablu na 0.00 samo za korisnika
-        currentPrice = 0.00;
-
-        // Resetuj iznos u korisničkom wallet-u
+        // Resetuj iznos u virtuelnom novčaniku na 0
         amountElement.innerText = '0.00';
 
-        // Napomena: **Delta Coins Majning** ostaje nepromijenjen
+        // Ažuriraj Firestore bazu podataka (samo currentPrice korisnika)
+        const userDocRef = doc(db, 'network', userId);
+        await updateDoc(userDocRef, {
+            currentPrice: 0.00 // Resetuj trenutni iznos korisnika
+        });
+
+        console.log('Mintovanje završeno. Ukupna vrijednost u Delta Coins Majning ostaje nepromijenjena.');
 
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
@@ -3620,21 +3640,19 @@ mintButton.addEventListener('click', async () => {
 
 
 
+
     // Učitaj proizvode nakon učitavanja stranice
     window.onload = () => {
     loadUserId();
     loadUserData();
     loadProducts();
-
-    // Ažuriranje Delta Coins Majning
-    updateTotalCoinsSpent();
-
-    // Ažuriraj prikaz svakih 5 sekundi
+    initializeTotalMintedTokens(); // Pokreni samo jednom
     setInterval(() => {
         loadUserData();
-        updateTotalCoinsSpent();
+        updateTotalCoinsSpent(); // Ažuriraj svakih 5 sekundi
     }, 5000);
 };
+
 
     </script>
 
