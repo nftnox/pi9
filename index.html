@@ -1223,69 +1223,84 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
 
     // Omogući MetaMask plaćanje
    // Omogući MetaMask plaćanje
-   buyWithCryptoButton.addEventListener('click', async () => {
-    try {
-        // Provjera da li je MetaMask instaliran
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
+buyWithCryptoButton.addEventListener('click', async () => {
+    // Provjera da li je MetaMask instaliran
+    if (typeof window.ethereum !== 'undefined') {
+        try {
+            // Povežite se sa MetaMask-om i dobijte račune
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum); // Inicijalizacija web3 objekta
+
+            // Dobijanje trenutnog računa
+            const accounts = await web3.eth.getAccounts();
+            const account = accounts[0]; // Prvi račun u nizu
+            console.log("Povezan račun:", account);
+
+            // Provjera cijene u ETH
+            const ethPrice = productData.cryptoPrice;
+            console.log("Cijena u ETH:", ethPrice);
+
+            // Konverzija cijene u wei koristeći preciznu konverziju
+            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
+            console.log("Vrijednost u Wei:", weiValue);
+
+            // Inicijacija transakcije
+            const txParams = {
+                from: account,
+                to: '0x045cd928A66C6FAb414c807005CFD7769470FDAf', // Ethereum adresa primatelja
+                value: weiValue, // Vrijednost u wei
+                gas: 21000 // Minimalan gas za slanje
+            };
+
+            // Slanje transakcije putem MetaMask-a
+            const transactionHash = await web3.eth.sendTransaction(txParams);
+
+            // Ako je transakcija uspješna, ažuriraj status proizvoda u Firestore-u
+            console.log(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
+
+            // Ažuriraj status proizvoda na 'prodato' i dodaj novog vlasnika u Firestore-u
+            const productDocRef = doc(db, 'products', productId);
+            await updateDoc(productDocRef, {
+                sold: true,
+                owner: userId,
+                ownerName: username // Dodaj ime korisnika kao vlasnika
+            });
+
+            // Dodavanje proizvoda u kupovine
+            const userPurchasesRef = collection(db, `network/${userId}/purchases`);
+            await addDoc(userPurchasesRef, {
+                name: productData.name,
+                imageUrl: productData.imageUrl,
+                price: productData.cryptoPrice,
+                purchaseTime: new Date()
+            });
+
+            // Promjena boje dugmeta na crvenu i teksta na 'Prodato'
+            buyWithCryptoButton.textContent = 'Prodato';
+            buyWithCryptoButton.style.backgroundColor = 'red';
+            buyWithCryptoButton.disabled = true;
+
+            // Prikaz novog vlasnika ispod 'Prodato'
+            ownerDiv.textContent = `Novi vlasnik: ${username}`;
+            ownerDiv.style.color = 'white';
+            ownerDiv.style.cursor = 'pointer';
+
+            // Klikom na ime vlasnika otvara se njegov profil
+            ownerDiv.addEventListener('click', () => {
+                window.location.href = `profile.html?ime=${username}`;
+            });
+
+            productDiv.appendChild(ownerDiv);
+
+            alert(`Kupili ste ${productData.name} za ${productData.cryptoPrice} ETH!`);
+        } catch (error) {
+            console.error('Greška prilikom MetaMask transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
         }
-
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // Dohvati trenutni račun iz MetaMask-a
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-
-        // Poveži se sa pametnim ugovorom LUNA tokena
-        const contract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Provjera korisnikovog balansa LUNA tokena
-        const balance = await contract.methods.balanceOf(currentAccount).call();
-        const lunaPriceInWei = web3.utils.toWei(productData.cryptoPrice.toString(), 'ether');
-
-        if (parseFloat(balance) < parseFloat(lunaPriceInWei)) {
-            alert('Nemate dovoljno LUNA tokena za ovu kupovinu.');
-            return;
-        }
-
-        // Pokreni MetaMask transakciju za prijenos LUNA tokena
-        console.log(`Plaćanje ${productData.cryptoPrice} LUNA tokena sa računa ${currentAccount}`);
-        await contract.methods
-            .transfer('0x045cd928A66C6FAb414c807005CFD7769470FDAf', lunaPriceInWei) // Adresa trgovca
-            .send({ from: currentAccount });
-
-        // Ažuriraj status proizvoda nakon uspješne transakcije
-        const productDocRef = doc(db, 'products', productId);
-        await updateDoc(productDocRef, {
-            sold: true,
-            owner: userId,
-            ownerName: username // Dodaj ime korisnika kao vlasnika
-        });
-
-        // Dodavanje proizvoda u Firestore kolekciju kupovina
-        const userPurchasesRef = collection(db, `network/${userId}/purchases`);
-        await addDoc(userPurchasesRef, {
-            name: productData.name,
-            imageUrl: productData.imageUrl,
-            price: productData.cryptoPrice,
-            purchaseTime: new Date()
-        });
-
-        // Promijeni status na "Prodano"
-        buyWithCryptoButton.textContent = 'Prodano';
-        buyWithCryptoButton.style.backgroundColor = 'red';
-        buyWithCryptoButton.disabled = true;
-
-        alert(`Uspješno ste kupili ${productData.name} za ${productData.cryptoPrice} LUNA tokena!`);
-    } catch (error) {
-        console.error('Greška prilikom kupovine putem MetaMask-a:', error);
-        alert('Došlo je do greške prilikom transakcije. Molimo pokušajte ponovo.');
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
-
 
 
 
@@ -1324,75 +1339,83 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
-        // Dodavanje događaja za dugme 'Kupi'
         buyButton.addEventListener('click', async () => {
-            if (productData.sold) {
-                alert('Ovaj proizvod je već prodan.');
-                return;
-            }
+    if (productData.sold) {
+        alert('Ovaj proizvod je već prodan.');
+        return;
+    }
 
-            if (currentPrice >= productData.price) {
-                try {
-                    // Kreiranje reference na dokument proizvoda
-                    const productDocRef = doc(db, 'products', productId);
+    if (typeof window.ethereum === 'undefined') {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje plaćanja.');
+        return;
+    }
 
-                    // Ažuriraj status proizvoda na 'prodato' i vlasnika u Firestore-u
-                    await updateDoc(productDocRef, {
-                        sold: true,
-                        owner: userId,
-                        ownerName: username // Dodaj ime korisnika kao vlasnika
-                    });
+    try {
+        // Povezivanje sa MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
 
-                    // Kreiranje reference na dokument korisnika
-                    const userDocRef = doc(db, 'network', userId);
+        // Dohvaćanje korisnikovog računa iz MetaMask-a
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
 
-                    // Oduzimanje cijene proizvoda u Firestore-u
-                    const novaCijena = currentPrice - productData.price;
-                    await updateDoc(userDocRef, {
-                        currentPrice: novaCijena
-                    });
+        // Povezivanje s LUNA ugovorom
+        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
 
-                    // Dodavanje proizvoda u kupovine
-                    const userPurchasesRef = collection(db, `network/${userId}/purchases`);
-                    await addDoc(userPurchasesRef, {
-                        name: productData.name,
-                        imageUrl: productData.imageUrl,
-                        price: productData.price,
-                        purchaseTime: new Date()
-                    });
+        // Provjera korisnikovog LUNA balansa
+        const userBalance = await lunaTokenContract.methods.balanceOf(currentAccount).call();
+        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Cijena proizvoda u wei
 
-                    // Ažuriranje prikaza trenutne cijene
-                    currentPrice = novaCijena;
-                    document.getElementById('amount').innerText = currentPrice.toFixed(2);
+        if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
+            alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
+            return;
+        }
 
-                    // Promjena boje dugmeta na crvenu i teksta na 'Prodato'
-                    buyButton.textContent = 'Sold';
-                    buyButton.style.backgroundColor = 'red';
-                    buyButton.disabled = true;
+        // Izvršenje transakcije transfer
+        const sellerAddress = '0x045cd928A66C6FAb414c807005CFD7769470FDAf'; // Adresa vlasnika proizvoda
+        await lunaTokenContract.methods
+            .transfer(sellerAddress, requiredAmount)
+            .send({ from: currentAccount });
 
-                    // Prikaz novog vlasnika ispod "Prodato"
-                    ownerDiv.textContent = `Novi vlasnik: ${username}`;
-                    ownerDiv.style.color = 'white';
-                    ownerDiv.style.cursor = 'pointer';
+        // Ažuriranje Firestore baze podataka za proizvod
+        const productDocRef = doc(db, 'products', productId);
+        await updateDoc(productDocRef, {
+            sold: true,
+            owner: userId,
+            ownerName: username
+        });
 
-                    // Klikom na ime vlasnika otvara se njegov profil
-                   // U kodu za prikaz novog vlasnika
-ownerDiv.addEventListener('click', () => {
-    window.location.href = `profile.html?ime=${productData.ownerName}`;
+        // Dodavanje proizvoda u korisnikove kupovine
+        const userPurchasesRef = collection(db, `network/${userId}/purchases`);
+        await addDoc(userPurchasesRef, {
+            name: productData.name,
+            imageUrl: productData.imageUrl,
+            price: productData.price,
+            purchaseTime: new Date()
+        });
+
+        // Promjena izgleda proizvoda nakon kupovine
+        buyButton.textContent = 'Sold';
+        buyButton.style.backgroundColor = 'red';
+        buyButton.disabled = true;
+
+        // Dodavanje novog vlasnika proizvoda
+        ownerDiv.textContent = `Novi vlasnik: ${username}`;
+        ownerDiv.style.color = 'white';
+        ownerDiv.style.cursor = 'pointer';
+
+        ownerDiv.addEventListener('click', () => {
+            window.location.href = `profile.html?ime=${username}`;
+        });
+        productDiv.appendChild(ownerDiv);
+
+        alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
+    } catch (error) {
+        console.error('Greška prilikom obrade transakcije:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
+    }
 });
 
-
-                    productDiv.appendChild(ownerDiv);
-
-                    alert(`Kupili ste ${productData.name} za ${productData.price} δ!`);
-                } catch (error) {
-                    console.error('Greška prilikom ažuriranja Firestore-a:', error);
-                    alert('Došlo je do greške. Pokušajte ponovo.');
-                }
-            } else {
-                alert('Nemate dovoljno sredstava za kupovinu ovog proizvoda.');
-            }
-        });
 
         productDiv.appendChild(productImg);
         productDiv.appendChild(productName);
