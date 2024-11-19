@@ -1346,7 +1346,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
     }
 
     if (typeof window.ethereum === 'undefined') {
-        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje plaćanja.');
+        alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
         return;
     }
 
@@ -1355,29 +1355,29 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // Dohvaćanje korisnikovog računa iz MetaMask-a
+        // Trenutni korisnički račun
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
 
-        // Povezivanje s LUNA ugovorom
+        // Povezivanje s LUNA token ugovorom
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Provjera korisnikovog LUNA balansa
+        // Provjera balansa korisnika
         const userBalance = await lunaTokenContract.methods.balanceOf(currentAccount).call();
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Cijena proizvoda u wei
+        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
 
         if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
             alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
             return;
         }
 
-        // Izvršenje transakcije transfer
-        const sellerAddress = '0x045cd928A66C6FAb414c807005CFD7769470FDAf'; // Adresa vlasnika proizvoda
+        // Prijenos tokena prodavcu
+        const sellerAddress = '0x045cd928A66C6FAb414c807005CFD7769470FDAf'; // Adresa prodavca
         await lunaTokenContract.methods
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
-        // Ažuriranje Firestore baze podataka za proizvod
+        // Ažuriranje baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
@@ -1385,7 +1385,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             ownerName: username
         });
 
-        // Dodavanje proizvoda u korisnikove kupovine
+        // Dodavanje proizvoda u kupovine korisnika
         const userPurchasesRef = collection(db, `network/${userId}/purchases`);
         await addDoc(userPurchasesRef, {
             name: productData.name,
@@ -1394,16 +1394,15 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             purchaseTime: new Date()
         });
 
-        // Promjena izgleda proizvoda nakon kupovine
+        // Promjena izgleda nakon uspješne kupovine
         buyButton.textContent = 'Sold';
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
 
-        // Dodavanje novog vlasnika proizvoda
+        // Prikaz vlasnika
         ownerDiv.textContent = `Novi vlasnik: ${username}`;
         ownerDiv.style.color = 'white';
         ownerDiv.style.cursor = 'pointer';
-
         ownerDiv.addEventListener('click', () => {
             window.location.href = `profile.html?ime=${username}`;
         });
@@ -1415,6 +1414,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
         productDiv.appendChild(productImg);
