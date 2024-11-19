@@ -1357,11 +1357,12 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         }
 
         // Prijenos tokena prodavcu
-        const sellerAddress = '0x045cd928A66C6FAb414c807005CFD7769470FDAf'; // Adresa prodavca
+        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
         await lunaTokenContract.methods
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
+            
         // Ažuriranje baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
