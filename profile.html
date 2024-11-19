@@ -576,9 +576,10 @@ async function loadProfileProducts() {
             productDiv.appendChild(productName);
 
             const productPrice = document.createElement('div');
-            productPrice.classList.add('product-price');
-            productPrice.innerText = `Cijena: ${productData.price} Delta coin`;
-            productDiv.appendChild(productPrice);
+productPrice.classList.add('product-price');
+productPrice.innerText = `Cijena: ${productData.price} Luna Coin`;
+productDiv.appendChild(productPrice);
+
 
             // Dodavanje cijene u ETH ako postoji
             if (productData.cryptoPrice) {
@@ -628,17 +629,15 @@ async function loadProfileProducts() {
                 productDiv.appendChild(setPriceButton);
             } else {
                 // Dodaj dugme za kupovinu Delta coinom
-                const buyButton = document.createElement('button');
-                buyButton.innerText = 'Kupi (Delta coin)';
-                buyButton.classList.add('buy-button');
-                buyButton.addEventListener('click', async () => {
-                    if (currentPrice >= productData.price) {
-                        await updateProductOwnership(docSnap.id, productData);
-                    } else {
-                        alert('Nemate dovoljno sredstava!');
-                    }
-                });
-                productDiv.appendChild(buyButton);
+                // Dodaj dugme za kupovinu Luna tokenima
+const buyButton = document.createElement('button');
+buyButton.innerText = 'Kupi (Luna Coin)';
+buyButton.classList.add('buy-button');
+buyButton.addEventListener('click', async () => {
+    await handleLunaPurchase(docSnap.id, productData);
+});
+productDiv.appendChild(buyButton);
+
 
                 // Dodaj dugme za kupovinu putem kriptovalute
                 const buyWithCryptoButton = document.createElement('button');
@@ -919,6 +918,221 @@ async function loadProfileOwnerData() {
     }
 }
 
+
+
+
+
+
+async function handleLunaPurchase(productId, productData) {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            // Povezivanje sa MetaMask-om
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+
+            // Trenutni račun korisnika
+            const accounts = await web3.eth.getAccounts();
+            const buyerAccount = accounts[0];
+
+            // Povezivanje sa Luna token ugovorom
+            const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+
+            // Provjera balansa korisnika
+            const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
+            const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
+
+            if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
+                alert('Nemate dovoljno Luna tokena za ovu transakciju.');
+                return;
+            }
+
+            // Prijenos tokena prodavcu
+            // Dohvatite Ethereum adresu prodavca iz Firestore-a
+            const sellerDocRef = doc(db, 'network', productData.owner);
+            const sellerDocSnap = await getDoc(sellerDocRef);
+            const sellerEthAddress = sellerDocSnap.data().ethAddress;
+
+            if (!sellerEthAddress) {
+                alert('Prodavac nema postavljenu Ethereum adresu.');
+                return;
+            }
+
+            await lunaTokenContract.methods
+                .transfer(sellerEthAddress, requiredAmount)
+                .send({ from: buyerAccount });
+
+            // Ažuriranje baze podataka za proizvod
+            await updateDoc(doc(db, 'products', productId), {
+                owner: loggedInUserId,
+                ownerName: loggedInUserIme,
+                sold: true
+            });
+
+            // Dodavanje proizvoda u kupovine
+            const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
+            await addDoc(userPurchasesRef, {
+                name: productData.name,
+                imageUrl: productData.imageUrl,
+                price: productData.price,
+                purchaseTime: new Date()
+            });
+
+            alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
+            loadProfileProducts(); // Osvježi prikaz
+        } catch (error) {
+            console.error('Greška prilikom obrade transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
+    }
+}
+const contractAddress = "0xCf4687eE794128026f0CC1a80c0a6788a38039a4"; // Nova adresa ugovora
+const contractABI = [
+    {
+        "inputs": [],
+        "name": "mintMyTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBalance",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "earnedBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    // Dodajemo standardne ERC-20 funkcije:
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "name",
+        "outputs": [
+            {
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [
+            {
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
 // Pozovi funkciju za učitavanje podataka vlasnika profila
 loadProfileOwnerData();
 
