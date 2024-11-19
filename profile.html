@@ -3,13 +3,489 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tržnica</title>
+    <title>Profil korisnika</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+
+   <style>
+input,
+textarea {
+    touch-action: manipulation; /* Omogućava manipulaciju bez zumiranja */
+    
+}
+
+
+      
+
+
+/* User info styling */
+
+
+
+
+
+
+
+
+
+
+
+
+/* Main container for all products */
+.marketplace-outline {
+    padding: 20px;
+    border: 2px solid #ccc; /* Outer border for the entire marketplace */
+    background-color: #fff; /* White background */
+    border-radius: 10px;
+    max-width: 1200px;
+    margin: 0 auto; /* Center the container */
+}
+
+/* Container for individual products */
+.product {
+        border: 5px solid; /* Postavite debljinu obruba */
+        border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+        border-radius: 8px; /* Zaobljeni uglovi */
+        padding: 10px; /* Unutarnji razmak */
+        margin: 10px; /* Vanjski razmak između proizvoda */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Blaga sjena za bolji izgled */
+    }
+
+    .product img {
+        width: 200px;
+        height: 200px;
+        object-fit: cover;
+        margin-bottom: 10px;
+        border-radius: 8px;
+    }
+
+    .product-list-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px; /* Razmak između proizvoda */
+        justify-content: center; /* Centriranje proizvoda */
+    }
+
+/* Individual product box */
+.product-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 200px; /* Set fixed width */
+    height: 300px; /* Set fixed height */
+    padding: 10px;
+    background-color: #f9f9f9; /* Light background for products */
+    border: 1px solid #ccc; /* Border for each product */
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Image styling for each product */
+.product-box img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+/* Product name styling */
+.product-name {
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+/* Product price styling */
+.product-price {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+/* 'Kupi' button styling */
+.buy-button {
+    width: 100%;
+    padding: 8px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.buy-button:hover {
+    background-color: #45a049;
+}
+
+.marketplace-outline h2 {
+        text-align: center; /* Centrira tekst naslova */
+        margin-bottom: 20px; /* Dodaje razmak ispod naslova */
+        font-weight: bold; /* Podebljava naslov */
+    }
+
+        /* Stilovi za profilnu stranicu */
+        .profile-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+
+
+
+
+
+       .profile-outline {
+            padding: 20px;
+            border: 2px solid #ccc; /* Outer border for the entire profile */
+            background-color: #fff; /* White background */
+            border-radius: 10px;
+            max-width: 1200px;
+            margin: 0 auto; /* Center the container */
+        }
+
+        .profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Razmak između naslova i slike */
+    margin-bottom: 20px;
+}
+        /* Title styling within the large outline box */
+        .profile-title {
+    font-size: 24px; /* Vraćen originalni font za bolju vidljivost */
+    padding: 10px;
+    color: #fff;
+    background-color: #4b0078;
+    border-radius: 8px;
+    text-align: center;
+    margin: 0 auto 20px auto; /* Centriranje naslova */
+    max-width: 400px; /* Smanjena maksimalna širina */
+    transform: translateX(58px); /* Podesite vrijednost px po px */
+}
+
+@media screen and (max-width: 768px) {
+    .profile-title {
+        max-width: 280px; /* Smanjena maksimalna širina za tablete i manje ekrane */
+    }
+}
+
+#eth-account-section {
+    max-width: 400px; /* Ograničenje širine na desktopu */
+    margin: 0 auto; /* Centriranje na desktopu */
+}
+
+@media screen and (max-width: 768px) {
+    #eth-account-section {
+        max-width: 280px; /* Ograničenje širine za mobilne uređaje */
+        margin: 0 auto; /* Centriranje na mobilnim uređajima */
+    }
+
+    #eth-address-input {
+        width: 100%; /* Prilagođavanje širine polja za unos */
+    }
+}
+
+        /* Container for individual products */
+        .product {
+            border: 5px solid;
+            border-image: linear-gradient(to right, #5a99cd, #4b0078) 1;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .product img {
+    width: 250px; /* Povećana širina slike */
+    height: 250px; /* Povećana visina slike */
+    object-fit: cover;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+
+        .product-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .product-price {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .buy-button, .set-price-button {
+            padding: 8px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .buy-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .set-price-button {
+            background-color: #4b0078;
+            color: white;
+        }
+
+        .input-price {
+            width: 100px;
+            padding: 5px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .product-list-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        #current-price-display {
+    font-weight: bold; /* Podebljava sav tekst unutar div-a */
+    padding-left: 40px;
+}
+/* Main transaction history container */
+#transaction-history {
+    max-width: 800px;
+    padding: 15px;
+    background-color: #333;
+    border-radius: 10px;
+    margin: 20px auto;
+    color: white;
+}
+
+/* Each transaction item in a fixed-height, single-column list */
+.transaction-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #444;
+    border-radius: 5px;
+    height: 80px;
+    width: 100%;
+    position: relative; /* Enables absolute positioning within */
+}
+
+/* Image styling for a consistent size */
+.transaction-item img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 15px;
+}
+
+/* Transaction details container with more spacing between items */
+.transaction-details {
+    display: flex;
+    align-items: center;
+    color: white;
+    width: 100%;
+}
+
+/* Left-aligned name with fixed width */
+.transaction-name {
+    font-size: 14px;
+    font-weight: bold;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Centered price */
+.transaction-price {
+    font-size: 14px;
+    position: absolute;
+    left: 50%; /* Center in the middle */
+    transform: translateX(-50%); /* Adjusts to center perfectly */
+    white-space: nowrap;
+}
+
+/* Right-aligned date */
+.transaction-time {
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+    margin-left: auto; /* Pushes it to the right */
+}
+/* Hide date on screens smaller than 768px */
+@media (max-width: 768px) {
+    .transaction-time {
+        display: none;
+    }
+}
+@media (max-width: 768px) {
+    .transaction-price {
+        left: 80%; /* Moves the price further to the right on mobile */
+        transform: translateX(-50%);
+    }
+}
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 768px) {
+    .profile-title {
+        font-size: 18px; /* Smanjena veličina fonta za mobilne uređaje */
+        text-align: left; /* Poravnanje naslova ulijevo */
+        max-width: 45%; /* Uklanja ograničenje širine za mobilne uređaje */
+        transform: translateX(0); /* Vraća naslov u normalan položaj */
+    }
+}
+
+
+    </style>
+</head>
+<body>
+
+    <header class="header-container">
+        <div id="greeting">Pozdrav, <span id="logged-in-user"></span></div>
+        <div id="current-price-display">Your wallet: <span id="current-price">0.00</span> <span class="delta">&#948;</span></div>
+        
+        <!-- Toggle button for mobile devices -->
+        <button id="toggle-menu-button" class="toggle-button">☰</button>
+        
+        <!-- Desktop menu -->
+        <nav id="desktop-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+
+
+        <nav id="toggle-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    </header>
+  
+
+</script>
+
+
+    
+    <script>
+        const toggleMenuButton = document.getElementById('toggle-menu-button');
+        const toggleMenu = document.getElementById('toggle-menu');
+
+        toggleMenuButton.addEventListener('click', () => {
+            // Togglovanje prikaza menija
+            if (toggleMenu.style.display === 'flex') {
+                toggleMenu.style.display = 'none'; // Sakrij meni
+            } else {
+                toggleMenu.style.display = 'flex'; // Prikaži meni
+            }
+        });
+    </script>
+
+   
+
+
+    
+    <div class="image-container">
+        <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
+    </div>
+
+    
+
+
+
+
+
+
+
+
+
+    <div class="partnership-box">
+        <p>
+            Delta coin is selecting partnerships with crypto-services and general businesses ahead of our Open Network launch. 
+            This is a unique, early opportunity for businesses to connect with over 10 million engaged Delta coin fans and become part of Delta’s rapidly expanding Web3 ecosystem. 
+            If your company is interested in partnering with Delta or you’d like to introduce a business to partner with Delta, tap “Partnerships” to explore how and why.
+        </p>
+    </div>
+
+   
+
+    <div class="background blue"></div>
+    <div class="background purple"></div>
+
+
+
+
+
+    <div class="profile-outline">
+        <div class="profile-header">
+            <div id="profile-title" class="profile-title"></div>
+            <div class="profile-picture" id="profile-picture"></div>
+        </div>
+    
+        <div id="eth-account-section" style="display: none; margin-top: 20px; text-align: center; background-color: #ffcccc; padding: 10px; border-radius: 8px;">
+            <label for="eth-address-input" style="color: #800000; font-weight: bold;">Vaš MetaMask račun:</label>
+            <input type="text" id="eth-address-input" placeholder="Unesite vašu Ethereum adresu" style="margin-top: 10px; padding: 5px; width: 60%; border: 1px solid #800000;" disabled>
+            <button id="save-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer;">Spremi adresu</button>
+            <button id="edit-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer; display: none;">Promeni adresu</button>
+        </div>
+        
+        <div id="profile-products" class="product-list-container"></div>
+    </div>
+    
+    <div id="transaction-history" class="product-list-container">
+        <div id="transaction-title" class="profile-title">Historija transakcija</div>
+    </div>
+    
+
+
+
+
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-        // Povezivanje s Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
             authDomain: "piii-7844e.firebaseapp.com",
@@ -24,614 +500,989 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // Povezivanje s NFT ugovorom
-        const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
-        const nftContractABI = [
-        [
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "ERC721IncorrectOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC721InsufficientApproval",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "approver",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidApprover",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidOperator",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "receiver",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidReceiver",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			}
-		],
-		"name": "ERC721InvalidSender",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC721NonexistentToken",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "recipient",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string"
-			}
-		],
-		"name": "mintNFT",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "approved",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "Approval",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "approved",
-				"type": "bool"
-			}
-		],
-		"name": "ApprovalForAll",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "previousOwner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "OwnershipTransferred",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "safeTransferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bytes",
-				"name": "data",
-				"type": "bytes"
-			}
-		],
-		"name": "safeTransferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "approved",
-				"type": "bool"
-			}
-		],
-		"name": "setApprovalForAll",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "Transfer",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "transferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "currentTokenId",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "getApproved",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			}
-		],
-		"name": "isApprovedForAll",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "name",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "ownerOf",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes4",
-				"name": "interfaceId",
-				"type": "bytes4"
-			}
-		],
-		"name": "supportsInterface",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "symbol",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "tokenURI",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-]
-        ];
 
-        const web3 = new Web3(window.ethereum);
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-        document.getElementById('publish-product').addEventListener('click', async () => {
-            const name = document.getElementById('product-name').value;
-            const price = parseFloat(document.getElementById('product-price').value);
-            const cryptoPrice = parseFloat(document.getElementById('product-crypto-price').value);
-            const file = document.getElementById('product-image').files[0];
+        
 
-            if (!name || !price || !cryptoPrice || !file) {
-                alert('Molimo popunite sva polja.');
+        
+
+        // Dohvati parametre iz URL-a
+        const params = new URLSearchParams(window.location.search);
+        const profileName = params.get('ime');
+        const loggedInUser = params.get('loggedInUser');
+        let currentPrice = parseFloat(params.get('trenutnaCijena'));
+
+        let loggedInUserIme = ''; // Varijabla za pravo ime prijavljenog korisnika
+        let loggedInUserId = ''; // Varijabla za ID prijavljenog korisnika u Firestore-u
+
+        // Funkcija za dobijanje 'ime' korisnika na osnovu 'username'
+        async function getLoggedInUserIme() {
+            const userCollection = collection(db, 'network');
+            const q = query(userCollection, where('username', '==', loggedInUser));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                querySnapshot.forEach(docSnap => {
+                    const userData = docSnap.data();
+                    loggedInUserIme = userData.ime;
+                    loggedInUserId = docSnap.id;
+                });
+            } else {
+                console.error("Korisnik ne postoji u Firestore-u.");
+            }
+        }
+
+        // Pozovi funkciju za dobijanje 'ime' korisnika
+        await getLoggedInUserIme();
+
+        // Prikaži ime prijavljenog korisnika i trenutnu cijenu
+        document.getElementById('logged-in-user').innerText = loggedInUserIme;
+        document.getElementById('current-price').innerText = currentPrice.toFixed(2);
+
+        // Prikaži naslov profila
+        const profileTitle = document.getElementById('profile-title');
+        profileTitle.innerText = loggedInUserIme === profileName ? 'Vaš profil' : `Profil korisnika: ${profileName}`;
+
+// Prikaži polje za unos Ethereum adrese ako je korisnik na svom profilu
+// Prikaži polje za unos Ethereum adrese ako je korisnik na svom profilu
+if (loggedInUserIme === profileName) {
+    document.getElementById('eth-account-section').style.display = 'block';
+}
+
+        
+
+        // Učitaj proizvode korisnika
+       // Funkcija za učitavanje proizvoda na profilu
+async function loadProfileProducts() {
+    const productCollection = collection(db, 'products');
+    const querySnapshot = await getDocs(productCollection);
+    const profileProducts = document.getElementById('profile-products');
+    profileProducts.innerHTML = '';
+
+    querySnapshot.forEach(docSnap => {
+        const productData = docSnap.data();
+
+        if (productData.ownerName === profileName) {
+            const productDiv = document.createElement('div');
+            productDiv.classList.add('product');
+
+            const productImg = document.createElement('img');
+            productImg.src = productData.imageUrl;
+            productDiv.appendChild(productImg);
+
+            const productName = document.createElement('div');
+            productName.classList.add('product-name');
+            productName.innerText = productData.name;
+            productDiv.appendChild(productName);
+
+            const productPrice = document.createElement('div');
+productPrice.classList.add('product-price');
+productPrice.innerText = `Cijena: ${productData.price} Luna Coin`;
+productDiv.appendChild(productPrice);
+
+
+            // Dodavanje cijene u ETH ako postoji
+            if (productData.cryptoPrice) {
+                const productCryptoPrice = document.createElement('div');
+                productCryptoPrice.classList.add('product-price');
+                productCryptoPrice.innerText = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
+                productDiv.appendChild(productCryptoPrice);
+            }
+
+            if (profileName === loggedInUserIme) {
+                // Dodaj opcije za postavljanje cijene
+                const priceInput = document.createElement('input');
+                priceInput.type = 'number';
+                priceInput.placeholder = 'Nova cijena (Delta coin)';
+                priceInput.classList.add('input-price');
+
+                const cryptoPriceInput = document.createElement('input');
+                cryptoPriceInput.type = 'number';
+                cryptoPriceInput.placeholder = 'Nova cijena (ETH)';
+                cryptoPriceInput.classList.add('input-price');
+
+                const setPriceButton = document.createElement('button');
+                setPriceButton.innerText = 'Postavi cijene';
+                setPriceButton.classList.add('set-price-button');
+                setPriceButton.addEventListener('click', async () => {
+                    const novaCijena = parseFloat(priceInput.value);
+                    const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+
+                    if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
+                        const updateData = {};
+                        if (!isNaN(novaCijena) && novaCijena > 0) {
+                            updateData.price = novaCijena;
+                        }
+                        if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
+                            updateData.cryptoPrice = novaCryptoCijena;
+                        }
+                        await updateDoc(doc(db, 'products', docSnap.id), updateData);
+                        alert('Nove cijene postavljene!');
+                        loadProfileProducts(); // Osvježi prikaz
+                    } else {
+                        alert('Unesite ispravne cijene!');
+                    }
+                });
+
+                productDiv.appendChild(priceInput);
+                productDiv.appendChild(cryptoPriceInput);
+                productDiv.appendChild(setPriceButton);
+            } else {
+                // Dodaj dugme za kupovinu Delta coinom
+                // Dodaj dugme za kupovinu Luna tokenima
+const buyButton = document.createElement('button');
+buyButton.innerText = 'Kupi (Luna Coin)';
+buyButton.classList.add('buy-button');
+buyButton.addEventListener('click', async () => {
+    await handleLunaPurchase(docSnap.id, productData);
+});
+productDiv.appendChild(buyButton);
+
+
+                // Dodaj dugme za kupovinu putem kriptovalute
+                const buyWithCryptoButton = document.createElement('button');
+                buyWithCryptoButton.innerText = 'Kupi (ETH)';
+                buyWithCryptoButton.classList.add('buy-button');
+                buyWithCryptoButton.style.backgroundColor = 'purple';
+                buyWithCryptoButton.addEventListener('click', async () => {
+                    await handleCryptoPurchase(docSnap.id, productData);
+                });
+                productDiv.appendChild(buyWithCryptoButton);
+            }
+
+            profileProducts.appendChild(productDiv);
+        }
+    });
+}
+
+// Ažuriranje vlasništva proizvoda kada se kupuje Delta coinom
+async function updateProductOwnership(productId, productData) {
+    try {
+        // Dodavanje proizvoda u kupovine novog vlasnika
+        const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
+        await addDoc(userPurchasesRef, {
+            name: productData.name,
+            imageUrl: productData.imageUrl,
+            price: productData.price,
+            purchaseTime: new Date()
+        });
+
+        // Oduzimanje cijene proizvoda od trenutne cijene novog vlasnika
+        const userDocRef = doc(db, 'network', loggedInUserId);
+        currentPrice -= productData.price;
+        await updateDoc(userDocRef, { currentPrice: currentPrice });
+        document.getElementById('current-price').innerText = currentPrice.toFixed(2);
+
+        // Dodavanje cijene proizvoda na trenutnu cijenu prodavca
+        const sellerId = productData.owner;
+        const sellerDocRef = doc(db, 'network', sellerId);
+        const sellerDocSnap = await getDoc(sellerDocRef);
+
+        if (sellerDocSnap.exists()) {
+            const sellerData = sellerDocSnap.data();
+            let sellerCurrentPrice = sellerData.currentPrice || 0;
+            sellerCurrentPrice += productData.price;
+            await updateDoc(sellerDocRef, { currentPrice: sellerCurrentPrice });
+        } else {
+            console.error("Prodavac nije pronađen u Firestore-u.");
+        }
+
+        // Ažuriranje vlasništva u Firestore-u
+        await updateDoc(doc(db, 'products', productId), {
+            owner: loggedInUserId,
+            ownerName: loggedInUserIme,
+            sold: true
+        });
+
+        alert(`Kupili ste ${productData.name} za ${productData.price} Delta coin!`);
+        loadProfileProducts(); // Osvježi prikaz
+    } catch (error) {
+        console.error('Greška prilikom kupovine:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
+    }
+}
+
+// Funkcija za rukovanje kripto kupovinom putem MetaMask-a
+async function handleCryptoPurchase(productId, productData) {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            // Zatražite autorizaciju za MetaMask
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+            const web3 = new Web3(window.ethereum);
+            const accounts = await web3.eth.getAccounts();
+            const account = accounts[0];
+            
+            const ethPrice = productData.cryptoPrice;
+            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
+
+            // Dohvati Ethereum adresu vlasnika proizvoda
+            const productOwnerRef = doc(db, 'network', productData.owner);
+            const productOwnerSnap = await getDoc(productOwnerRef);
+            const recipientAddress = productOwnerSnap.data().ethAddress;
+
+            if (!recipientAddress) {
+                alert('Vlasnik proizvoda nema postavljenu Ethereum adresu.');
                 return;
             }
 
+            const txParams = {
+                from: account,
+                to: recipientAddress, // Dinamički primatelj
+                value: weiValue,
+                gas: 21000
+            };
+
+            const transactionHash = await web3.eth.sendTransaction(txParams);
+            alert(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
+
+            // Ažuriranje vlasništva u Firestore-u nakon uspješne transakcije
+            await updateDoc(doc(db, 'products', productId), {
+                owner: loggedInUserId,
+                ownerName: loggedInUserIme,
+                sold: true
+            });
+
+            loadProfileProducts(); // Osvježi prikaz
+        } catch (error) {
+            console.error('Greška prilikom MetaMask transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
+    }
+}
+
+
+
+
+
+// Prikaži polje za unos Ethereum adrese ako je vlasnik profila
+// Prikaži polje za unos Ethereum adrese ako je vlasnik profila
+if (profileName === loggedInUserIme) {
+    document.getElementById('eth-account-section').style.display = 'block';
+
+    // Dohvati trenutnu Ethereum adresu iz Firestore-a
+    const userDocRef = doc(db, 'network', loggedInUserId);
+    const userDocSnap = await getDoc(userDocRef);
+
+    const ethAddressInput = document.getElementById('eth-address-input');
+    const saveEthAddressButton = document.getElementById('save-eth-address');
+    const editEthAddressButton = document.getElementById('edit-eth-address');
+
+    if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+
+        if (userData.ethAddress) {
+            // Ako adresa postoji, prikaži je i sakrij dugme za spremanje
+            ethAddressInput.value = userData.ethAddress;
+            ethAddressInput.disabled = true;
+            saveEthAddressButton.style.display = 'none';
+            editEthAddressButton.style.display = 'inline-block';
+        } else {
+            // Ako adresa ne postoji, omogući unos i prikaži dugme za spremanje
+            ethAddressInput.disabled = false;
+            saveEthAddressButton.style.display = 'inline-block';
+            editEthAddressButton.style.display = 'none';
+        }
+    }
+
+    editEthAddressButton.addEventListener('click', () => {
+        ethAddressInput.disabled = false;
+        ethAddressInput.value = ''; // Očisti polje za unos
+        saveEthAddressButton.style.display = 'inline-block';
+        editEthAddressButton.style.display = 'none';
+    });
+
+    saveEthAddressButton.addEventListener('click', async () => {
+    const newEthAddress = ethAddressInput.value.trim();
+
+    // Provjera i inicijalizacija Web3 samo ako je dostupan
+    if (typeof window.Web3 !== 'undefined') {
+        const web3 = new Web3(window.ethereum);
+
+        if (web3.utils.isAddress(newEthAddress)) {
             try {
-                // Upload slike na Firebase Storage
-                const storageRef = ref(storage, 'productImages/' + file.name);
-                const snapshot = await uploadBytes(storageRef, file);
-                const imageUrl = await getDownloadURL(snapshot.ref);
+                // Ažuriraj korisnikov dokument u Firestore-u
+                await updateDoc(userDocRef, { ethAddress: newEthAddress });
 
-                // Spremanje proizvoda u Firestore
-                const docRef = await addDoc(collection(db, 'products'), {
-                    name,
-                    price,
-                    cryptoPrice,
-                    imageUrl
-                });
-
-                const productId = docRef.id; // Firestore ID za proizvod
-                const tokenURI = `https://firestore.googleapis.com/v1/projects/piii-7844e/databases/(default)/documents/products/${productId}`;
-
-
-                // Mintanje NFT-a
-                const accounts = await web3.eth.requestAccounts();
-                const currentAccount = accounts[0];
-
-                await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
-
-                alert('Proizvod uspješno objavljen i NFT mintovan!');
+                alert('Ethereum adresa uspješno spremljena!');
+                ethAddressInput.value = newEthAddress;
+                ethAddressInput.disabled = true; // Ponovo onemogući unos
+                saveEthAddressButton.style.display = 'none'; // Sakrij dugme za spremanje
+                editEthAddressButton.style.display = 'inline-block'; // Prikaži dugme za promenu
             } catch (error) {
-                console.error('Greška prilikom objave proizvoda ili mintanja NFT-a:', error);
+                console.error('Greška prilikom spremanja Ethereum adrese:', error);
                 alert('Došlo je do greške. Pokušajte ponovo.');
             }
+        } else {
+            alert('Unesite ispravnu Ethereum adresu.');
+        }
+    } else {
+        alert('Web3 nije dostupan. Provjerite da li je MetaMask instaliran.');
+    }
+});
+
+}
+
+
+
+// Funkcija za učitavanje historije transakcija određenog korisnika
+// Updated loadTransactionHistory function for list-style layout
+async function loadTransactionHistory() {
+    const userCollection = collection(db, 'network');
+    const q = query(userCollection, where('ime', '==', profileName));
+    const userSnapshot = await getDocs(q);
+
+    if (!userSnapshot.empty) {
+        let profileUserId = '';
+        userSnapshot.forEach(docSnap => {
+            profileUserId = docSnap.id;
         });
+
+        const purchasesRef = collection(db, `network/${profileUserId}/purchases`);
+        const purchasesSnapshot = await getDocs(purchasesRef);
+        const transactionHistoryDiv = document.getElementById('transaction-history');
+        transactionHistoryDiv.innerHTML = '';
+
+        if (!purchasesSnapshot.empty) {
+            purchasesSnapshot.forEach(docSnap => {
+                const purchaseData = docSnap.data();
+
+                const transactionDiv = document.createElement('div');
+                transactionDiv.classList.add('transaction-item');
+
+                const productImg = document.createElement('img');
+                productImg.src = purchaseData.imageUrl;
+                transactionDiv.appendChild(productImg);
+
+                const transactionDetails = document.createElement('div');
+                transactionDetails.classList.add('transaction-details');
+
+                const productName = document.createElement('span');
+                productName.classList.add('transaction-name');
+                productName.innerText = purchaseData.name;
+
+                const purchasePrice = document.createElement('span');
+                purchasePrice.classList.add('transaction-price');
+                purchasePrice.innerText = `Cijena: ${purchaseData.price} Delta coin`;
+
+                const purchaseTime = document.createElement('span');
+                purchaseTime.classList.add('transaction-time');
+                purchaseTime.innerText = `Vrijeme kupovine: ${purchaseData.purchaseTime.toDate().toLocaleString()}`;
+
+                transactionDetails.appendChild(productName);
+                transactionDetails.appendChild(purchasePrice);
+                transactionDetails.appendChild(purchaseTime);
+                transactionDiv.appendChild(transactionDetails);
+
+                transactionHistoryDiv.appendChild(transactionDiv);
+            });
+        } else {
+            const noTransactionsMessage = document.createElement('div');
+            noTransactionsMessage.innerText = 'Nema transakcija.';
+            noTransactionsMessage.style.textAlign = 'center';
+            transactionHistoryDiv.appendChild(noTransactionsMessage);
+        }
+    } else {
+        console.error("Korisnik nije pronađen u Firestore-u.");
+    }
+}
+
+// Funkcija za učitavanje podataka korisnika čiji profil gledamo
+async function loadProfileOwnerData() {
+    const userCollection = collection(db, 'network');
+    const q = query(userCollection, where('ime', '==', profileName));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        querySnapshot.forEach(docSnap => {
+            const userData = docSnap.data();
+
+            // Prikaz profilne slike vlasnika profila ako postoji
+            if (userData.profilePictureUrl) {
+                const profilePictureDiv = document.getElementById('profile-picture');
+                profilePictureDiv.innerHTML = `<img src="${userData.profilePictureUrl}" alt="Profil korisnika" style="width: 120px; height: 120px; border-radius: 50%;">`;
+            } else {
+                // Prikaz praznog mjesta ako profilna slika ne postoji
+                const profilePictureDiv = document.getElementById('profile-picture');
+                profilePictureDiv.innerHTML = `<div style="width: 120px; height: 120px; border-radius: 50%; background-color: #ccc;"></div>`;
+            }
+
+            // Prikaži naslov profila
+            const profileTitle = document.getElementById('profile-title');
+            profileTitle.innerText = loggedInUserIme === profileName ? 'Vaš profil' : `Profil korisnika: ${profileName}`;
+        });
+    } else {
+        console.error("Korisnik nije pronađen u Firestore-u.");
+    }
+}
+
+
+
+
+
+
+async function handleLunaPurchase(productId, productData) {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            // Povezivanje sa MetaMask-om
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+
+            // Trenutni račun korisnika
+            const accounts = await web3.eth.getAccounts();
+            const buyerAccount = accounts[0];
+
+            // Povezivanje sa Luna token ugovorom
+            const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+
+            // Provjera balansa korisnika
+            const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
+            const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
+
+            if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
+                alert('Nemate dovoljno Luna tokena za ovu transakciju.');
+                return;
+            }
+
+            // Prijenos tokena prodavcu
+            // Dohvatite Ethereum adresu prodavca iz Firestore-a
+            const sellerDocRef = doc(db, 'network', productData.owner);
+            const sellerDocSnap = await getDoc(sellerDocRef);
+            const sellerEthAddress = sellerDocSnap.data().ethAddress;
+
+            if (!sellerEthAddress) {
+                alert('Prodavac nema postavljenu Ethereum adresu.');
+                return;
+            }
+
+            await lunaTokenContract.methods
+                .transfer(sellerEthAddress, requiredAmount)
+                .send({ from: buyerAccount });
+
+            // Ažuriranje baze podataka za proizvod
+            await updateDoc(doc(db, 'products', productId), {
+                owner: loggedInUserId,
+                ownerName: loggedInUserIme,
+                sold: true
+            });
+
+            // Dodavanje proizvoda u kupovine
+            const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
+            await addDoc(userPurchasesRef, {
+                name: productData.name,
+                imageUrl: productData.imageUrl,
+                price: productData.price,
+                purchaseTime: new Date()
+            });
+
+            alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
+            loadProfileProducts(); // Osvježi prikaz
+        } catch (error) {
+            console.error('Greška prilikom obrade transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
+    }
+}
+const contractAddress = "0xCf4687eE794128026f0CC1a80c0a6788a38039a4"; // Nova adresa ugovora
+const contractABI = [
+    {
+        "inputs": [],
+        "name": "mintMyTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBalance",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "earnedBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    // Dodajemo standardne ERC-20 funkcije:
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "name",
+        "outputs": [
+            {
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [
+            {
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+// Pozovi funkciju za učitavanje podataka vlasnika profila
+loadProfileOwnerData();
+
+
+// Pozovi funkciju za učitavanje historije transakcija
+loadTransactionHistory();
+
+// Pozovi funkciju za učitavanje proizvoda
+loadProfileProducts();
+
     </script>
-</head>
-<body>
-    <h1>Dodaj novi proizvod</h1>
-    <input type="file" id="product-image" accept="image/*"><br>
-    <input type="text" id="product-name" placeholder="Naziv proizvoda"><br>
-    <input type="number" id="product-price" placeholder="Cijena proizvoda (u fiat valuti)"><br>
-    <input type="number" step="0.01" id="product-crypto-price" placeholder="Cijena proizvoda (u ETH)"><br>
-    <button id="publish-product">Objavi</button>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+    body {
+        font-family: 'Roboto', sans-serif; /* Promjena fonta */
+        margin: 0;
+        padding: 0;
+        background-color: black;
+        
+       
+    }
+   
+
+    @media (max-width: 768px) {
+    html, body {
+        width: 100%;
+        overflow-x: hidden; /* Onemogućava horizontalno pomjeranje */
+        margin: 0; /* Uklanja podrazumijevane margine */
+        padding: 0; /* Uklanja podrazumijevane paddinge */
+    }
+
+    /* Osiguraj da svi kontejneri i elementi imaju odgovarajuću širinu */
+    * {
+        max-width: 100%; /* Ograničava širinu na 100% */
+        box-sizing: border-box; /* Uključuje padding i border u ukupnu širinu */
+    }
+
+    img {
+        max-width: 100%; /* Održava slike unutar širine kontejnera */
+        height: auto; /* Održava odnos slike */
+    }
+
+    /* Podesi širinu specifičnih elemenata ako je potrebno */
+    .some-element { /* Zameniti sa stvarnim klasama */
+        width: 100%; /* Ili odgovarajući procenat */
+    }
+}
+
+    .background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .blue {
+    background: linear-gradient(to bottom right, rgba(23, 135, 226, 0.6), rgba(0, 0, 0, 0) 50%);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 50%;
+    
+}
+
+
+.purple {
+    background: linear-gradient(to top left, rgba(128, 0, 128, 0.6), rgba(0, 0, 0, 0) 50%);
+    position: fixed; /* Changed to fixed to always stick to the bottom-right */
+    bottom: 0;
+    right: 0;
+    width: 50%;
+    height: 50%;
+    z-index: 1; /* Make sure it stays below other content if necessary */
+}
+
+
+
+        
+    nav {
+        display: flex;
+        gap: 20px;
+    }
+    nav a {
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+    nav .material-icons {
+        margin-right: 5px; /* Razmak između ikone i teksta */
+    }
+    .container {
+        display: flex;
+        
+        padding: 20px;
+    }
+    .icon-section {
+    flex: 2;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 20px;
+}
+
+.icon {
+    background-color: transparent; /* Prozirna pozadina */
+    border-radius: 0; /* Pravougaoni oblik */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 120px; /* Širina pravougaonika */
+    height: 60px; /* Visina pravougaonika */
+    font-size: 24px;
+    cursor: pointer;
+    position: relative;
+    background: transparent; /* Prozirna pozadina */
+    color: white; /* Bijela boja teksta */
+    border: 2px solid transparent; /* Prozirni obrub (outline) */
+    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+
+
+    
+
+    
+}
+
+   
+    .amount {
+        font-size: 24px;
+        margin-left: 2px;
+    }
+
+
+/* Stil za ikonice */
+.material-icons {
+    vertical-align: middle; /* Poravnanje ikone sa tekstom */
+    margin-right: 8px; /* Razmak između ikone i teksta */
+}
+
+
+#share-icon {
+    background-color: transparent; /* Prozirna pozadina */
+    border-radius: 0; /* Pravougaoni oblik */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 150px; /* Širina pravougaonika */
+    height: 60px; /* Visina pravougaonika */
+    font-size: 22px;
+    cursor: pointer;
+    position: relative;
+    background: transparent; /* Prozirna pozadina */
+    color: white; /* Bijela boja teksta */
+    border: 2px solid transparent; /* Prozirni obrub (outline) */
+    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+
+
+}
+
+#share-icon span.material-icons {
+    font-size: 24px; /* Veličina ikone */
+}
+
+
+</style>
+
+
+
+
+<style>
+    .partnership-box {
+        border-width: 2px; /* debljina obruba */
+        border-style: solid; /* stil obruba */
+        border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* gradijentni obrub s lijeva na desno */
+        padding: 20px; /* razmak unutar boxa */
+        margin: 20px auto; /* razmak iznad i ispod boxa, centrirano */
+        max-width: 600px; /* maksimalna širina boxa */
+        text-align: justify; /* opravdanje teksta */
+        background-color: #000; /* crna pozadina */
+        color: #fff; /* bijela boja teksta */
+        border-radius: 50px !important; /* povećanje zaobljenosti ivica */
+    }
+
+    .partnership-box p {
+        margin: 0; /* uklanja zadani razmak oko paragrafa */
+        text-indent: 0; /* nema uvlačenja prve linije */
+        line-height: 1.6; /* povećava razmak između redova */
+    }
+
+    .partnership-box img {
+    width: 100%; /* Postavi osnovnu širinu na 100% da se prilagođava */
+    max-width: 600px; /* Maksimalna širina za desktop */
+    height: auto; /* Automatsko prilagođavanje visine */
+}
+
+/* Za mobilne uređaje */
+@media only screen and (max-width: 768px) {
+    .partnership-box img {
+        max-width: 350px; /* Maksimalna širina za mobitele */
+    }
+}
+
+</style>
+
+
+
+
+<style>
+   header {
+
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  position: relative; /* Omogućuje apsolutno pozicioniranje menija */
+}
+
+
+/* Toggle dugme */
+.toggle-button {
+  display: none; /* Skriveno po defaultu */
+  font-size: 30px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+#toggle-menu {
+  display: none; /* Skriveno po defaultu */
+  flex-direction: column; /* Vertikalno poravnanje menija */
+  background: linear-gradient(to bottom, #000000, #4b0078); /* Gradijent od plave do tamno ljubičaste */
+  position: absolute;
+  right: 0px;
+  top: 60px;
+  width: 50%;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+
+
+
+
+#toggle-menu a {
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  display: block;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Stil za desktop meni */
+#desktop-menu {
+  display: flex;
+}
+
+#desktop-menu a {
+  margin-left: 20px;
+  text-decoration: none;
+  color: white;
+}
+
+/* Media query za mobilne uređaje */
+@media (max-width: 768px) {
+  /* Prikaži toggle dugme na mobilnim uređajima */
+  .toggle-button {
+      display: block;
+      transform: translateX(20px); /* Pomjera udesno za 20px */
+  }
+  /* Sakrij desktop meni na mobilnim uređajima */
+  #desktop-menu {
+      display: none;
+  }
+
+}
+
+.image-container {
+    display: flex;
+    justify-content: center; /* Centriraj sliku */
+    align-items: flex-start; /* Poravnaj gornji dio */
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .image-container {
+        align-items: flex-start; /* Gornji dio */
+        transform: translateY(10px); /* Pomakni prema dolje na mobilnim uređajima */
+    }
+}
+
+.image-container img {
+    animation: pulse 3s infinite; /* Animacija nazvana 'pulse' koja traje 2 sekunde i ponavlja se beskonačno */
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1); /* Početna veličina */
+    }
+    50% {
+        transform: scale(1.05); /* Blago povećanje veličine */
+    }
+    100% {
+        transform: scale(1); /* Vraćanje na početnu veličinu */
+    }
+}
+
+
+  </style>
+
+
+
+<style>
+    #current-price {
+        transform: translateX(130px); /* Podesi ovu vrijednost prema željenom pomjeranju */
+}
+
+@media only screen and (max-width: 768px) {
+    #current-price {
+        transform: translateX(40px); /* Podesi ovu vrijednost prema željenom pomjeranju */
+    }
+}
+
+#user-name {
+    position: relative;
+}
+
+@media only screen and (max-width: 768px) {
+    #user-name {
+        transform: translateX(-20px); /* Pomjeranje ulijevo, prilagodi prema potrebi */
+    }
+}
+
+
+</style>
 </body>
 </html>
