@@ -1223,68 +1223,84 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
 
     // Omogući MetaMask plaćanje
    // Omogući MetaMask plaćanje
-   buyWithCryptoButton.addEventListener('click', async () => {
+buyWithCryptoButton.addEventListener('click', async () => {
+    // Provjera da li je MetaMask instaliran
     if (typeof window.ethereum !== 'undefined') {
         try {
-            // Povezivanje sa MetaMask-om
+            // Povežite se sa MetaMask-om i dobijte račune
             await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const web3 = new Web3(window.ethereum);
+            const web3 = new Web3(window.ethereum); // Inicijalizacija web3 objekta
 
-            // Dohvati trenutnog kupca
+            // Dobijanje trenutnog računa
             const accounts = await web3.eth.getAccounts();
-            const currentAccount = accounts[0];
-
-            console.log(`Trenutni korisnik (kupac): ${currentAccount}`);
-
-            // Definiši početnog vlasnika ručno
-            const originalOwner = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9';
+            const account = accounts[0]; // Prvi račun u nizu
+            console.log("Povezan račun:", account);
 
             // Provjera cijene u ETH
             const ethPrice = productData.cryptoPrice;
+            console.log("Cijena u ETH:", ethPrice);
+
+            // Konverzija cijene u wei koristeći preciznu konverziju
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
+            console.log("Vrijednost u Wei:", weiValue);
 
-            console.log(`Cijena u Wei: ${weiValue}`);
+            // Inicijacija transakcije
+            const txParams = {
+                from: account,
+                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Ethereum adresa primatelja
+                value: weiValue, // Vrijednost u wei
+                gas: 21000 // Minimalan gas za slanje
+            };
 
-            // Plaćanje originalnom vlasniku
-            await web3.eth.sendTransaction({
-                from: currentAccount,
-                to: originalOwner, // Direktna adresa vlasnika
-                value: weiValue,
-                gas: 21000 // Minimalan gas
-            });
+            // Slanje transakcije putem MetaMask-a
+            const transactionHash = await web3.eth.sendTransaction(txParams);
 
-            console.log(`Uplata uspješna! Prenosimo NFT na ${currentAccount}.`);
+            // Ako je transakcija uspješna, ažuriraj status proizvoda u Firestore-u
+            console.log(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
 
-            // Prebacivanje NFT-a na kupca
-            const tokenId = productData.tokenId; // ID NFT-a iz Firestore-a
-            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-            console.log(`Pokušaj prijenosa NFT-a sa originalnog vlasnika (${originalOwner}) na kupca (${currentAccount}).`);
-
-            await nftContract.methods
-                .safeTransferFrom(originalOwner, currentAccount, tokenId)
-                .send({ from: currentAccount });
-
-            console.log(`NFT sa ID-em ${tokenId} uspješno prebačen na ${currentAccount}.`);
-
-            // Ažuriranje Firestore-a
+            // Ažuriraj status proizvoda na 'prodato' i dodaj novog vlasnika u Firestore-u
             const productDocRef = doc(db, 'products', productId);
             await updateDoc(productDocRef, {
                 sold: true,
-                owner: currentAccount, // Novi vlasnik
-                ownerName: username // Ime kupca
+                owner: userId,
+                ownerName: username // Dodaj ime korisnika kao vlasnika
             });
 
-            alert(`Kupili ste ${productData.name} za ${productData.cryptoPrice} ETH! NFT je dodan u vaš wallet.`);
+            // Dodavanje proizvoda u kupovine
+            const userPurchasesRef = collection(db, `network/${userId}/purchases`);
+            await addDoc(userPurchasesRef, {
+                name: productData.name,
+                imageUrl: productData.imageUrl,
+                price: productData.cryptoPrice,
+                purchaseTime: new Date()
+            });
+
+            // Promjena boje dugmeta na crvenu i teksta na 'Prodato'
+            buyWithCryptoButton.textContent = 'Prodato';
+            buyWithCryptoButton.style.backgroundColor = 'red';
+            buyWithCryptoButton.disabled = true;
+
+            // Prikaz novog vlasnika ispod 'Prodato'
+            ownerDiv.textContent = `Novi vlasnik: ${username}`;
+            ownerDiv.style.color = 'white';
+            ownerDiv.style.cursor = 'pointer';
+
+            // Klikom na ime vlasnika otvara se njegov profil
+            ownerDiv.addEventListener('click', () => {
+                window.location.href = `profile.html?ime=${username}`;
+            });
+
+            productDiv.appendChild(ownerDiv);
+
+            alert(`Kupili ste ${productData.name} za ${productData.cryptoPrice} ETH!`);
         } catch (error) {
-            console.error('Greška prilikom prijenosa NFT-a:', error);
+            console.error('Greška prilikom MetaMask transakcije:', error);
             alert('Došlo je do greške. Pokušajte ponovo.');
         }
     } else {
-        alert('Molimo vas da instalirate MetaMask ekstenziju.');
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
-
 
 
 
@@ -1324,70 +1340,50 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         }
 
         buyButton.addEventListener('click', async () => {
-    if (productData.sold) {
-        alert('Ovaj proizvod je već prodan.');
-        return;
-    }
-
-    if (typeof window.ethereum === 'undefined') {
-        alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-        return;
-    }
-
     try {
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // Trenutni korisnički račun
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-
-        // Povezivanje s LUNA token ugovorom
-        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Provjera balansa korisnika
-        const userBalance = await lunaTokenContract.methods.balanceOf(currentAccount).call();
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
-
-        if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
-            alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
+        // Provjera MetaMask-a
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
             return;
         }
 
-        // Prijenos tokena prodavcu
-        const sellerAddress = productData.owner; // Adresa trenutnog vlasnika NFT-a
-        await lunaTokenContract.methods
-            .transfer(sellerAddress, requiredAmount)
-            .send({ from: currentAccount });
+        // Povezivanje s MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
 
-        // Prijenos NFT-a kupcu
-        const tokenId = productData.tokenId; // ID NFT-a
-        console.log(`Pokušaj prijenosa NFT-a sa ${sellerAddress} na ${currentAccount}.`);
+        // Dohvati trenutni račun kupca
+        const accounts = await web3.eth.getAccounts();
+        const buyerAddress = accounts[0]; // Adresa kupca
 
+        // Adresa prodavca (hardkodirana)
+        const sellerAddress = "0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9";
+
+        // tokenId NFT-a koji se prenosi
+        const tokenId = productData.tokenId; // Pretpostavlja se da se tokenId čuva u Firestore
+
+        // Povezivanje s NFT pametnim ugovorom
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // Pozivanje funkcije transferFrom
+        console.log(`Prijenos NFT-a tokenId: ${tokenId} sa ${sellerAddress} na ${buyerAddress}...`);
         await nftContract.methods
-            .safeTransferFrom(sellerAddress, currentAccount, tokenId)
-            .send({ from: sellerAddress });
+            .transferFrom(sellerAddress, buyerAddress, tokenId)
+            .send({ from: sellerAddress }); // Transakciju inicira prodavac
 
-        console.log(`NFT sa ID-em ${tokenId} uspješno prebačen na ${currentAccount}.`);
+        console.log(`NFT tokenId: ${tokenId} uspješno prenesen na ${buyerAddress}!`);
 
-        // Ažuriranje baze podataka za proizvod
+        // Ažuriranje baze podataka Firestore
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
-            sold: true,
-            owner: currentAccount,
-            ownerName: username
+            owner: buyerAddress, // Nova adresa vlasnika
+            ownerName: buyerUsername, // Ime kupca
+            sold: true // Oznaka da je proizvod prodan
         });
 
-        // Promjena izgleda nakon uspješne kupovine
-        buyButton.textContent = 'Sold';
-        buyButton.style.backgroundColor = 'red';
-        buyButton.disabled = true;
-
-        alert(`Kupili ste ${productData.name}! NFT je dodan u vaš MetaMask wallet.`);
+        alert('Uspješno ste prenijeli NFT na novog vlasnika!');
     } catch (error) {
-        console.error('Greška prilikom obrade transakcije:', error);
-        alert('Došlo je do greške. Pokušajte ponovo.');
+        console.error('Greška prilikom prijenosa NFT-a:', error);
+        alert('Došlo je do greške prilikom prijenosa NFT-a. Pokušajte ponovo.');
     }
 });
 
@@ -1732,10 +1728,7 @@ usdAmountBuyInput.addEventListener('input', () => {
     }
 });
 
-/////////////////////NFT//////////////////////
-
-
-// Povezivanje s NFT ugovorom
+///////////////////////// Povezivanje s NFT ugovorom/////////////////////////
 const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
         
@@ -2293,6 +2286,185 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        document.getElementById('publish-product').addEventListener('click', async () => {
+            const name = document.getElementById('product-name').value;
+            const price = parseFloat(document.getElementById('product-price').value);
+            const cryptoPrice = parseFloat(document.getElementById('product-crypto-price').value);
+            const file = document.getElementById('product-image').files[0];
+
+            if (!name || !price || !cryptoPrice || !file) {
+                alert('Molimo popunite sva polja.');
+                return;
+            }
+
+            try {
+                // Upload slike na Firebase Storage
+                const storageRef = ref(storage, 'productImages/' + file.name);
+                const snapshot = await uploadBytes(storageRef, file);
+                const imageUrl = await getDownloadURL(snapshot.ref);
+
+                // Spremanje proizvoda u Firestore
+                const docRef = await addDoc(collection(db, 'products'), {
+                    name,
+                    price,
+                    cryptoPrice,
+                    imageUrl
+                });
+
+                const productId = docRef.id; // Firestore ID za proizvod
+                const tokenURI = `https://firestore.googleapis.com/v1/projects/piii-7844e/databases/(default)/documents/products/${productId}`;
+
+
+                // Mintanje NFT-a
+              // Mintanje NFT-a
+const accounts = await web3.eth.requestAccounts();
+const currentAccount = accounts[0];
+
+const mintReceipt = await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
+
+// Dobijanje tokenId iz događaja Transfer
+const newTokenId = mintReceipt.events.Transfer.returnValues.tokenId;
+
+// Odobravanje Marketplace ugovora za upravljanje NFT-om
+await nftContract.methods.approve(marketplaceContractAddress, newTokenId).send({ from: currentAccount });
+
+// Konvertiranje cijene u Wei (ako koristite cryptoPrice u ETH)
+const priceInWei = web3.utils.toWei(cryptoPrice.toString(), 'ether');
+
+// Listanje NFT-a na Marketplace-u
+await marketplaceContract.methods.listItem(newTokenId, priceInWei).send({ from: currentAccount });
+
+// Spremanje tokenId u Firestore
+await updateDoc(docRef, {
+    tokenId: newTokenId
+});
+
+alert('Proizvod uspješno objavljen, NFT mintovan i listan na Marketplace-u!');
+
+            } catch (error) {
+                console.error('Greška prilikom objave proizvoda ili mintanja NFT-a:', error);
+                alert('Došlo je do greške. Pokušajte ponovo.');
+            }
+        });
+
+
+
+
+///////////////////// Adresa Marketplace ugovora///////////////////////////
+const marketplaceContractAddress = "0xEC55DB960B3f8A7499A3E221b6c4C2E485b4f37C"; // Zamijenite s adresom vašeg Marketplace ugovora
+
+// ABI Marketplace ugovora
+const marketplaceContractABI = [
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            }
+        ],
+        "name": "approve",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            }
+        ],
+        "name": "transferFrom",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "price",
+                "type": "uint256"
+            }
+        ],
+        "name": "listItem",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            }
+        ],
+        "name": "buyItem",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getListing",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "address",
+                        "name": "seller",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "price",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct Marketplace.Listing",
+                "name": "",
+                "type": "tuple"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+
+
+// Inicijalizirajte Marketplace ugovor
+const marketplaceContract = new web3.eth.Contract(marketplaceContractABI, marketplaceContractAddress);
+
 
 /////////////////CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAT///////////////////////////////////////////////////////////////////////////////////////////////////////
 
