@@ -602,40 +602,46 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const snapshot = await uploadBytes(storageRef, file);
         const imageUrl = await getDownloadURL(snapshot.ref);
 
-        // Generiši JSON metapodatke
-        const metadata = {
-            name: name,
-            description: `NFT za proizvod ${name}`,
-            image: imageUrl, // URL slike
-        };
-        const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
-        const metadataFile = new File([metadataBlob], `${name}-metadata.json`);
-
-        // Spasi JSON metapodatke u Firebase Storage
-        const metadataRef = ref(storage, 'metadata/' + metadataFile.name);
-        const metadataSnapshot = await uploadBytes(metadataRef, metadataFile);
-        const metadataUrl = await getDownloadURL(metadataSnapshot.ref);
-
         // Spremanje proizvoda u Firestore
         const docRef = await addDoc(collection(db, 'products'), {
             name,
             price,
             cryptoPrice,
-            imageUrl,
-            metadataUrl
+            imageUrl
         });
 
-        const productId = docRef.id;
+        const productId = docRef.id; // Firestore ID za proizvod
+
+        // Kreiraj metadata JSON objekt
+        const metadata = {
+            name: name,
+            description: 'Proizvod na Tržnici',
+            image: imageUrl,
+        };
+
+        // Pretvori metadata objekt u JSON string
+        const metadataString = JSON.stringify(metadata);
+
+        // Upload metadata JSON na Firebase Storage
+        const metadataBlob = new Blob([metadataString], { type: 'application/json' });
+        const metadataRef = ref(storage, 'metadata/' + productId + '.json');
+        const metadataSnapshot = await uploadBytes(metadataRef, metadataBlob);
+        const metadataUrl = await getDownloadURL(metadataSnapshot.ref);
+
+        // Postavi tokenURI na URL metadata JSON datoteke
+        const tokenURI = metadataUrl;
 
         // Mintanje NFT-a
         const accounts = await web3.eth.requestAccounts();
         const currentAccount = accounts[0];
-        await nftContract.methods.mintNFT(currentAccount, metadataUrl).send({ from: currentAccount });
+        await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
 
-        // Dohvati tokenId i ažuriraj Firestore
+        // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
+
+        // Ažuriraj dokument u Firestore s tokenId-om
         await updateDoc(docRef, {
-            tokenId: tokenId,
+            tokenId: tokenId // Dodaj tokenId uz ostale podatke
         });
 
         alert('Proizvod uspješno objavljen i NFT mintovan!');
