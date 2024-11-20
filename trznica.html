@@ -618,9 +618,14 @@
                 const accounts = await web3.eth.requestAccounts();
                 const currentAccount = accounts[0];
 
-                await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
+                // Mintanje NFT-a
+await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
 
-                alert('Proizvod uspješno objavljen i NFT mintovan!');
+// Odobri prijenos NFT-a za tržište (ili specifičnog kupca)
+await nftContract.methods.approve('0xMarketAddress', newTokenId).send({ from: currentAccount });
+
+alert('NFT je uspješno mintovan i odobren za prijenos!');
+
             } catch (error) {
                 console.error('Greška prilikom objave proizvoda ili mintanja NFT-a:', error);
                 alert('Došlo je do greške. Pokušajte ponovo.');
