@@ -1229,60 +1229,59 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
             // Povezivanje sa MetaMask-om
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum);
-            const accounts = await web3.eth.getAccounts();
-            const buyerAccount = accounts[0]; // Kupčev račun
-            const ethPrice = productData.cryptoPrice;
 
-            // Konvertuj ETH cenu u wei
+            // Dohvati trenutnog kupca
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0];
+
+            console.log(`Trenutni korisnik (kupac): ${currentAccount}`);
+
+            // Definiši početnog vlasnika ručno
+            const originalOwner = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9';
+
+            // Provjera cijene u ETH
+            const ethPrice = productData.cryptoPrice;
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
 
-            // Iniciraj transakciju
-            const txParams = {
-                from: buyerAccount,
-                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Adresa prodavca
+            console.log(`Cijena u Wei: ${weiValue}`);
+
+            // Plaćanje originalnom vlasniku
+            await web3.eth.sendTransaction({
+                from: currentAccount,
+                to: originalOwner, // Direktna adresa vlasnika
                 value: weiValue,
-                gas: 21000
-            };
+                gas: 21000 // Minimalan gas
+            });
 
-            const transactionHash = await web3.eth.sendTransaction(txParams);
-            console.log(`Transakcija uspješna: ${transactionHash.transactionHash}`);
+            console.log(`Uplata uspješna! Prenosimo NFT na ${currentAccount}.`);
 
-            // Transfer NFT-a
-            const tokenId = productData.tokenId; // ID NFT-a koji odgovara proizvodu
+            // Prebacivanje NFT-a na kupca
+            const tokenId = productData.tokenId; // ID NFT-a iz Firestore-a
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+            console.log(`Pokušaj prijenosa NFT-a sa originalnog vlasnika (${originalOwner}) na kupca (${currentAccount}).`);
+
             await nftContract.methods
-                .safeTransferFrom(productData.owner, buyerAccount, tokenId)
-                .send({ from: productData.owner });
+                .safeTransferFrom(originalOwner, currentAccount, tokenId)
+                .send({ from: currentAccount });
 
-            console.log(`NFT sa ID-jem ${tokenId} je prebačen na ${buyerAccount}`);
+            console.log(`NFT sa ID-em ${tokenId} uspješno prebačen na ${currentAccount}.`);
 
-            // Ažuriraj Firestore
+            // Ažuriranje Firestore-a
             const productDocRef = doc(db, 'products', productId);
             await updateDoc(productDocRef, {
                 sold: true,
-                owner: buyerAccount,
-                ownerName: username // Novo ime vlasnika
+                owner: currentAccount, // Novi vlasnik
+                ownerName: username // Ime kupca
             });
 
-            // Ažuriraj dugme
-            buyWithCryptoButton.textContent = 'Prodato';
-            buyWithCryptoButton.disabled = true;
-
-            // Dodaj u kupovine korisnika
-            const userPurchasesRef = collection(db, `network/${userId}/purchases`);
-            await addDoc(userPurchasesRef, {
-                name: productData.name,
-                imageUrl: productData.imageUrl,
-                price: productData.cryptoPrice,
-                purchaseTime: new Date()
-            });
-
-            alert(`Kupili ste ${productData.name} za ${ethPrice} ETH! NFT je dodat u vaš wallet.`);
+            alert(`Kupili ste ${productData.name} za ${productData.cryptoPrice} ETH! NFT je dodan u vaš wallet.`);
         } catch (error) {
-            console.error('Greška prilikom transakcije ili transfera NFT-a:', error);
+            console.error('Greška prilikom prijenosa NFT-a:', error);
             alert('Došlo je do greške. Pokušajte ponovo.');
         }
     } else {
-        alert('MetaMask nije instaliran. Molimo instalirajte MetaMask.');
+        alert('Molimo vas da instalirate MetaMask ekstenziju.');
     }
 });
 
@@ -1362,7 +1361,6 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
-            
         // Ažuriranje baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
