@@ -615,22 +615,94 @@
 
 
                 // Mintanje NFT-a
-                const accounts = await web3.eth.requestAccounts();
-                const currentAccount = accounts[0];
+              // Mintanje NFT-a
+const accounts = await web3.eth.requestAccounts();
+const currentAccount = accounts[0];
 
-                // Mintanje NFT-a
-await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
+const mintReceipt = await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
 
-// Odobri prijenos NFT-a za tržište (ili specifičnog kupca)
-await nftContract.methods.approve('0xMarketAddress', newTokenId).send({ from: currentAccount });
+// Dobijanje tokenId iz događaja Transfer
+const newTokenId = mintReceipt.events.Transfer.returnValues.tokenId;
 
-alert('NFT je uspješno mintovan i odobren za prijenos!');
+// Odobravanje Marketplace ugovora za upravljanje NFT-om
+await nftContract.methods.approve(marketplaceContractAddress, newTokenId).send({ from: currentAccount });
+
+// Konvertiranje cijene u Wei (ako koristite cryptoPrice u ETH)
+const priceInWei = web3.utils.toWei(cryptoPrice.toString(), 'ether');
+
+// Listanje NFT-a na Marketplace-u
+await marketplaceContract.methods.listItem(newTokenId, priceInWei).send({ from: currentAccount });
+
+// Spremanje tokenId u Firestore
+await updateDoc(docRef, {
+    tokenId: newTokenId
+});
+
+alert('Proizvod uspješno objavljen, NFT mintovan i listan na Marketplace-u!');
 
             } catch (error) {
                 console.error('Greška prilikom objave proizvoda ili mintanja NFT-a:', error);
                 alert('Došlo je do greške. Pokušajte ponovo.');
             }
         });
+
+
+
+
+// Adresa Marketplace ugovora
+const marketplaceContractAddress = "0xEC55DB960B3f8A7499A3E221b6c4C2E485b4f37C"; // Zamijenite s adresom vašeg Marketplace ugovora
+
+// ABI Marketplace ugovora
+const marketplaceContractABI = [
+
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+
+];
+
+// Inicijalizirajte Marketplace ugovor
+const marketplaceContract = new web3.eth.Contract(marketplaceContractABI, marketplaceContractAddress);
+
+
     </script>
 </head>
 <body>
