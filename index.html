@@ -1339,7 +1339,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
-       buyButton.addEventListener('click', async () => {
+        buyButton.addEventListener('click', async () => {
     if (productData.sold) {
         alert('Ovaj proizvod je već prodan.');
         return;
@@ -1377,32 +1377,22 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
-        console.log('LUNA tokeni uspješno preneseni prodavcu.');
-
-        // *** Dodaj prenos NFT-a ***
-        // Povezivanje sa NFT ugovorom
+        // Prijenos vlasništva nad NFT-om
+        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+        const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
 
-        // Povezivanje sa Marketplace ugovorom
-        const marketplaceContract = new web3.eth.Contract(marketplaceContractABI, marketplaceContractAddress);
-
-        // Funkcija kupovine NFT-a sa Marketplace ugovora
-        console.log(`Kupujem NFT tokenId: ${productData.tokenId} sa Marketplace-a...`);
-        await marketplaceContract.methods.buyItem(productData.tokenId).send({
-            from: currentAccount, // Kupac inicira transakciju
-        });
-
-        // Provjera vlasništva nad NFT-om
-        const newOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
-        if (newOwner.toLowerCase() === currentAccount.toLowerCase()) {
-            console.log(`NFT tokenId: ${productData.tokenId} sada je u vlasništvu ${currentAccount}.`);
-        } else {
-            console.error("Prenos NFT-a nije uspio. Provjerite ugovor.");
-            alert('NFT nije uspješno prenesen. Pokušajte ponovo.');
+        if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
+            alert('Greška: NFT ne pripada prodavcu!');
             return;
         }
 
-        // *** Ažuriraj Firestore bazu podataka ***
+        // Transfer NFT-a
+        await nftContract.methods
+            .safeTransferFrom(sellerAddress, currentAccount, tokenId)
+            .send({ from: sellerAddress });
+
+        // Ažuriranje Firestore baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
@@ -1417,7 +1407,6 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             imageUrl: productData.imageUrl,
             price: productData.price,
             purchaseTime: new Date(),
-            tokenId: productData.tokenId, // Dodaj tokenId za praćenje
         });
 
         // Promjena izgleda nakon uspješne kupovine
@@ -1434,7 +1423,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         });
         productDiv.appendChild(ownerDiv);
 
-        alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena i NFT je prenesen u vaš wallet!`);
+        alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
     } catch (error) {
         console.error('Greška prilikom obrade transakcije:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
@@ -1672,120 +1661,6 @@ mintButton.addEventListener('click', async () => {
     }
 });
 
-
-///////////////////// Adresa Marketplace ugovora///////////////////////////
-const marketplaceContractAddress = "0xEC55DB960B3f8A7499A3E221b6c4C2E485b4f37C"; // Zamijenite s adresom vašeg Marketplace ugovora
-
-// ABI Marketplace ugovora
-const marketplaceContractABI = [
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            }
-        ],
-        "name": "approve",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "from",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            }
-        ],
-        "name": "transferFrom",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "price",
-                "type": "uint256"
-            }
-        ],
-        "name": "listItem",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            }
-        ],
-        "name": "buyItem",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            }
-        ],
-        "name": "getListing",
-        "outputs": [
-            {
-                "components": [
-                    {
-                        "internalType": "address",
-                        "name": "seller",
-                        "type": "address"
-                    },
-                    {
-                        "internalType": "uint256",
-                        "name": "price",
-                        "type": "uint256"
-                    }
-                ],
-                "internalType": "struct Marketplace.Listing",
-                "name": "",
-                "type": "tuple"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-];
-
-
-// Inicijalizirajte Marketplace ugovor
-const marketplaceContract = new web3.eth.Contract(marketplaceContractABI, marketplaceContractAddress);
 
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
