@@ -1355,15 +1355,15 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // Trenutni korisnički račun
+        // Trenutni korisnički račun (kupac)
         const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
+        const buyerAddress = accounts[0];
 
         // Povezivanje s LUNA token ugovorom
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
 
         // Provjera balansa korisnika
-        const userBalance = await lunaTokenContract.methods.balanceOf(currentAccount).call();
+        const userBalance = await lunaTokenContract.methods.balanceOf(buyerAddress).call();
         const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
 
         if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
@@ -1371,18 +1371,32 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-        // Prijenos tokena prodavcu
+        // Prijenos LUNA tokena prodavcu
         const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
         await lunaTokenContract.methods
             .transfer(sellerAddress, requiredAmount)
-            .send({ from: currentAccount });
+            .send({ from: buyerAddress });
+
+        console.log(`Uspješno poslano ${productData.price} LUNA tokena prodavcu: ${sellerAddress}`);
+
+        // Povezivanje s NFT ugovorom
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // Prijenos NFT-a sa prodavca na kupca
+        const tokenId = productData.tokenId; // Pretpostavlja se da se tokenId čuva u Firestore
+        console.log(`Prijenos NFT-a tokenId: ${tokenId} sa ${sellerAddress} na ${buyerAddress}...`);
+        await nftContract.methods
+            .transferFrom(sellerAddress, buyerAddress, tokenId)
+            .send({ from: sellerAddress }); // Transakciju inicira prodavac
+
+        console.log(`NFT tokenId: ${tokenId} uspješno prenesen na ${buyerAddress}!`);
 
         // Ažuriranje baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: userId,
-            ownerName: username
+            owner: buyerAddress, // Nova adresa vlasnika
+            ownerName: username // Ime kupca
         });
 
         // Dodavanje proizvoda u kupovine korisnika
@@ -1408,12 +1422,13 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         });
         productDiv.appendChild(ownerDiv);
 
-        alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
+        alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena i NFT je uspješno prenesen!`);
     } catch (error) {
         console.error('Greška prilikom obrade transakcije:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
