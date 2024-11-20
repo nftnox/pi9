@@ -1229,7 +1229,7 @@ buyWithCryptoButton.addEventListener('click', async () => {
         try {
             // Povežite se sa MetaMask-om i dobijte račune
             await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const web3 = new Web3(window.ethereum); // Inicijalizacija web3 objekta
+            const web3 = new Web3("https://sepolia.infura.io/v3/ea72f2119efa40a4a28ddf73fca07777");
 
             // Dobijanje trenutnog računa
             const accounts = await web3.eth.getAccounts();
@@ -1353,7 +1353,8 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
     try {
         // Povezivanje sa MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
+        const web3 = new Web3("https://sepolia.infura.io/v3/ea72f2119efa40a4a28ddf73fca07777");
+
 
         // Trenutni korisnički račun
         const accounts = await web3.eth.getAccounts();
@@ -2006,7 +2007,8 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
         ];
 
-        const web3 = new Web3(window.ethereum);
+        const web3 = new Web3("https://sepolia.infura.io/v3/ea72f2119efa40a4a28ddf73fca07777");
+
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
 
@@ -2170,7 +2172,7 @@ mintButton.addEventListener('click', async () => {
 
         // Povezivanje sa MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
+        const web3 = new Web3("https://sepolia.infura.io/v3/ea72f2119efa40a4a28ddf73fca07777");
 
         // Dohvati trenutni račun iz MetaMask-a
         const accounts = await web3.eth.getAccounts();
