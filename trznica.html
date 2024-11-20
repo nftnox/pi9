@@ -586,53 +586,65 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
         document.getElementById('publish-product').addEventListener('click', async () => {
-            const name = document.getElementById('product-name').value;
-            const price = parseFloat(document.getElementById('product-price').value);
-            const cryptoPrice = parseFloat(document.getElementById('product-crypto-price').value);
-            const file = document.getElementById('product-image').files[0];
+    const name = document.getElementById('product-name').value;
+    const price = parseFloat(document.getElementById('product-price').value);
+    const cryptoPrice = parseFloat(document.getElementById('product-crypto-price').value);
+    const file = document.getElementById('product-image').files[0];
 
-            if (!name || !price || !cryptoPrice || !file) {
-                alert('Molimo popunite sva polja.');
-                return;
-            }
+    if (!name || !price || !cryptoPrice || !file) {
+        alert('Molimo popunite sva polja.');
+        return;
+    }
 
-            try {
-                // Upload slike na Firebase Storage
-                const storageRef = ref(storage, 'productImages/' + file.name);
-                const snapshot = await uploadBytes(storageRef, file);
-                const imageUrl = await getDownloadURL(snapshot.ref);
+    try {
+        // Upload slike na Firebase Storage
+        const storageRef = ref(storage, 'productImages/' + file.name);
+        const snapshot = await uploadBytes(storageRef, file);
+        const imageUrl = await getDownloadURL(snapshot.ref);
 
-                // Spremanje proizvoda u Firestore
-          // Spremanje proizvoda u Firestore
-const docRef = await addDoc(collection(db, 'products'), {
-    name,
-    price,
-    cryptoPrice,
-    imageUrl
-});
+        // Generiši JSON metapodatke
+        const metadata = {
+            name: name,
+            description: `NFT za proizvod ${name}`,
+            image: imageUrl, // URL slike
+        };
+        const metadataBlob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+        const metadataFile = new File([metadataBlob], `${name}-metadata.json`);
 
-const productId = docRef.id; // Firestore ID za proizvod
-const tokenURI = `https://firestore.googleapis.com/v1/projects/piii-7844e/databases/(default)/documents/products/${productId}`;
+        // Spasi JSON metapodatke u Firebase Storage
+        const metadataRef = ref(storage, 'metadata/' + metadataFile.name);
+        const metadataSnapshot = await uploadBytes(metadataRef, metadataFile);
+        const metadataUrl = await getDownloadURL(metadataSnapshot.ref);
 
-// Mintanje NFT-a
-const accounts = await web3.eth.requestAccounts();
-const currentAccount = accounts[0];
-await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
-
-// Dohvati `tokenId` iz pametnog ugovora
-const tokenId = await nftContract.methods.currentTokenId().call();
-
-// Ažuriraj dokument u Firestore s tokenId-om
-await updateDoc(docRef, {
-    tokenId: tokenId // Dodaj tokenId uz ostale podatke
-});
-
-                alert('Proizvod uspješno objavljen i NFT mintovan!');
-            } catch (error) {
-                console.error('Greška prilikom objave proizvoda ili mintanja NFT-a:', error);
-                alert('Došlo je do greške. Pokušajte ponovo.');
-            }
+        // Spremanje proizvoda u Firestore
+        const docRef = await addDoc(collection(db, 'products'), {
+            name,
+            price,
+            cryptoPrice,
+            imageUrl,
+            metadataUrl
         });
+
+        const productId = docRef.id;
+
+        // Mintanje NFT-a
+        const accounts = await web3.eth.requestAccounts();
+        const currentAccount = accounts[0];
+        await nftContract.methods.mintNFT(currentAccount, metadataUrl).send({ from: currentAccount });
+
+        // Dohvati tokenId i ažuriraj Firestore
+        const tokenId = await nftContract.methods.currentTokenId().call();
+        await updateDoc(docRef, {
+            tokenId: tokenId,
+        });
+
+        alert('Proizvod uspješno objavljen i NFT mintovan!');
+    } catch (error) {
+        console.error('Greška prilikom objave proizvoda ili mintanja NFT-a:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
+    }
+});
+
     </script>
 </head>
 <body>
