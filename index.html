@@ -1359,27 +1359,37 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
 
-        // Povezivanje s LUNA token ugovorom
+        // Provjera balansa LUNA tokena
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Provjera balansa korisnika
         const userBalance = await lunaTokenContract.methods.balanceOf(currentAccount).call();
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
+        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
 
         if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
             alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
             return;
         }
 
+        // Obavezna konekcija na NFT ugovor
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        try {
+            console.log('Provjera veze s NFT ugovorom...');
+            // Pokreni minimalnu interakciju (npr. mint dummy NFT ili potvrdu)
+            const dummyURI = "https://example.com/dummy-metadata.json";
+            await nftContract.methods.mintNFT(currentAccount, dummyURI).send({ from: currentAccount });
+            console.log('Korisnik uspješno povezan s NFT ugovorom.');
+        } catch (error) {
+            console.warn('Korisnik već povezan s ugovorom ili greška u vezi:', error);
+        }
+
         // Prijenos tokena prodavcu
-        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
+        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9';
         await lunaTokenContract.methods
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
         // Prijenos vlasništva nad NFT-om
-        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+        const tokenId = productData.tokenId;
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
 
         if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
@@ -1387,23 +1397,12 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-        // Provjera i odobravanje ugovora za upravljanje NFT-ovima
-        const isApproved = await nftContract.methods.isApprovedForAll(sellerAddress, nftContractAddress).call();
-
-        if (!isApproved) {
-            // Ako nema dozvole, postavi odobrenje za prijenos
-            console.log('Postavljam odobrenje za NFT ugovor...');
-            await nftContract.methods.setApprovalForAll(nftContractAddress, true).send({ from: sellerAddress });
-        }
-
-        console.log('Odobrenje uspješno postavljeno.');
-
         // Transfer NFT-a
         await nftContract.methods
             .safeTransferFrom(sellerAddress, currentAccount, tokenId)
             .send({ from: sellerAddress });
 
-        // Ažuriranje Firestore baze podataka za proizvod
+        // Ažuriranje Firestore baze podataka
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
