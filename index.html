@@ -1387,17 +1387,16 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-     
+        // Provjera i odobravanje ugovora za upravljanje NFT-ovima
+        const isApproved = await nftContract.methods.isApprovedForAll(sellerAddress, nftContractAddress).call();
 
-// Provjeri dozvole
-const isApproved = await nftContract.methods.isApprovedForAll(currentAccount, contractAddress).call();
+        if (!isApproved) {
+            // Ako nema dozvole, postavi odobrenje za prijenos
+            console.log('Postavljam odobrenje za NFT ugovor...');
+            await nftContract.methods.setApprovalForAll(nftContractAddress, true).send({ from: sellerAddress });
+        }
 
-if (!isApproved) {
-    // Ako nema dozvole, odobri ugovor
-    await nftContract.methods.setApprovalForAll(contractAddress, true).send({ from: currentAccount });
-    console.log("Ugovor je odobren za upravljanje NFT-ovima.");
-}
-
+        console.log('Odobrenje uspješno postavljeno.');
 
         // Transfer NFT-a
         await nftContract.methods
@@ -1441,6 +1440,7 @@ if (!isApproved) {
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
