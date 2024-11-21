@@ -1377,7 +1377,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
-        // Prijenos vlasništva nad NFT-om
+        // Povezivanje s NFT ugovorom
         const tokenId = productData.tokenId; // Token ID preuzet iz Firestore baze
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
