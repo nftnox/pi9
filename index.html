@@ -1377,11 +1377,9 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
-        // Povezivanje s NFT ugovorom
-        const tokenId = productData.tokenId; // Token ID preuzet iz Firestore baze
+        // Prijenos vlasništva nad NFT-om
+        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // Provjera trenutnog vlasnika NFT-a
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
 
         if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
@@ -1389,7 +1387,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-        // Transfer NFT-a na novog vlasnika
+        // Transfer NFT-a
         await nftContract.methods
             .safeTransferFrom(sellerAddress, currentAccount, tokenId)
             .send({ from: sellerAddress });
@@ -1398,8 +1396,8 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: currentAccount,
-            ownerName: username, // Ažurira novog vlasnika
+            owner: userId,
+            ownerName: username,
         });
 
         // Dodavanje proizvoda u kupovine korisnika
@@ -1426,29 +1424,11 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         productDiv.appendChild(ownerDiv);
 
         alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
-
-        // **DODANO ZA NFT UGOVOR**
-        console.log('Povezivanje s NFT ugovorom...');
-        const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Adresa NFT ugovora
-        const nftContractABI = [ /* ABI kod već je definisan */ ];
-
-        const nftWeb3Contract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // Mintanje novog NFT-a za kupca (opcionalno)
-        const tokenURI = productData.imageUrl; // Koristimo sliku proizvoda kao metapodatke
-        const newTokenId = await nftWeb3Contract.methods
-            .mintNFT(currentAccount, tokenURI)
-            .send({ from: currentAccount });
-
-        console.log(`NFT uspješno mintovan s ID-jem: ${newTokenId.events.Transfer.returnValues.tokenId}`);
-        alert(`NFT za proizvod "${productData.name}" uspješno mintovan i povezan s vašim računom.`);
     } catch (error) {
         console.error('Greška prilikom obrade transakcije:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+        alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
-
-
 
 
 
