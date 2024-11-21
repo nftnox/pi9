@@ -1387,6 +1387,9 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
+        // **DODANO**: Odobravanje transfera NFT-a kupcu
+        await nftContract.methods.approve(currentAccount, tokenId).send({ from: sellerAddress });
+
         // Transfer NFT-a
         await nftContract.methods
             .safeTransferFrom(sellerAddress, currentAccount, tokenId)
@@ -1429,6 +1432,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
@@ -2219,8 +2223,6 @@ mintButton.addEventListener('click', async () => {
     }
 });
 
-await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: ownerAddress });
-await nftContract.methods.approve(buyerAddress, tokenId).send({ from: sellerAddress });
 
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
