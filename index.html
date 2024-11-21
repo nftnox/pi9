@@ -1390,6 +1390,34 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         // **DODANO**: Odobravanje transfera NFT-a kupcu
         await nftContract.methods.approve(currentAccount, tokenId).send({ from: sellerAddress });
 
+// **DODANO**: Provjeri i odobri transfer ako nije odobren
+async function ensureApproval(nftContract, ownerAddress, spenderAddress, tokenId) {
+    const isApproved = await nftContract.methods
+        .getApproved(tokenId)
+        .call();
+
+    if (isApproved.toLowerCase() !== spenderAddress.toLowerCase()) {
+        console.log("Nije autorizirano. Postavljam autorizaciju...");
+
+        await nftContract.methods
+            .approve(spenderAddress, tokenId)
+            .send({ from: ownerAddress });
+
+        console.log("Autorizacija uspješno postavljena.");
+    } else {
+        console.log("Ugovor je već autoriziran.");
+    }
+}
+
+// Provjeri autorizaciju prije prijenosa
+await ensureApproval(nftContract, sellerAddress, currentAccount, tokenId);
+
+// Transfer NFT-a
+await nftContract.methods
+    .safeTransferFrom(sellerAddress, currentAccount, tokenId)
+    .send({ from: sellerAddress });
+
+
         // Transfer NFT-a
         await nftContract.methods
             .safeTransferFrom(sellerAddress, currentAccount, tokenId)
