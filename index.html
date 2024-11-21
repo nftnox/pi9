@@ -2219,6 +2219,8 @@ mintButton.addEventListener('click', async () => {
     }
 });
 
+await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: ownerAddress });
+await nftContract.methods.approve(buyerAddress, tokenId).send({ from: sellerAddress });
 
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
