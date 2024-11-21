@@ -1387,7 +1387,16 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-        await nftContract.methods.approve(buyerAddress, tokenId).send({ from: currentOwner });
+     
+
+// Provjeri dozvole
+const isApproved = await nftContract.methods.isApprovedForAll(currentAccount, contractAddress).call();
+
+if (!isApproved) {
+    // Ako nema dozvole, odobri ugovor
+    await nftContract.methods.setApprovalForAll(contractAddress, true).send({ from: currentAccount });
+    console.log("Ugovor je odobren za upravljanje NFT-ovima.");
+}
 
 
         // Transfer NFT-a
