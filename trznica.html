@@ -602,16 +602,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const snapshot = await uploadBytes(storageRef, file);
         const imageUrl = await getDownloadURL(snapshot.ref);
 
-        // Spremanje proizvoda u Firestore
-        const docRef = await addDoc(collection(db, 'products'), {
-            name,
-            price,
-            cryptoPrice,
-            imageUrl
-        });
-
-        const productId = docRef.id; // Firestore ID za proizvod
-
         // Kreiraj metadata JSON objekt
         const metadata = {
             name: name,
@@ -624,7 +614,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 
         // Upload metadata JSON na Firebase Storage
         const metadataBlob = new Blob([metadataString], { type: 'application/json' });
-        const metadataRef = ref(storage, 'metadata/' + productId + '.json');
+        const metadataRef = ref(storage, 'metadata/' + name + '.json');
         const metadataSnapshot = await uploadBytes(metadataRef, metadataBlob);
         const metadataUrl = await getDownloadURL(metadataSnapshot.ref);
 
@@ -639,9 +629,13 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
 
-        // Ažuriraj dokument u Firestore s tokenId-om
-        await updateDoc(docRef, {
-            tokenId: tokenId // Dodaj tokenId uz ostale podatke
+        // Spremanje proizvoda u Firestore s tokenId-om
+        const docRef = await addDoc(collection(db, 'products'), {
+            name,
+            price,
+            cryptoPrice,
+            imageUrl,
+            tokenId, // Dodaj tokenId u inicijalni zapis
         });
 
         alert('Proizvod uspješno objavljen i NFT mintovan!');
@@ -650,6 +644,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
     </script>
 </head>
