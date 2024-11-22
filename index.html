@@ -2198,30 +2198,29 @@ mintButton.addEventListener('click', async () => {
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Dohvati iznos iz virtuelnog novčanika
-        const amountElement = document.getElementById('amount');
-        const amountToMint = parseFloat(amountElement.innerText);
-
-        if (amountToMint <= 0) {
+        // Dohvati trenutnu vrijednost iz `currentPrice` (Your Wallet)
+        if (currentPrice <= 0) {
             alert('Nemate dovoljno sredstava za mintovanje.');
             return;
         }
 
         // Konvertuj iznos u najmanju jedinicu (wei)
-        const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
+        const amountInWei = web3.utils.toWei(currentPrice.toString(), 'ether');
 
         // Pozovi funkciju `updateBalanceAndMint` direktno
-        console.log(`Mintovanje ${amountToMint} LUNA tokena za ${currentAccount}...`);
+        console.log(`Mintovanje ${currentPrice} LUNA tokena za ${currentAccount}...`);
         await contract.methods.updateBalanceAndMint(currentAccount, amountInWei).send({ from: currentAccount });
 
-        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
+        alert(`Uspješno ste mintovali ${currentPrice} LUNA tokena!`);
 
-        // Resetuj iznos u virtuelnom novčaniku na 0
-        amountElement.innerText = '0.00';
+        // Resetuj `currentPrice` na 0 nakon mintovanja
+        currentPrice = 0.00;
 
-        // Opcionalno ažuriraj Firestore bazu podataka (ako je relevantno)
-        currentPrice = 0.00; // Resetovanje globalne varijable
-        await updateFirestore(currentPrice, null); // Ažuriranje Firestore-a
+        // Ažuriraj prikaz na stranici (Your Wallet)
+        const amountElement = document.getElementById('amount');
+        amountElement.innerText = currentPrice.toFixed(2);
+
+        console.log("Virtuelni novčanik uspješno resetovan na 0.");
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
