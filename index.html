@@ -2198,7 +2198,7 @@ mintButton.addEventListener('click', async () => {
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Dohvati trenutnu vrijednost iz `currentPrice` (Your Wallet)
+        // Provjeri trenutni iznos u novčaniku (currentPrice)
         if (currentPrice <= 0) {
             alert('Nemate dovoljno sredstava za mintovanje.');
             return;
@@ -2211,12 +2211,11 @@ mintButton.addEventListener('click', async () => {
         console.log(`Mintovanje ${currentPrice} LUNA tokena za ${currentAccount}...`);
         await contract.methods.updateBalanceAndMint(currentAccount, amountInWei).send({ from: currentAccount });
 
+        // Nakon uspješnog mintovanja, resetuj currentPrice na 0
         alert(`Uspješno ste mintovali ${currentPrice} LUNA tokena!`);
-
-        // Resetuj `currentPrice` na 0 nakon mintovanja
         currentPrice = 0.00;
 
-        // Ažuriraj prikaz na stranici (Your Wallet)
+        // Ažuriraj prikaz na stranici
         const amountElement = document.getElementById('amount');
         amountElement.innerText = currentPrice.toFixed(2);
 
@@ -2226,6 +2225,7 @@ mintButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
 
 
 
