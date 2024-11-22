@@ -639,11 +639,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
 
-		await nftContract.methods.setApprovalForAll("0x0000000000000000000000000000000000000000", true).send({ from: currentAccount });
-// Ovo osigurava da bilo koji uređaj može izvršiti `safeTransferFrom`.
-
-
-
         // Ažuriraj dokument u Firestore s tokenId-om
         await updateDoc(docRef, {
             tokenId: tokenId // Dodaj tokenId uz ostale podatke
