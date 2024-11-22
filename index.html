@@ -2162,6 +2162,41 @@ const contractABI = [
     }
 ];
 
+// Dodaj funkcionalnost za dugme "Poveži se s NFT ugovorom"
+document.getElementById('connect-nft-contract').addEventListener('click', async () => {
+    try {
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
+        // Povezivanje sa MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
+
+        // Dohvati trenutni račun iz MetaMask-a
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+        console.log(`Povezan račun: ${currentAccount}`);
+
+        // Poveži se s NFT ugovorom
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // Prazna transakcija za povezivanje s ugovorom
+        await web3.eth.sendTransaction({
+            from: currentAccount,
+            to: nftContractAddress,
+            value: 0, // Bez prijenosa sredstava
+            gas: 21000, // Minimalni gas za jednostavnu transakciju
+        });
+
+        alert('Uspješno povezivanje s NFT ugovorom!');
+    } catch (error) {
+        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
+    }
+});
+
 
 const mintButton = document.getElementById('mint-my-coin');
 
@@ -4323,42 +4358,7 @@ function showConfetti() {
 
 
 
-<script>
-    document.getElementById('connect-nft-contract').addEventListener('click', async () => {
-    try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
-        }
 
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // Dohvati trenutni račun iz MetaMask-a
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-        console.log(`Povezan račun: ${currentAccount}`);
-
-        // Poveži se s NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // Prazna transakcija za povezivanje s ugovorom
-        await web3.eth.sendTransaction({
-            from: currentAccount,
-            to: nftContractAddress,
-            value: 0, // Bez prijenosa sredstava
-            gas: 21000, // Minimalni gas za jednostavnu transakciju
-        });
-
-        alert('Uspješno povezivanje s NFT ugovorom!');
-    } catch (error) {
-        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
-        alert('Došlo je do greške. Pokušajte ponovo.');
-    }
-});
-
-</script>
 
 </body>
 </html>
