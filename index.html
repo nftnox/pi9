@@ -1223,7 +1223,7 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
 
     // Omogući MetaMask plaćanje
    // Omogući MetaMask plaćanje
-   buyWithCryptoButton.addEventListener('click', async () => {
+buyWithCryptoButton.addEventListener('click', async () => {
     // Provjera da li je MetaMask instaliran
     if (typeof window.ethereum !== 'undefined') {
         try {
@@ -1244,22 +1244,10 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
             console.log("Vrijednost u Wei:", weiValue);
 
-            // Kontakt s NFT ugovorom
-            const tokenId = productData.tokenId; // Pretpostavka: tokenId je spremljen u Firestore
-            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-            // Provjeri trenutnog vlasnika NFT-a
-            const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-            console.log("Trenutni vlasnik NFT-a:", currentOwner);
-
-            // Odobravanje transakcije za trenutnog korisnika ako nije odobreno
-            await nftContract.methods.approve(account, tokenId).send({ from: currentOwner });
-            console.log(`NFT s tokenId ${tokenId} je odobren za prijenos.`);
-
-            // Inicijacija transakcije plaćanja
+            // Inicijacija transakcije
             const txParams = {
                 from: account,
-                to: currentOwner, // Adresa trenutnog vlasnika
+                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Ethereum adresa primatelja
                 value: weiValue, // Vrijednost u wei
                 gas: 21000 // Minimalan gas za slanje
             };
@@ -1267,15 +1255,14 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
             // Slanje transakcije putem MetaMask-a
             const transactionHash = await web3.eth.sendTransaction(txParams);
 
-            // Prijenos vlasništva nad NFT-om
-            await nftContract.methods.safeTransferFrom(currentOwner, account, tokenId).send({ from: currentOwner });
-            console.log(`NFT s tokenId ${tokenId} uspješno prenesen.`);
-
             // Ako je transakcija uspješna, ažuriraj status proizvoda u Firestore-u
+            console.log(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
+
+            // Ažuriraj status proizvoda na 'prodato' i dodaj novog vlasnika u Firestore-u
             const productDocRef = doc(db, 'products', productId);
             await updateDoc(productDocRef, {
                 sold: true,
-                owner: account,
+                owner: userId,
                 ownerName: username // Dodaj ime korisnika kao vlasnika
             });
 
@@ -1314,7 +1301,6 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
-
 
 
 
