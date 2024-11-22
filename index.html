@@ -2219,7 +2219,10 @@ mintButton.addEventListener('click', async () => {
         const amountElement = document.getElementById('amount');
         amountElement.innerText = currentPrice.toFixed(2);
 
-        console.log("Virtuelni novčanik uspješno resetovan na 0.");
+        // Ažuriraj Firestore da sačuva novu vrijednost (0.00)
+        await updateFirestore(currentPrice, new Date());
+
+        console.log("Virtuelni novčanik i Firestore uspješno resetovani na 0.");
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
