@@ -1359,24 +1359,38 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
 
-        // Povezivanje sa ARIA ugovorom
-        const ariaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+        // Povezivanje s LUNA token ugovorom
+        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Proverite ARIA balans korisnika
-        const userBalance = await ariaTokenContract.methods.balanceOf(currentAccount).call();
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cene u Wei
+        // Provjera balansa korisnika
+        const userBalance = await lunaTokenContract.methods.balanceOf(currentAccount).call();
+        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
 
         if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
-            alert('Nemate dovoljno ARIA tokena za ovu transakciju.');
+            alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
             return;
         }
 
         // Prijenos tokena prodavcu
         const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
-        await ariaTokenContract.methods
-    .updateBalanceAndMint(sellerAddress, requiredAmount)
-    .send({ from: currentAccount });
+        await lunaTokenContract.methods
+            .transfer(sellerAddress, requiredAmount)
+            .send({ from: currentAccount });
 
+        // Prijenos vlasništva nad NFT-om
+        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+        const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
+
+        if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
+            alert('Greška: NFT ne pripada prodavcu!');
+            return;
+        }
+
+        // Transfer NFT-a
+        await nftContract.methods
+            .safeTransferFrom(sellerAddress, currentAccount, tokenId)
+            .send({ from: sellerAddress });
 
         // Ažuriranje Firestore baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
@@ -1409,13 +1423,12 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         });
         productDiv.appendChild(ownerDiv);
 
-        alert(`Kupili ste ${productData.name} za ${productData.price} ARIA tokena!`);
+        alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
     } catch (error) {
         console.error('Greška prilikom obrade transakcije:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
-
 
 
 
@@ -1997,31 +2010,94 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
 
-/////////////////////////////////// MINT ZA ARIA TOKEN ////////////////////////////////////////////////
-
-const contractAddress = "0x196579d52F74A7E15303f2279c83Bd57db8f9f6C"; // Ispravna adresa ugovora
+///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const contractAddress = "0x9C709D9Bd343283c80437aBB641AAf10C33F582B"; // Nova adresa ugovora
 const contractABI = [
     {
-        "inputs": [
-            { "internalType": "address", "name": "user", "type": "address" },
-            { "internalType": "uint256", "name": "amount", "type": "uint256" }
-        ],
-        "name": "updateBalanceAndMint",
+        "inputs": [],
+        "name": "mintMyTokens",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBalance",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "earnedBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    // Dodajemo standardne ERC-20 funkcije:
+    {
         "constant": true,
         "inputs": [
-            { "name": "account", "type": "address" }
+            {
+                "name": "account",
+                "type": "address"
+            }
         ],
         "name": "balanceOf",
         "outputs": [
-            { "name": "", "type": "uint256" }
+            {
+                "name": "",
+                "type": "uint256"
+            }
         ],
         "payable": false,
         "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -2029,7 +2105,10 @@ const contractABI = [
         "inputs": [],
         "name": "name",
         "outputs": [
-            { "name": "", "type": "string" }
+            {
+                "name": "",
+                "type": "string"
+            }
         ],
         "payable": false,
         "stateMutability": "view",
@@ -2040,7 +2119,10 @@ const contractABI = [
         "inputs": [],
         "name": "symbol",
         "outputs": [
-            { "name": "", "type": "string" }
+            {
+                "name": "",
+                "type": "string"
+            }
         ],
         "payable": false,
         "stateMutability": "view",
@@ -2051,13 +2133,31 @@ const contractABI = [
         "inputs": [],
         "name": "decimals",
         "outputs": [
-            { "name": "", "type": "uint8" }
+            {
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
         ],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     }
 ];
+
 
 const mintButton = document.getElementById('mint-my-coin');
 
@@ -2074,13 +2174,7 @@ mintButton.addEventListener('click', async () => {
 
         // Dohvati trenutni račun iz MetaMask-a
         const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0].trim(); // Ukloni razmake iz adrese
-
-        // Validacija adrese
-        if (!web3.utils.isAddress(currentAccount)) {
-            alert("Neispravna Ethereum adresa: " + currentAccount);
-            return;
-        }
+        const currentAccount = accounts[0];
 
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
@@ -2089,7 +2183,7 @@ mintButton.addEventListener('click', async () => {
         const amountElement = document.getElementById('amount');
         const amountToMint = parseFloat(amountElement.innerText);
 
-        if (isNaN(amountToMint) || amountToMint <= 0) {
+        if (amountToMint <= 0) {
             alert('Nemate dovoljno sredstava za mintovanje.');
             return;
         }
@@ -2097,23 +2191,23 @@ mintButton.addEventListener('click', async () => {
         // Konvertuj iznos u najmanju jedinicu (wei)
         const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
 
-        // Pozovi funkciju `updateBalanceAndMint` za ažuriranje balansa i mintovanje
-        console.log(`Ažuriranje balansa i mintovanje ARIA tokena sa ${amountToMint} za ${currentAccount}...`);
-        await contract.methods
-            .updateBalanceAndMint(currentAccount, amountInWei)
-            .send({ from: currentAccount });
+        // Pozovi funkciju `updateBalanceAndMint` direktno
+        console.log(`Mintovanje ${amountToMint} LUNA tokena za ${currentAccount}...`);
+        await contract.methods.updateBalanceAndMint(currentAccount, amountInWei).send({ from: currentAccount });
 
-        alert(`Uspješno ste mintovali ${amountToMint} ARIA tokena!`);
+        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
 
-        // Resetujte trenutnu cijenu
+        // Resetujte `currentPrice` varijablu na 0.00
         currentPrice = 0.00;
-        amountElement.innerText = '0.00';
 
+        // Resetuj iznos u virtuelnom novčaniku na 0
+        amountElement.innerText = '0.00';
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
 
 
 
