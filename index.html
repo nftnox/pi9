@@ -1455,7 +1455,7 @@ localStorage.setItem('loggedInUser', userParam);
 
 /////////////////////////////////// MINT ZA ARIA TOKEN ////////////////////////////////////////////////
 
-const contractAddress = "0x196579d52F74A7E15303f2279c83Bd57db8f9f6C  "; // Zamijenite sa adresom vašeg ARIA ugovora
+const contractAddress = "0x196579d52F74A7E15303f2279c83Bd57db8f9f6C"; // Ispravna adresa ugovora
 const contractABI = [
     {
         "inputs": [
@@ -1530,7 +1530,13 @@ mintButton.addEventListener('click', async () => {
 
         // Dohvati trenutni račun iz MetaMask-a
         const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
+        const currentAccount = accounts[0].trim(); // Ukloni razmake iz adrese
+
+        // Validacija adrese
+        if (!web3.utils.isAddress(currentAccount)) {
+            alert("Neispravna Ethereum adresa: " + currentAccount);
+            return;
+        }
 
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
@@ -1539,7 +1545,7 @@ mintButton.addEventListener('click', async () => {
         const amountElement = document.getElementById('amount');
         const amountToMint = parseFloat(amountElement.innerText);
 
-        if (amountToMint <= 0) {
+        if (isNaN(amountToMint) || amountToMint <= 0) {
             alert('Nemate dovoljno sredstava za mintovanje.');
             return;
         }
