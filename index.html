@@ -1453,94 +1453,31 @@ localStorage.setItem('loggedInUser', userParam);
 
 
 
-///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const contractAddress = "0xCf4687eE794128026f0CC1a80c0a6788a38039a4"; // Nova adresa ugovora
+/////////////////////////////////// MINT ZA ARIA TOKEN ////////////////////////////////////////////////
+
+const contractAddress = "0x196579d52F74A7E15303f2279c83Bd57db8f9f6C  "; // Zamijenite sa adresom vašeg ARIA ugovora
 const contractABI = [
     {
-        "inputs": [],
-        "name": "mintMyTokens",
+        "inputs": [
+            { "internalType": "address", "name": "user", "type": "address" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "updateBalanceAndMint",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
     },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateBalance",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "name": "earnedBalance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    // Dodajemo standardne ERC-20 funkcije:
     {
         "constant": true,
         "inputs": [
-            {
-                "name": "account",
-                "type": "address"
-            }
+            { "name": "account", "type": "address" }
         ],
         "name": "balanceOf",
         "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
+            { "name": "", "type": "uint256" }
         ],
         "payable": false,
         "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "recipient",
-                "type": "address"
-            },
-            {
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "transfer",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "nonpayable",
         "type": "function"
     },
     {
@@ -1548,10 +1485,7 @@ const contractABI = [
         "inputs": [],
         "name": "name",
         "outputs": [
-            {
-                "name": "",
-                "type": "string"
-            }
+            { "name": "", "type": "string" }
         ],
         "payable": false,
         "stateMutability": "view",
@@ -1562,10 +1496,7 @@ const contractABI = [
         "inputs": [],
         "name": "symbol",
         "outputs": [
-            {
-                "name": "",
-                "type": "string"
-            }
+            { "name": "", "type": "string" }
         ],
         "payable": false,
         "stateMutability": "view",
@@ -1576,31 +1507,13 @@ const contractABI = [
         "inputs": [],
         "name": "decimals",
         "outputs": [
-            {
-                "name": "",
-                "type": "uint8"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256"
-            }
+            { "name": "", "type": "uint8" }
         ],
         "payable": false,
         "stateMutability": "view",
         "type": "function"
     }
 ];
-
 
 const mintButton = document.getElementById('mint-my-coin');
 
@@ -1622,7 +1535,7 @@ mintButton.addEventListener('click', async () => {
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Dohvati iznos iz Your wallet
+        // Dohvati iznos iz virtuelnog novčanika
         const amountElement = document.getElementById('amount');
         const amountToMint = parseFloat(amountElement.innerText);
 
@@ -1634,33 +1547,24 @@ mintButton.addEventListener('click', async () => {
         // Konvertuj iznos u najmanju jedinicu (wei)
         const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
 
-        // Ažuriraj saldo korisnika u ugovoru
-        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
+        // Pozovi funkciju `updateBalanceAndMint` za ažuriranje balansa i mintovanje
+        console.log(`Ažuriranje balansa i mintovanje ARIA tokena sa ${amountToMint} za ${currentAccount}...`);
         await contract.methods
-            .updateBalance(currentAccount, amountInWei)
+            .updateBalanceAndMint(currentAccount, amountInWei)
             .send({ from: currentAccount });
 
-        // Pozovi funkciju mintMyTokens iz ugovora
-        console.log(`Mintovanje LUNA tokena za ${currentAccount}...`);
-        await contract.methods.mintMyTokens().send({ from: currentAccount });
+        alert(`Uspješno ste mintovali ${amountToMint} ARIA tokena!`);
 
-        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
-
-        // Resetujte `currentPrice` varijablu na 0.00
+        // Resetujte trenutnu cijenu
         currentPrice = 0.00;
-
-        // Resetuj iznos u virtuelnom novčaniku na 0
         amountElement.innerText = '0.00';
 
-        // Ažuriraj Firestore bazu podataka
-        await updateFirestore(currentPrice, lastClickTime);
-
-        // Ažuriraj prikaz u MetaMask-u (opcionalno)
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
 
 
 
