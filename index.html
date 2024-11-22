@@ -1359,6 +1359,22 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
 
+        // Povezivanje s NFT ugovorom
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+        const tokenId = productData.tokenId;
+
+        // Provjeri da li NFT postoji i ko je trenutni vlasnik
+        console.log('Provjera vlasništva nad NFT-om...');
+        const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
+        console.log(`Trenutni vlasnik NFT-a (${tokenId}): ${currentOwner}`);
+
+        // Validacija da li prodavac zaista posjeduje NFT
+        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
+        if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
+            alert('Greška: NFT ne pripada prodavcu!');
+            return;
+        }
+
         // Povezivanje s LUNA token ugovorom
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
 
@@ -1372,22 +1388,13 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         }
 
         // Prijenos tokena prodavcu
-        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
+        console.log(`Prijenos ${productData.price} LUNA tokena prodavcu (${sellerAddress})...`);
         await lunaTokenContract.methods
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
         // Prijenos vlasništva nad NFT-om
-        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-        const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-
-        if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
-            alert('Greška: NFT ne pripada prodavcu!');
-            return;
-        }
-
-        // Transfer NFT-a
+        console.log('Prijenos NFT-a kupcu...');
         await nftContract.methods
             .safeTransferFrom(sellerAddress, currentAccount, tokenId)
             .send({ from: sellerAddress });
@@ -1396,8 +1403,8 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: userId,
-            ownerName: username,
+            owner: currentAccount, // Spremi adresu novog vlasnika
+            ownerName: username,  // Pretpostavka da je 'username' ime prijavljenog korisnika
         });
 
         // Dodavanje proizvoda u kupovine korisnika
@@ -1415,6 +1422,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         buyButton.disabled = true;
 
         // Prikaz vlasnika
+        const ownerDiv = document.createElement('div');
         ownerDiv.textContent = `Novi vlasnik: ${username}`;
         ownerDiv.style.color = 'white';
         ownerDiv.style.cursor = 'pointer';
@@ -1429,6 +1437,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
