@@ -1351,46 +1351,36 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
     }
 
     try {
-        // Povezivanje s MetaMask-om
+        // Povezivanje sa MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // Dohvati trenutni MetaMask račun
+        // Trenutni korisnički račun
         const accounts = await web3.eth.getAccounts();
-        const buyerAccount = accounts[0];
-        console.log(`Kupac povezan s računom: ${buyerAccount}`);
+        const currentAccount = accounts[0];
 
-        // Provjera balansa LUNA tokena
+        // Povezivanje s LUNA token ugovorom
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-        const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
 
-        console.log(`Trenutni balans LUNA tokena: ${userBalance}`);
-        console.log(`Potrebno za kupovinu: ${requiredAmount}`);
+        // Provjera balansa korisnika
+        const userBalance = await lunaTokenContract.methods.balanceOf(currentAccount).call();
+        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
 
         if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
             alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
             return;
         }
 
-        // Transfer LUNA tokena prodavcu
-        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Zamijeni pravom adresom prodavca
+        // Prijenos tokena prodavcu
+        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
         await lunaTokenContract.methods
             .transfer(sellerAddress, requiredAmount)
-            .send({ from: buyerAccount });
+            .send({ from: currentAccount });
 
-        console.log('LUNA tokeni uspješno preneseni prodavcu.');
-
-        // Provjera i transfer NFT-a
-        const tokenId = productData.tokenId; // Osiguraj da tokenId postoji u Firestore
-        if (!tokenId) {
-            alert('Greška: Token ID nije definisan za ovaj proizvod.');
-            return;
-        }
-
+        // Prijenos vlasništva nad NFT-om
+        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-        console.log(`Trenutni vlasnik NFT-a: ${currentOwner}`);
 
         if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
             alert('Greška: NFT ne pripada prodavcu!');
@@ -1399,27 +1389,46 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         // Transfer NFT-a
         await nftContract.methods
-            .safeTransferFrom(sellerAddress, buyerAccount, tokenId)
+            .safeTransferFrom(sellerAddress, currentAccount, tokenId)
             .send({ from: sellerAddress });
 
-        console.log('NFT uspješno prenesen na novog vlasnika.');
-
-        // Ažuriranje Firestore podataka
+        // Ažuriranje Firestore baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: buyerAccount,
+            owner: userId,
             ownerName: username,
         });
+
+        // Dodavanje proizvoda u kupovine korisnika
+        const userPurchasesRef = collection(db, `network/${userId}/purchases`);
+        await addDoc(userPurchasesRef, {
+            name: productData.name,
+            imageUrl: productData.imageUrl,
+            price: productData.price,
+            purchaseTime: new Date(),
+        });
+
+        // Promjena izgleda nakon uspješne kupovine
+        buyButton.textContent = 'Sold';
+        buyButton.style.backgroundColor = 'red';
+        buyButton.disabled = true;
+
+        // Prikaz vlasnika
+        ownerDiv.textContent = `Novi vlasnik: ${username}`;
+        ownerDiv.style.color = 'white';
+        ownerDiv.style.cursor = 'pointer';
+        ownerDiv.addEventListener('click', () => {
+            window.location.href = `profile.html?ime=${username}`;
+        });
+        productDiv.appendChild(ownerDiv);
 
         alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
     } catch (error) {
         console.error('Greška prilikom obrade transakcije:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+        alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
-
-
 
 
 
@@ -1441,7 +1450,7 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 // Spremi ime prijavljenog korisnika u localStorage
 localStorage.setItem('loggedInUser', userParam);
 
-// Povezivanje s NFT ugovorom
+///////////////////////////// Povezivanje s NFT ugovorom
 const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
         
@@ -2002,26 +2011,8 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
 
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const contractAddress = "0x9C709D9Bd343283c80437aBB641AAf10C33F582B"; // Nova adresa ugovora
+const contractAddress = "0x9C709D9Bd343283c80437aBB641AAf10C33F582B"; // Nova adresa ugovora             
 const contractABI = [
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "updateBalanceAndMint",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
     {
         "inputs": [],
         "name": "mintMyTokens",
@@ -2168,7 +2159,6 @@ const contractABI = [
 ];
 
 
-
 const mintButton = document.getElementById('mint-my-coin');
 
 mintButton.addEventListener('click', async () => {
@@ -2189,39 +2179,45 @@ mintButton.addEventListener('click', async () => {
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Provjeri trenutni iznos u novčaniku (currentPrice)
-        if (currentPrice <= 0) {
+        // Dohvati iznos iz Your wallet
+        const amountElement = document.getElementById('amount');
+        const amountToMint = parseFloat(amountElement.innerText);
+
+        if (amountToMint <= 0) {
             alert('Nemate dovoljno sredstava za mintovanje.');
             return;
         }
 
         // Konvertuj iznos u najmanju jedinicu (wei)
-        const amountInWei = web3.utils.toWei(currentPrice.toString(), 'ether');
+        const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
 
-        // Pozovi funkciju `updateBalanceAndMint` direktno
-        console.log(`Mintovanje ${currentPrice} LUNA tokena za ${currentAccount}...`);
-        await contract.methods.updateBalanceAndMint(currentAccount, amountInWei).send({ from: currentAccount });
+        // Ažuriraj saldo korisnika u ugovoru
+        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
+        await contract.methods
+            .updateBalance(currentAccount, amountInWei)
+            .send({ from: currentAccount });
 
-        // Nakon uspješnog mintovanja, resetuj currentPrice na 0
-        alert(`Uspješno ste mintovali ${currentPrice} LUNA tokena!`);
+        // Pozovi funkciju mintMyTokens iz ugovora
+        console.log(`Mintovanje LUNA tokena za ${currentAccount}...`);
+        await contract.methods.mintMyTokens().send({ from: currentAccount });
+
+        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
+
+        // Resetujte `currentPrice` varijablu na 0.00
         currentPrice = 0.00;
 
-        // Ažuriraj prikaz na stranici
-        const amountElement = document.getElementById('amount');
-        amountElement.innerText = currentPrice.toFixed(2);
+        // Resetuj iznos u virtuelnom novčaniku na 0
+        amountElement.innerText = '0.00';
 
-        // Ažuriraj Firestore da sačuva novu vrijednost (0.00)
-        await updateFirestore(currentPrice, new Date());
+        // Ažuriraj Firestore bazu podataka
+        await updateFirestore(currentPrice, lastClickTime);
 
-        console.log("Virtuelni novčanik i Firestore uspješno resetovani na 0.");
+        // Ažuriraj prikaz u MetaMask-u (opcionalno)
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
-
-
-
 
 
 
