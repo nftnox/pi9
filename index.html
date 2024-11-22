@@ -1374,8 +1374,9 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         // Prijenos tokena prodavcu
         const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
         await ariaTokenContract.methods
-            .transfer(sellerAddress, requiredAmount)
-            .send({ from: currentAccount });
+    .updateBalanceAndMint(sellerAddress, requiredAmount)
+    .send({ from: currentAccount });
+
 
         // Ažuriranje Firestore baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
