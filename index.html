@@ -2431,15 +2431,11 @@ mintButton.addEventListener('click', async () => {
         // Konvertuj iznos u najmanju jedinicu (wei)
         const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
 
-        // Ažuriraj saldo korisnika u ugovoru
-        console.log(`Ažuriranje balansa sa ${amountToMint} za ${currentAccount}`);
+        // Kombinovano ažuriraj saldo i mintuj tokene
+        console.log(`Ažuriranje i mintovanje sa ${amountToMint} za ${currentAccount}`);
         await contract.methods
-            .updateBalance(currentAccount, amountInWei)
+            .updateAndMint(currentAccount, amountInWei)
             .send({ from: currentAccount });
-
-        // Pozovi funkciju mintMyTokens iz ugovora
-        console.log(`Mintovanje LUNA tokena za ${currentAccount}...`);
-        await contract.methods.mintMyTokens().send({ from: currentAccount });
 
         alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
 
@@ -2452,12 +2448,12 @@ mintButton.addEventListener('click', async () => {
         // Ažuriraj Firestore bazu podataka
         await updateFirestore(currentPrice, lastClickTime);
 
-        // Ažuriraj prikaz u MetaMask-u (opcionalno)
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
 
 
 
