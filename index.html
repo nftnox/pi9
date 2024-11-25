@@ -2454,58 +2454,7 @@ mintButton.addEventListener('click', async () => {
     }
 });
 
-// Funkcija za provjeru balansa korisnika
-async function checkBalance(userAddress) {
-    try {
-        const balance = await contract.methods.balanceOf(userAddress).call();
-        console.log(`Korisnik ${userAddress} ima saldo: ${web3.utils.fromWei(balance, 'ether')} tokena`);
-        return web3.utils.fromWei(balance, 'ether'); // Konvertuj iz Wei u Ether
-    } catch (error) {
-        console.error("Greška pri provjeri balansa:", error);
-        alert("Došlo je do greške prilikom provjere balansa.");
-    }
-}
 
-// Funkcija za prijenos tokena
-async function transferTokens(senderAddress, recipientAddress, amount) {
-    try {
-        const amountInWei = web3.utils.toWei(amount.toString(), 'ether'); // Konvertuj iznos u Wei
-
-        // Priprema transakcije
-        const transaction = await contract.methods
-            .transfer(recipientAddress, amountInWei)
-            .send({ from: senderAddress });
-
-        console.log(`Transakcija uspješna! Hash: ${transaction.transactionHash}`);
-        alert(`Uspješno ste poslali ${amount} tokena na adresu ${recipientAddress}`);
-    } catch (error) {
-        console.error("Greška pri prijenosu tokena:", error);
-        alert("Došlo je do greške prilikom prijenosa tokena.");
-    }
-}
-
-// Testiranje funkcija
-document.addEventListener('DOMContentLoaded', async () => {
-    if (typeof window.ethereum === 'undefined') {
-        alert("MetaMask nije instaliran. Molimo instalirajte ga za korištenje ove funkcionalnosti.");
-        return;
-    }
-
-    // Priključivanje na MetaMask
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    const accounts = await web3.eth.getAccounts();
-    const currentAccount = accounts[0];
-    console.log("Trenutni račun:", currentAccount);
-
-    // Provjera balansa
-    const balance = await checkBalance(currentAccount);
-    console.log(`Vaš saldo: ${balance} tokena`);
-
-    // Primjer prijenosa tokena (podesi adrese i iznos)
-    const recipientAddress = "0xRecipientAddressHere";
-    const amountToSend = 10; // Iznos u LUNA tokenima
-    await transferTokens(currentAccount, recipientAddress, amountToSend);
-});
 
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
