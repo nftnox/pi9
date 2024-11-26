@@ -14,724 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
 
 
-    <style>
-
-/* Sprečavanje zoomiranja na mobilnim uređajima */
-input,
-textarea {
-    touch-action: manipulation; /* Omogućava manipulaciju bez zumiranja */
-    
-}
-
-
-      
-        /* Chat modal, smješten u donji desni ugao za desktop, full screen za mobilne uređaje */
-        #chat-modal {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 350px;
-            height: 600px;
-            background-color: white;
-            border: 1px solid #ccc;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            z-index: 1000;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        @media (max-width: 768px) {
-    #chat-modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: white;
-        z-index: 1000;
-        overflow: auto;
-        border-radius: 0;
-    }
-
-    #chat-header {
-        padding: 15px;
-    }
-
-    #chat-box {
-        padding: 15px;
-    }
-}
-
-
-#chat-header-title-container {
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-}
-
-#chat-header-title {
-    font-size: 16px;
-    font-weight: bold;
-    line-height: 2.2; /* Dodaje blagi prostor između redova za vertikalno centriranje */
-}
-
-        /* Gornji dio sa X dugmetom za zatvaranje */
-        #chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background-color: #5a99cd;
-            color: white;
-        }
-
-        #close-chat {
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            color: white;
-            cursor: pointer;
-        }
-
-        #chat-box {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-
-        #chat-message {
-        width: 100px; /* Postavi željenu širinu */
-        padding: 5px; /* Smanji unutrašnji razmak */
-        font-size: 16px; /* Smanji veličinu fonta */
-    }
-
-        #users-list {
-    display: flex;
-    flex-direction: column; /* Stack users vertically */
-    gap: 15px; /* Add space between users */
-    padding: 10px;
-}
-
-.user-item {
-    display: flex; /* Align elements horizontally */
-    align-items: center; /* Center image and text vertically */
-    gap: 10px; /* Space between profile image and text */
-    padding: 10px;
-    border-bottom: 1px solid #ccc; /* Add a separator line */
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.user-item:hover {
-    background-color: #3f78a9; /* Tamnija boja kada se prelazi mišem */
-}
-
-
-#back-to-users {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-    margin-right: 10px;
-    color: #ffffff;
-}
-
-/* User info styling */
-.user-info {
-    display: flex;
-    flex-direction: column; /* Stack name and last message vertically */
-}
-
-.user-info .user-name {
-    font-weight: bold; /* Bold the username */
-    margin-bottom: 5px; /* Add space below the name */
-    color: #000;
-}
-
-.user-info .last-message {
-    color: #666; /* Gray color for the last message */
-    font-size: 14px; /* Slightly smaller font size */
-    overflow: hidden;
-    text-overflow: ellipsis; /* Truncate long messages */
-    white-space: nowrap; /* Prevent text from wrapping */
-}
-
-
-
-
-        /* Poruke u chat prozoru */
-        #messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 10px;
-            border-bottom: 1px solid #ccc;
-        }
-
-        .message {
-    display: block; /* Osigurajte da je svaki element u novom redu */
-    margin: 5px 0; /* Razmak između poruka */
-    padding: 10px; /* Unutarnji razmak za bolju čitljivost */
-    border-radius: 5px; /* Zaobljeni rubovi */
-    word-wrap: break-word; /* Omogućuje prelamanje riječi */
-    max-width: 80%; /* Maksimalna širina poruke */
-}
-
-
-
-        /* Donji dio s unosom poruke */
-        #message-input {
-    display: flex;
-    gap: 10px;
-    padding: 10px;
-    position: sticky; /* Fiksirano na dno, ali unutar tok dokumenta */
-    bottom: 0;
-    width: 100%; /* Osigurava da unos zauzima cijelu širinu chata */
-    background-color: white; /* Dodaj pozadinu */
-    border-top: 1px solid #ccc; /* Gornja linija za odvajanje od poruka */
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Blaga sjena za vizualni efekat */
-    z-index: 10; /* Osiguraj da unos bude iznad poruka */
-}
-
-
-/* Unosno polje */
-#message-input input {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-/* Dugme za slanje */
-#message-input button {
-    padding: 10px;
-    background-color: #5a99cd;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-       
-       
-       /* Prethodni CSS za div #messages, uz male izmjene */
-/* Kontejner za poruke */
-#messages {
-    display: flex;
-    flex-direction: column; /* Da poruke idu vertikalno jedna ispod druge */
-    flex-grow: 1;
-    overflow-y: auto; /* Omogućava skrolanje poruka */
-    padding-bottom: 40px; /* Dovoljno prostora ispod zadnje poruke */
-    max-height: calc(100% - 70px); /* Visina poruka minus unos */
-    box-sizing: border-box; /* Padding uključen u ukupnu visinu */
-}
-
-.message {
-    padding: 10px;
-    border-radius: 5px;
-    margin: 5px 0;
-    max-width: 60%; /* Maksimalna širina poruke */
-    word-wrap: break-word; /* Da tekst ne prelazi okvir poruke */
-}
-
-.message.sender {
-    background-color: #5a99cd; /* Plava pozadina za logovanog korisnika */
-    color: white;
-    margin-left: auto; /* Pomeri poruku sendera desno */
-    text-align: right; /* Tekst unutar poruke poravnaj desno */
-}
-
-.message.recipient {
-    background-color: lightgray; /* Siva pozadina za drugog korisnika */
-    color: black;
-    margin-right: auto; /* Pomeri poruku recipienta levo */
-    text-align: left; /* Tekst unutar poruke poravnaj levo */
-}
-
-
-
-
-#search-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px; /* Razmak između pretrage i liste korisnika */
-}
-
-#user-search {
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    width: 250px; /* Širina polja za pretragu */
-    font-size: 16px;
-}
-
-#search-button {
-    background-color: #4CAF50; /* Zelena boja */
-    color: white; /* Bijela boja teksta */
-    border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-left: 10px; /* Razmak između polja za pretragu i dugmeta */
-    font-size: 16px;
-    transition: background-color 0.3s ease; /* Animacija za hover */
-}
-
-
-#create-group-button {
-    background-color: #4CAF50; /* Zelena boja */
-    color: white; /* Bijela boja teksta */
-    border: none;
-    padding: 8.5px 13px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-left: 10px; /* Razmak između polja za pretragu i dugmeta */
-    font-size: 16px;
-    transition: background-color 0.3s ease; /* Animacija za hover */
-}
-
-#search-button:hover {
-    background-color: #45a049; /* Tamnija zelena kada se pređe mišem */
-}
-
-#search-button:focus {
-    outline: none; /* Uklanja plavi rub kad je dugme fokusirano */
-}
-
-
-/* Stilovi za modal */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4); /* Crna pozadina sa transparentnošću */
-}
-
-.modal-content {
-    background-color: white;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 10px;
-}
-
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close:hover, .close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-
-.user-item img {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
-    background-color: #5a99cd; /* Fallback background */
-}
-
-
-
-.message img {
-    max-width: 100px; /* Limits the width of the image */
-    max-height: 100px; /* Limits the height of the image */
-    border-radius: 8px; /* Adds rounded corners */
-    margin-bottom: 10px; /* Adds spacing below the image */
-    object-fit: cover; /* Ensures the image covers the area without being distorted */
-}
-
-/* The modal for full-screen image */
-.image-modal {
-    display: none; /* Hidden by default */
-    position: fixed;
-    z-index: 1000; /* Ensure it appears above other elements */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    background-color: rgba(0, 0, 0, 0.9); /* Black background with transparency */
-}
-
-/* Image inside the modal */
-.modal-content {
-    margin: auto;
-    display: block;
-    max-width: 90%;
-    max-height: 90%;
-}
-
-/* Close button */
-.close {
-    position: absolute;
-    top: 20px;
-    right: 35px;
-    color: white;
-    font-size: 40px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-    color: #bbb;
-    text-decoration: none;
-    cursor: pointer;
-}
-@media screen and (max-width: 768px) {
-    .image-modal {
-        align-items: flex-start; /* Align the image to the top */
-        padding-top: 250px; /* Add padding at the top to push the image down */
-    }
-
-    .modal-content {
-        max-width: 95%;
-        max-height: 70%; /* Keep the height smaller for mobile */
-    }
-}
-
-
-
-#send-image {
-        width: 40px; /* Širina dugmeta */
-        height: 40px; /* Visina dugmeta */
-        font-size: 20px; /* Veličina fonta unutar dugmeta */
-        background-color: #f0f0f0; /* Svijetlo siva boja pozadine */
-        border: none;
-        border-radius: 5px; /* Zaobljeni uglovi */
-        cursor: pointer;
-    }
-
-    /* Smanjenje pozadine dugmeta za video poziv */
-    #start-call {
-        width: 40px; /* Širina dugmeta */
-        height: 40px; /* Visina dugmeta */
-        padding: 5px; /* Manji unutrašnji razmak */
-        font-size: 18px; /* Veličina ikone */
-        
-        border: none;
-        border-radius: 5px; /* Zaobljeni uglovi */
-        cursor: pointer;
-    }
-
-/* Main container for all products */
-.marketplace-outline {
-    padding: 20px;
-    border: 3px solid; /* Adjust border thickness */
-    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Same gradient as .product */
-    background-color: #000000; /* Background color */
-    border-radius: 10px;
-    max-width: 1000px;
-    margin: 0 auto; /* Center the container */
-}
-
-
-/* Container for individual products */
-.product {
-        border: 3px solid; /* Postavite debljinu obruba */
-        border-image: linear-gradient(to right, #d3d3d3, #d6d6d6) 1; /* Gradijentni obrub s lijeva na desno */
-        border-radius: 8px; /* Zaobljeni uglovi */
-        padding: 10px; /* Unutarnji razmak */
-        margin: 10px; /* Vanjski razmak između proizvoda */
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Blaga sjena za bolji izgled */
-    }
-
-    .product img {
-    width: 250px; /* Povećana širina slike */
-    height: 250px; /* Povećana visina slike */
-    object-fit: cover;
-    margin-bottom: 10px;
-    border-radius: 8px;
-}
-
-    .product-list-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px; /* Razmak između proizvoda */
-        justify-content: center; /* Centriranje proizvoda */
-    }
-
-/* Individual product box */
-.product-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 200px; /* Set fixed width */
-    height: 300px; /* Set fixed height */
-    padding: 10px;
-    background-color: #f9f9f9; /* Light background for products */
-    border: 1px solid #ccc; /* Border for each product */
-    border-radius: 8px;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-/* Image styling for each product */
-.product-box img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 5px;
-    margin-bottom: 10px;
-}
-
-/* Product name styling */
-.product-name {
-    font-size: 16px;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 5px;
-}
-
-/* Product price styling */
-.product-price {
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 10px;
-}
-
-/* 'Kupi' button styling */
-.buy-button {
-    width: 100%;
-    padding: 8px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.buy-button:hover {
-    background-color: #45a049;
-}
-
-.marketplace-outline h2 {
-        text-align: center; /* Centrira tekst naslova */
-        margin-bottom: 20px; /* Dodaje razmak ispod naslova */
-        font-weight: bold; /* Podebljava naslov */
-    }
-
-    /* Exchange Modal Styles */
-#exchange-modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.4); /* Semi-transparent background */
-}
-
-.modal-content {
-    background-color: white;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 10px;
-}
-
-#exchange-modal h3 {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #000;
-}
-
-#coin-amount, #usd-amount {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    color: #000;
-}
-
-#send-request {
-    width: 100%;
-    padding: 10px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-#send-request:hover {
-    background-color: #45a049;
-}
-
-/* Buy Delta Coin Modal Styles */
-#buy-delta-modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.4); /* Semi-transparent background */
-}
-
-#buy-delta-modal .modal-content {
-    background-color: white;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 10px;
-}
-
-#buy-delta-modal h3 {
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #000;
-}
-
-#usd-amount-buy, #delta-amount-receive {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    color: #000;
-}
-
-#buy-delta-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #8A2BE2; /* Ljubičasta boja */
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px; /* Opcionalno, postavlja veličinu teksta */
-}
-
-#buy-delta-button:hover {
-    background-color: #6a1bb5; /* Tamnija ljubičasta boja na hover */
-}
-@media screen and (min-width: 768px) {
-    #coin-amount, #usd-amount, #usd-amount-buy, #delta-amount-receive {
-        width: 80%;
-        font-size: 14px;
-        margin: 10px auto; /* Razmak između elemenata */
-        display: block; /* Osigurava prikaz jednog ispod drugog */
-    }
-
-    #exchange-modal .modal-content, #buy-delta-modal .modal-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center; /* Centriranje unosa u odnosu na okvir */
-    }
-}
-
-/* Stilovi za `How much...` i vrijednosti */
-#exchange-modal p, #buy-delta-modal p {
-    margin: 0; /* Uklanja margine između teksta i iznosa */
-    font-size: 1em;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#usd-amount, #delta-amount-receive {
-    display: inline-block;
-    margin-left: 10px; /* Razmak između teksta i vrijednosti */
-    font-weight: bold;
-}
-
-
-.user-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.user-item .profile-picture {
-    position: relative;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    overflow: hidden;
-}
-
-
-
-/* Prilagođavanje za mobilne uređaje */
-@media (max-width: 600px) {
-    .user-item .status-icon {
-        bottom: 3px; /* Povećajte ili smanjite px za fino pomjeranje */
-        left: 40px; /* Povećajte ili smanjite px za fino pomjeranje */
-    }
-}
-
-
-#start-audio-call .material-icons,
-#start-call .material-icons {
-    color: #800080; /* Ljubičasta boja */
-    font-size: 24px; /* Veličina ikone */
-    cursor: pointer;
-    background: none; /* Bez pozadine */
-    border: none; /* Bez ivice */
-    padding: 0; /* Bez paddinga */
-    outline: none; /* Ukloni outline kod fokusa */
-}
-
-#start-audio-call:hover .material-icons,
-#start-call:hover .material-icons {
-    color: #a64ca6; /* Svjetlija ljubičasta za hover efekt */
-}
-
-
-
-
-#message-input #start-audio-call,
-#message-input #start-call {
-    display: none;
-}
-
-
-
-
-/* Styles for mobile display */
-@media (max-width: 768px) {
-    #product-list {
-        display: grid;
-        grid-template-columns: 1fr 1fr; /* Two columns */
-        gap: 10px; /* Space between products */
-        transform: translateX(-10px); /* Shift the product list slightly to the left */
-    }
-
-    .product {
-        width: 100%; /* Make each product take full width of its grid cell */
-    }
-}
-
-    </style>
+  
 </head>
 <body>
 
@@ -743,15 +26,19 @@ textarea {
         <!-- Toggle dugme za mobilne uređaje -->
         <button id="toggle-menu-button" class="toggle-button">☰</button>
     
-        <nav id="desktop-menu"> <!-- Desktop meni -->
+        <button id="desktop-toggle-button" class="toggle-button">
+            <span class="material-icons">menu</span> 
+        </button>
+        <nav id="desktop-menu" class="hidden">
+            <!-- Desktop meni -->
             <a href="#"><span class="material-icons">home</span> Home</a>
             <a href="#"><span class="material-icons">group</span> Team</a>
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
             <a href="#" id="exchange-link"><span class="material-icons">swap_horiz</span> Exchange</a>
             <a href="#" id="buy-delta-link"><span class="material-icons">attach_money</span> Buy Delta Coin</a>
-
         </nav>
+        
     
         <!-- Mobilni meni -->
         <nav id="toggle-menu">
@@ -809,7 +96,8 @@ textarea {
 <!-- Modal za kreiranje grupnog chata -->
 <div id="create-group-modal" class="modal" style="display: none;">
     <div class="modal-content">
-        <h3>Kreiraj grupni chat</h3>
+        <h3 style="color: black;">Kreiraj grupni chat</h3>
+
         <div id="group-friends-list"></div>
         <label for="group-name">Naziv grupe:</label>
         <input type="text" id="group-name" placeholder="Unesite naziv grupe">
@@ -926,7 +214,17 @@ document.getElementById('close-image-modal').addEventListener('click', function(
         });
     </script>
 
-   
+   <script>
+    // Selektujte desktop toggle dugme i meni
+const desktopToggleButton = document.getElementById('desktop-toggle-button');
+const desktopMenu = document.getElementById('desktop-menu');
+
+// Dodajte event listener za prikaz/sakrivanje desktop menija
+desktopToggleButton.addEventListener('click', () => {
+  desktopMenu.style.display = desktopMenu.style.display === 'block' ? 'none' : 'block';
+});
+
+   </script>
 
 
 
@@ -1061,27 +359,31 @@ document.getElementById('close-image-modal').addEventListener('click', function(
         const MAX_REFERRALS = 10; // Maksimalan broj korisnika koji mogu koristiti isti referralCode
 
         async function loadUserId() {
-            const userCollection = collection(db, 'network');
-            const q = query(userCollection, where("username", "==", userParam));
-            const querySnapshot = await getDocs(q);
+    const userCollection = collection(db, 'network');
+    const q = query(userCollection, where("username", "==", userParam));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+        querySnapshot.forEach(doc => {
+            userId = doc.id; // Dobijanje ID-a korisnika
+            const userData = doc.data();
+            username = userData.ime; // Dobijanje stvarnog imena korisnika
+            const lastName = userData.prezime || ""; // Dohvaćanje prezimena
             
-            if (!querySnapshot.empty) {
-                querySnapshot.forEach(doc => {
-                    userId = doc.id; // Dobijanje ID-a korisnika
-                    const userData = doc.data();
-                    username = userData.ime; // Dobijanje stvarnog imena korisnika
-                    document.getElementById('ime').innerText = username; // Prikazivanje imena korisnika
-                    
-                    if (userData.referralCode) {
-                        checkReferral(userData.referralCode);
-                    }
-                    
-                    loadUserData(); // Učitavanje podataka nakon što imamo ID
-                });
-            } else {
-                console.error("Korisnik ne postoji u Firestore-u.");
+            // Prikazivanje imena i prezimena korisnika
+            document.getElementById('ime').innerText = `${username} ${lastName}`;
+            
+            if (userData.referralCode) {
+                checkReferral(userData.referralCode);
             }
-        }
+            
+            loadUserData(); // Učitavanje podataka nakon što imamo ID
+        });
+    } else {
+        console.error("Korisnik ne postoji u Firestore-u.");
+    }
+}
+
 
         async function checkReferral(referralCode) {
             const userCollection = collection(db, 'network');
@@ -2591,7 +1893,8 @@ async function fetchContacts() {
     const querySnapshotRequester = await getDocs(qRequester);
     querySnapshotRequester.forEach(doc => {
         const chatData = doc.data();
-        const contactUser = allUsers.find(user => user.userName === chatData.recipientName);
+        const contactUser = allUsers.find(user => user.userName === `${chatData.recipientName} ${chatData.recipientLastName || ''}`.trim());
+
         if (contactUser) {
             contacts.add(JSON.stringify(contactUser));
         }
@@ -2601,7 +1904,8 @@ async function fetchContacts() {
     const querySnapshotRecipient = await getDocs(qRecipient);
     querySnapshotRecipient.forEach(doc => {
         const chatData = doc.data();
-        const contactUser = allUsers.find(user => user.userName === chatData.requester);
+        const contactUser = allUsers.find(user => user.userName === `${chatData.recipientName} ${chatData.recipientLastName || ''}`.trim());
+
         if (contactUser) {
             contacts.add(JSON.stringify(contactUser));
         }
@@ -2759,7 +2063,7 @@ async function fetchUsers() {
     allUsers = []; // Očisti listu korisnika
     querySnapshot.forEach(doc => {
         const userData = doc.data();
-        const userName = userData.ime;
+        const userName = `${userData.ime} ${userData.prezime || ''}`.trim(); // Spajamo ime i prezime
         const userId = doc.id;
         const profilePictureUrl = userData.profilePictureUrl || ''; // Preuzimamo URL slike ako postoji
 
@@ -2769,6 +2073,7 @@ async function fetchUsers() {
     // Nakon dohvaćanja svih korisnika, prikaži samo one s kojima je započet razgovor
     await fetchContacts(); // Prikaži samo kontakte
 }
+
 
 // Funkcija za inicijalno učitavanje kada se otvori chat modal
 document.getElementById('chat-link').addEventListener('click', async () => {
@@ -2826,11 +2131,11 @@ function showChatRequestPrompt(userName, userId) {
     chatRequestPrompt.style.zIndex = '1000'; // Osiguravamo da je prozor iznad svih ostalih elemenata
 
     chatRequestPrompt.innerHTML = `
-       <p style="color: black;">Želite li započeti chat sa ${userName}?</p>
+   <p style="color: black;">Želite li započeti chat sa ${userName}?</p>
+   <button id="accept-chat-request">Da</button>
+   <button id="decline-chat-request">Ne</button>
+`;
 
-        <button id="accept-chat-request">Da</button>
-        <button id="decline-chat-request">Ne</button>
-    `;
 
     document.body.appendChild(chatRequestPrompt);
 
@@ -2866,11 +2171,11 @@ function showAcceptChatPrompt(requesterName, requestId) {
     chatAcceptPrompt.style.zIndex = '1000'; // Osiguravamo da je prozor iznad svih ostalih elemenata
 
     chatAcceptPrompt.innerHTML = `
-       <p style="color: black;">Korisnik ${requesterName} želi da započne chat sa vama. Prihvatate li?</p>
+   <p style="color: black;">Korisnik ${requesterName} želi da započne chat sa vama. Prihvatate li?</p>
+   <button id="accept-chat-${requestId}">Prihvati</button>
+   <button id="decline-chat-${requestId}">Odbij</button>
+`;
 
-        <button id="accept-chat-${requestId}">Prihvati</button>
-        <button id="decline-chat-${requestId}">Odbij</button>
-    `;
 
     document.body.appendChild(chatAcceptPrompt);
 
@@ -2988,13 +2293,13 @@ function openChat(userName) {
 
     // Postavljanje naslova u zaglavlju chata
     chatHeaderTitle.innerHTML = `Chat with ${userName} 
-    <span id="start-audio-call" title="Audio Call" style="margin-left: 10px; cursor: pointer;">
-        <span class="material-icons">call</span>
-    </span>
-    <span id="start-call" title="Video Call" style="margin-left: 5px; cursor: pointer;">
-        <span class="material-icons">videocam</span>
-    </span>
-`;
+<span id="start-audio-call" title="Audio Call" style="margin-left: 10px; cursor: pointer;">
+    <span class="material-icons">call</span>
+</span>
+<span id="start-call" title="Video Call" style="margin-left: 5px; cursor: pointer;">
+    <span class="material-icons">videocam</span>
+</span>`;
+
 
 
     backButton.style.display = 'block';
@@ -4559,7 +3864,724 @@ function showConfetti() {
 
 
 
+<style>
 
+    /* Sprečavanje zoomiranja na mobilnim uređajima */
+    input,
+    textarea {
+        touch-action: manipulation; /* Omogućava manipulaciju bez zumiranja */
+        
+    }
+    
+    
+          
+            /* Chat modal, smješten u donji desni ugao za desktop, full screen za mobilne uređaje */
+            #chat-modal {
+                display: none;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                width: 350px;
+                height: 600px;
+                background-color: white;
+                border: 1px solid #ccc;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+                border-radius: 10px;
+                z-index: 1000;
+                flex-direction: column;
+                overflow: hidden;
+            }
+    
+            @media (max-width: 768px) {
+        #chat-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            z-index: 1000;
+            overflow: auto;
+            border-radius: 0;
+        }
+    
+        #chat-header {
+            padding: 15px;
+        }
+    
+        #chat-box {
+            padding: 15px;
+        }
+    }
+    
+    
+    #chat-header-title-container {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+    }
+    
+    #chat-header-title {
+        font-size: 16px;
+        font-weight: bold;
+        line-height: 2.2; /* Dodaje blagi prostor između redova za vertikalno centriranje */
+    }
+    
+            /* Gornji dio sa X dugmetom za zatvaranje */
+            #chat-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px;
+                background-color: #5a99cd;
+                color: white;
+            }
+    
+            #close-chat {
+                background: none;
+                border: none;
+                font-size: 1.5em;
+                color: white;
+                cursor: pointer;
+            }
+    
+            #chat-box {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+            }
+    
+    
+            #chat-message {
+            width: 100px; /* Postavi željenu širinu */
+            padding: 5px; /* Smanji unutrašnji razmak */
+            font-size: 16px; /* Smanji veličinu fonta */
+        }
+    
+            #users-list {
+        display: flex;
+        flex-direction: column; /* Stack users vertically */
+        gap: 15px; /* Add space between users */
+        padding: 10px;
+    }
+    
+    .user-item {
+        display: flex; /* Align elements horizontally */
+        align-items: center; /* Center image and text vertically */
+        gap: 10px; /* Space between profile image and text */
+        padding: 10px;
+        border-bottom: 1px solid #ccc; /* Add a separator line */
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    
+    .user-item:hover {
+        background-color: #3f78a9; /* Tamnija boja kada se prelazi mišem */
+    }
+    
+    
+    #back-to-users {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        margin-right: 10px;
+        color: #ffffff;
+    }
+    
+    /* User info styling */
+    .user-info {
+        display: flex;
+        flex-direction: column; /* Stack name and last message vertically */
+    }
+    
+    .user-info .user-name {
+        font-weight: bold; /* Bold the username */
+        margin-bottom: 5px; /* Add space below the name */
+        color: #000;
+    }
+    
+    .user-info .last-message {
+        color: #666; /* Gray color for the last message */
+        font-size: 14px; /* Slightly smaller font size */
+        overflow: hidden;
+        text-overflow: ellipsis; /* Truncate long messages */
+        white-space: nowrap; /* Prevent text from wrapping */
+    }
+    
+    
+    
+    
+            /* Poruke u chat prozoru */
+            #messages {
+                flex-grow: 1;
+                overflow-y: auto;
+                padding: 10px;
+                border-bottom: 1px solid #ccc;
+            }
+    
+            .message {
+        display: block; /* Osigurajte da je svaki element u novom redu */
+        margin: 5px 0; /* Razmak između poruka */
+        padding: 10px; /* Unutarnji razmak za bolju čitljivost */
+        border-radius: 5px; /* Zaobljeni rubovi */
+        word-wrap: break-word; /* Omogućuje prelamanje riječi */
+        max-width: 80%; /* Maksimalna širina poruke */
+    }
+    
+    
+    
+            /* Donji dio s unosom poruke */
+            #message-input {
+        display: flex;
+        gap: 10px;
+        padding: 10px;
+        position: sticky; /* Fiksirano na dno, ali unutar tok dokumenta */
+        bottom: 0;
+        width: 100%; /* Osigurava da unos zauzima cijelu širinu chata */
+        background-color: white; /* Dodaj pozadinu */
+        border-top: 1px solid #ccc; /* Gornja linija za odvajanje od poruka */
+        box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Blaga sjena za vizualni efekat */
+        z-index: 10; /* Osiguraj da unos bude iznad poruka */
+    }
+    
+    
+    /* Unosno polje */
+    #message-input input {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    
+    /* Dugme za slanje */
+    #message-input button {
+        padding: 10px;
+        background-color: #5a99cd;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    
+           
+           
+           /* Prethodni CSS za div #messages, uz male izmjene */
+    /* Kontejner za poruke */
+    #messages {
+        display: flex;
+        flex-direction: column; /* Da poruke idu vertikalno jedna ispod druge */
+        flex-grow: 1;
+        overflow-y: auto; /* Omogućava skrolanje poruka */
+        padding-bottom: 40px; /* Dovoljno prostora ispod zadnje poruke */
+        max-height: calc(100% - 70px); /* Visina poruka minus unos */
+        box-sizing: border-box; /* Padding uključen u ukupnu visinu */
+    }
+    
+    .message {
+        padding: 10px;
+        border-radius: 5px;
+        margin: 5px 0;
+        max-width: 60%; /* Maksimalna širina poruke */
+        word-wrap: break-word; /* Da tekst ne prelazi okvir poruke */
+    }
+    
+    .message.sender {
+        background-color: #5a99cd; /* Plava pozadina za logovanog korisnika */
+        color: white;
+        margin-left: auto; /* Pomeri poruku sendera desno */
+        text-align: right; /* Tekst unutar poruke poravnaj desno */
+    }
+    
+    .message.recipient {
+        background-color: lightgray; /* Siva pozadina za drugog korisnika */
+        color: black;
+        margin-right: auto; /* Pomeri poruku recipienta levo */
+        text-align: left; /* Tekst unutar poruke poravnaj levo */
+    }
+    
+    
+    
+    
+    #search-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px; /* Razmak između pretrage i liste korisnika */
+    }
+    
+    #user-search {
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        width: 250px; /* Širina polja za pretragu */
+        font-size: 16px;
+    }
+    
+    #search-button {
+        background-color: #4CAF50; /* Zelena boja */
+        color: white; /* Bijela boja teksta */
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px; /* Razmak između polja za pretragu i dugmeta */
+        font-size: 16px;
+        transition: background-color 0.3s ease; /* Animacija za hover */
+    }
+    
+    
+    #create-group-button {
+        background-color: #4CAF50; /* Zelena boja */
+        color: white; /* Bijela boja teksta */
+        border: none;
+        padding: 8.5px 13px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-left: 10px; /* Razmak između polja za pretragu i dugmeta */
+        font-size: 16px;
+        transition: background-color 0.3s ease; /* Animacija za hover */
+    }
+    
+    #search-button:hover {
+        background-color: #45a049; /* Tamnija zelena kada se pređe mišem */
+    }
+    
+    #search-button:focus {
+        outline: none; /* Uklanja plavi rub kad je dugme fokusirano */
+    }
+    
+    
+    /* Stilovi za modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4); /* Crna pozadina sa transparentnošću */
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 400px;
+        border-radius: 10px;
+    }
+    
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+    
+    .close:hover, .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    
+    
+    .user-item img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        background-color: #5a99cd; /* Fallback background */
+    }
+    
+    
+    
+    .message img {
+        max-width: 100px; /* Limits the width of the image */
+        max-height: 100px; /* Limits the height of the image */
+        border-radius: 8px; /* Adds rounded corners */
+        margin-bottom: 10px; /* Adds spacing below the image */
+        object-fit: cover; /* Ensures the image covers the area without being distorted */
+    }
+    
+    /* The modal for full-screen image */
+    .image-modal {
+        display: none; /* Hidden by default */
+        position: fixed;
+        z-index: 1000; /* Ensure it appears above other elements */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        background-color: rgba(0, 0, 0, 0.9); /* Black background with transparency */
+    }
+    
+    /* Image inside the modal */
+    .modal-content {
+        margin: auto;
+        display: block;
+        max-width: 90%;
+        max-height: 90%;
+    }
+    
+    /* Close button */
+    .close {
+        position: absolute;
+        top: 20px;
+        right: 35px;
+        color: white;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close:hover,
+    .close:focus {
+        color: #bbb;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    @media screen and (max-width: 768px) {
+        .image-modal {
+            align-items: flex-start; /* Align the image to the top */
+            padding-top: 250px; /* Add padding at the top to push the image down */
+        }
+    
+        .modal-content {
+            max-width: 95%;
+            max-height: 70%; /* Keep the height smaller for mobile */
+        }
+    }
+    
+    
+    
+    #send-image {
+            width: 40px; /* Širina dugmeta */
+            height: 40px; /* Visina dugmeta */
+            font-size: 20px; /* Veličina fonta unutar dugmeta */
+            background-color: #f0f0f0; /* Svijetlo siva boja pozadine */
+            border: none;
+            border-radius: 5px; /* Zaobljeni uglovi */
+            cursor: pointer;
+        }
+    
+        /* Smanjenje pozadine dugmeta za video poziv */
+        #start-call {
+            width: 40px; /* Širina dugmeta */
+            height: 40px; /* Visina dugmeta */
+            padding: 5px; /* Manji unutrašnji razmak */
+            font-size: 18px; /* Veličina ikone */
+            
+            border: none;
+            border-radius: 5px; /* Zaobljeni uglovi */
+            cursor: pointer;
+        }
+    
+    /* Main container for all products */
+    .marketplace-outline {
+        padding: 20px;
+        border: 3px solid; /* Adjust border thickness */
+        border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Same gradient as .product */
+        background-color: #000000; /* Background color */
+        border-radius: 10px;
+        max-width: 1000px;
+        margin: 0 auto; /* Center the container */
+    }
+    
+    
+    /* Container for individual products */
+    .product {
+            border: 3px solid; /* Postavite debljinu obruba */
+            border-image: linear-gradient(to right, #d3d3d3, #d6d6d6) 1; /* Gradijentni obrub s lijeva na desno */
+            border-radius: 8px; /* Zaobljeni uglovi */
+            padding: 10px; /* Unutarnji razmak */
+            margin: 10px; /* Vanjski razmak između proizvoda */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Blaga sjena za bolji izgled */
+        }
+    
+        .product img {
+        width: 250px; /* Povećana širina slike */
+        height: 250px; /* Povećana visina slike */
+        object-fit: cover;
+        margin-bottom: 10px;
+        border-radius: 8px;
+    }
+    
+        .product-list-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px; /* Razmak između proizvoda */
+            justify-content: center; /* Centriranje proizvoda */
+        }
+    
+    /* Individual product box */
+    .product-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 200px; /* Set fixed width */
+        height: 300px; /* Set fixed height */
+        padding: 10px;
+        background-color: #f9f9f9; /* Light background for products */
+        border: 1px solid #ccc; /* Border for each product */
+        border-radius: 8px;
+        box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Image styling for each product */
+    .product-box img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+    
+    /* Product name styling */
+    .product-name {
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+    
+    /* Product price styling */
+    .product-price {
+        font-size: 14px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    /* 'Kupi' button styling */
+    .buy-button {
+        width: 100%;
+        padding: 8px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    
+    .buy-button:hover {
+        background-color: #45a049;
+    }
+    
+    .marketplace-outline h2 {
+            text-align: center; /* Centrira tekst naslova */
+            margin-bottom: 20px; /* Dodaje razmak ispod naslova */
+            font-weight: bold; /* Podebljava naslov */
+        }
+    
+        /* Exchange Modal Styles */
+    #exchange-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.4); /* Semi-transparent background */
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 400px;
+        border-radius: 10px;
+    }
+    
+    #exchange-modal h3 {
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #000;
+    }
+    
+    #coin-amount, #usd-amount {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        color: #000;
+    }
+    
+    #send-request {
+        width: 100%;
+        padding: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    
+    #send-request:hover {
+        background-color: #45a049;
+    }
+    
+    /* Buy Delta Coin Modal Styles */
+    #buy-delta-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.4); /* Semi-transparent background */
+    }
+    
+    #buy-delta-modal .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 400px;
+        border-radius: 10px;
+    }
+    
+    #buy-delta-modal h3 {
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #000;
+    }
+    
+    #usd-amount-buy, #delta-amount-receive {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        color: #000;
+    }
+    
+    #buy-delta-button {
+        width: 100%;
+        padding: 10px;
+        background-color: #8A2BE2; /* Ljubičasta boja */
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px; /* Opcionalno, postavlja veličinu teksta */
+    }
+    
+    #buy-delta-button:hover {
+        background-color: #6a1bb5; /* Tamnija ljubičasta boja na hover */
+    }
+    @media screen and (min-width: 768px) {
+        #coin-amount, #usd-amount, #usd-amount-buy, #delta-amount-receive {
+            width: 80%;
+            font-size: 14px;
+            margin: 10px auto; /* Razmak između elemenata */
+            display: block; /* Osigurava prikaz jednog ispod drugog */
+        }
+    
+        #exchange-modal .modal-content, #buy-delta-modal .modal-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Centriranje unosa u odnosu na okvir */
+        }
+    }
+    
+    /* Stilovi za `How much...` i vrijednosti */
+    #exchange-modal p, #buy-delta-modal p {
+        margin: 0; /* Uklanja margine između teksta i iznosa */
+        font-size: 1em;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    #usd-amount, #delta-amount-receive {
+        display: inline-block;
+        margin-left: 10px; /* Razmak između teksta i vrijednosti */
+        font-weight: bold;
+    }
+    
+    
+    .user-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .user-item .profile-picture {
+        position: relative;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        overflow: hidden;
+    }
+    
+    
+    
+    /* Prilagođavanje za mobilne uređaje */
+    @media (max-width: 600px) {
+        .user-item .status-icon {
+            bottom: 3px; /* Povećajte ili smanjite px za fino pomjeranje */
+            left: 40px; /* Povećajte ili smanjite px za fino pomjeranje */
+        }
+    }
+    
+    
+    #start-audio-call .material-icons,
+    #start-call .material-icons {
+        color: #800080; /* Ljubičasta boja */
+        font-size: 24px; /* Veličina ikone */
+        cursor: pointer;
+        background: none; /* Bez pozadine */
+        border: none; /* Bez ivice */
+        padding: 0; /* Bez paddinga */
+        outline: none; /* Ukloni outline kod fokusa */
+    }
+    
+    #start-audio-call:hover .material-icons,
+    #start-call:hover .material-icons {
+        color: #a64ca6; /* Svjetlija ljubičasta za hover efekt */
+    }
+    
+    
+    
+    
+    #message-input #start-audio-call,
+    #message-input #start-call {
+        display: none;
+    }
+    
+    
+    
+    
+    /* Styles for mobile display */
+    @media (max-width: 768px) {
+        #product-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two columns */
+            gap: 10px; /* Space between products */
+            transform: translateX(-10px); /* Shift the product list slightly to the left */
+        }
+    
+        .product {
+            width: 100%; /* Make each product take full width of its grid cell */
+        }
+    }
+    
+        </style>
 
 
 <style>
@@ -4856,15 +4878,62 @@ function showConfetti() {
 }
 
 /* Stil za desktop meni */
+/* Sakrij desktop meni po defaultu */
 #desktop-menu {
-  display: flex;
+  display: none; /* Uvek sakriven, kontrolisaće ga JavaScript */
+  flex-direction: column; /* Vertikalno poravnanje menija */
+  background: linear-gradient(to bottom, #000000, #4b0078); /* Gradijent boja */
+  position: absolute;
+  right: 0;
+  top: 60px;
+  width: 12%;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
 }
 
 #desktop-menu a {
-  margin-left: 20px;
-  text-decoration: none;
   color: white;
+  text-decoration: none;
+  padding: 15px 20px; /* Povećan padding */
+  display: block;
+  text-align: center;
+  font-size: 18px; /* Povećana veličina fonta */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 10px; /* Dodat razmak ispod svakog linka */
 }
+
+/* Desktop dugme (toggle) */
+#desktop-toggle-button {
+  display: none; /* Prikazuje se samo za desktop uređaje */
+}
+
+/* Prikaz desktop menija samo na većim ekranima */
+@media (min-width: 768px) {
+  #desktop-toggle-button {
+    display: block; /* Prikaži desktop dugme */
+  }
+}
+
+/* Sakrij mobilni meni za desktop uređaje */
+@media (min-width: 768px) {
+  #toggle-menu {
+    display: none; /* Skriva mobilni meni */
+  }
+}
+
+/* Mobilni meni */
+@media (max-width: 768px) {
+  /* Skriven desktop meni */
+  #desktop-menu {
+    display: none; /* Desktop meni je uvek sakriven na mobilnim uređajima */
+  }
+
+  /* Prikaži mobilno toggle dugme */
+  .toggle-button {
+    display: block;
+  }
+}
+
 
 /* Media query za mobilne uređaje */
 @media (max-width: 768px) {
@@ -4917,7 +4986,7 @@ function showConfetti() {
 
 <style>
     #current-price {
-        transform: translateX(130px); /* Podesi ovu vrijednost prema željenom pomjeranju */
+        transform: translateX(770px); /* Podesi ovu vrijednost prema željenom pomjeranju */
         font-weight: bold;
 }
 
