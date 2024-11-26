@@ -2392,7 +2392,7 @@ async function loadMessageHistory() {
 
 
 
-let lastDisplayedMessageId = null; // ID posljednje prikazane poruke
+let lastReadMessageId = null; // ID posljednje pročitane poruke
 
 function listenForNewMessages() {
     const messagesCollection = collection(db, 'poruke');
@@ -2400,6 +2400,9 @@ function listenForNewMessages() {
         where('sender', 'in', [username, selectedUserName]),
         where('recipient', 'in', [username, selectedUserName])
     );
+
+
+    messageElement.dataset.id = messageData.id;
 
     onSnapshot(q, (querySnapshot) => {
         const messagesDiv = document.getElementById('messages');
@@ -2442,8 +2445,8 @@ function listenForNewMessages() {
             } else {
                 messageElement.classList.add('recipient');
 
-                // Play the receive sound for new incoming messages only
-                if (messageData.id !== lastDisplayedMessageId) {
+                // Zvuk za nove poruke
+                if (messageData.id !== lastReadMessageId && messageData.sender !== username) {
                     receiveSound.play();
                 }
             }
@@ -2451,9 +2454,9 @@ function listenForNewMessages() {
             messagesDiv.appendChild(messageElement);
         });
 
-        // Postavi ID posljednje poruke
+        // Postavi ID posljednje poruke kao pročitane
         if (messages.length > 0) {
-            lastDisplayedMessageId = messages[messages.length - 1].id;
+            lastReadMessageId = messages[messages.length - 1].id;
         }
 
         // Automatski skroluj na dno nakon što se prikažu poruke
@@ -2477,7 +2480,15 @@ function closeChat() {
     const chatModal = document.getElementById('chat-modal');
     chatModal.style.display = 'none'; // Sakrij modalni prozor
     isChatOpen = false; // Postavi chat stanje kao zatvoreno
+
+    // Ažuriraj posljednju pročitanu poruku
+    const messagesDiv = document.getElementById('messages');
+    const messageElements = messagesDiv.querySelectorAll('.message');
+    if (messageElements.length > 0) {
+        lastReadMessageId = messageElements[messageElements.length - 1].dataset.id;
+    }
 }
+
 
 // Dodaj događaj za povratak na listu korisnika
 document.getElementById('back-to-users').addEventListener('click', () => {
