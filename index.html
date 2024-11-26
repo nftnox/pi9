@@ -362,22 +362,13 @@ desktopToggleButton.addEventListener('click', () => {
     const userCollection = collection(db, 'network');
     const q = query(userCollection, where("username", "==", userParam));
     const querySnapshot = await getDocs(q);
-    
+
     if (!querySnapshot.empty) {
         querySnapshot.forEach(doc => {
             userId = doc.id; // Dobijanje ID-a korisnika
             const userData = doc.data();
-            username = userData.ime; // Dobijanje stvarnog imena korisnika
-            const lastName = userData.prezime || ""; // Dohvaćanje prezimena
-            
-            // Prikazivanje imena i prezimena korisnika
-            document.getElementById('ime').innerText = `${username} ${lastName}`;
-            
-            if (userData.referralCode) {
-                checkReferral(userData.referralCode);
-            }
-            
-            loadUserData(); // Učitavanje podataka nakon što imamo ID
+            username = `${userData.ime} ${userData.prezime}`; // Ime + prezime
+            document.getElementById('ime').innerText = username; // Prikazivanje imena korisnika
         });
     } else {
         console.error("Korisnik ne postoji u Firestore-u.");
@@ -1893,8 +1884,7 @@ async function fetchContacts() {
     const querySnapshotRequester = await getDocs(qRequester);
     querySnapshotRequester.forEach(doc => {
         const chatData = doc.data();
-        const contactUser = allUsers.find(user => user.userName === `${chatData.recipientName} ${chatData.recipientLastName || ''}`.trim());
-
+        const contactUser = allUsers.find(user => user.userName === chatData.recipientName);
         if (contactUser) {
             contacts.add(JSON.stringify(contactUser));
         }
@@ -1904,8 +1894,7 @@ async function fetchContacts() {
     const querySnapshotRecipient = await getDocs(qRecipient);
     querySnapshotRecipient.forEach(doc => {
         const chatData = doc.data();
-        const contactUser = allUsers.find(user => user.userName === `${chatData.recipientName} ${chatData.recipientLastName || ''}`.trim());
-
+        const contactUser = allUsers.find(user => user.userName === chatData.requester);
         if (contactUser) {
             contacts.add(JSON.stringify(contactUser));
         }
@@ -1955,7 +1944,7 @@ function displayUsers(users) {
             imgElement.innerHTML = '<i class="fas fa-user" style="font-size: 20px; color: #7d7d7d;"></i>';
         }
 
-        // Status ikona postavljena unutar slike
+        // Status ikona
         const statusIcon = document.createElement('span');
         statusIcon.classList.add('status-icon');
         statusIcon.style.width = '12px';
@@ -1963,25 +1952,21 @@ function displayUsers(users) {
         statusIcon.style.borderRadius = '50%';
         statusIcon.style.backgroundColor = 'gray'; // Zadana boja prije učitavanja statusa
         statusIcon.style.position = 'absolute';
-        statusIcon.style.bottom = '3px'; // Mali odmak od ruba slike
-        statusIcon.style.right = '3px'; // Mali odmak od ruba slike
-        statusIcon.style.border = '2px solid white'; // Bijeli obrub za bolju vidljivost na slici
+        statusIcon.style.bottom = '3px';
+        statusIcon.style.right = '3px';
+        statusIcon.style.border = '2px solid white';
 
-        // Postavi status na osnovu `lastClickTime`
-        updateUserStatus(user.userId, statusIcon);
-
-        // Dodaj status ikonu i sliku u omotač
         imgWrapper.appendChild(imgElement);
         imgWrapper.appendChild(statusIcon);
         userElement.appendChild(imgWrapper);
 
-        // Korisničko ime i zadnja poruka
+        // Korisničko ime
         const userInfo = document.createElement('div');
         userInfo.classList.add('user-info');
 
         const userName = document.createElement('div');
         userName.classList.add('user-name');
-        userName.textContent = user.userName;
+        userName.textContent = user.userName; // Ime + prezime
 
         const lastMessage = document.createElement('div');
         lastMessage.classList.add('last-message');
@@ -2001,6 +1986,7 @@ function displayUsers(users) {
         usersListDiv.appendChild(userElement);
     });
 }
+
 
 // Funkcija za ažuriranje statusa korisnika
 async function updateUserStatus(userId, statusIcon) {
@@ -2063,7 +2049,7 @@ async function fetchUsers() {
     allUsers = []; // Očisti listu korisnika
     querySnapshot.forEach(doc => {
         const userData = doc.data();
-        const userName = `${userData.ime} ${userData.prezime || ''}`.trim(); // Spajamo ime i prezime
+        const userName = `${userData.ime} ${userData.prezime}`; // Kombinacija imena i prezimena
         const userId = doc.id;
         const profilePictureUrl = userData.profilePictureUrl || ''; // Preuzimamo URL slike ako postoji
 
@@ -2131,11 +2117,11 @@ function showChatRequestPrompt(userName, userId) {
     chatRequestPrompt.style.zIndex = '1000'; // Osiguravamo da je prozor iznad svih ostalih elemenata
 
     chatRequestPrompt.innerHTML = `
-   <p style="color: black;">Želite li započeti chat sa ${userName}?</p>
-   <button id="accept-chat-request">Da</button>
-   <button id="decline-chat-request">Ne</button>
-`;
+       <p style="color: black;">Želite li započeti chat sa ${userName}?</p>
 
+        <button id="accept-chat-request">Da</button>
+        <button id="decline-chat-request">Ne</button>
+    `;
 
     document.body.appendChild(chatRequestPrompt);
 
@@ -2171,11 +2157,11 @@ function showAcceptChatPrompt(requesterName, requestId) {
     chatAcceptPrompt.style.zIndex = '1000'; // Osiguravamo da je prozor iznad svih ostalih elemenata
 
     chatAcceptPrompt.innerHTML = `
-   <p style="color: black;">Korisnik ${requesterName} želi da započne chat sa vama. Prihvatate li?</p>
-   <button id="accept-chat-${requestId}">Prihvati</button>
-   <button id="decline-chat-${requestId}">Odbij</button>
-`;
+       <p style="color: black;">Korisnik ${requesterName} želi da započne chat sa vama. Prihvatate li?</p>
 
+        <button id="accept-chat-${requestId}">Prihvati</button>
+        <button id="decline-chat-${requestId}">Odbij</button>
+    `;
 
     document.body.appendChild(chatAcceptPrompt);
 
@@ -2293,13 +2279,13 @@ function openChat(userName) {
 
     // Postavljanje naslova u zaglavlju chata
     chatHeaderTitle.innerHTML = `Chat with ${userName} 
-<span id="start-audio-call" title="Audio Call" style="margin-left: 10px; cursor: pointer;">
-    <span class="material-icons">call</span>
-</span>
-<span id="start-call" title="Video Call" style="margin-left: 5px; cursor: pointer;">
-    <span class="material-icons">videocam</span>
-</span>`;
-
+    <span id="start-audio-call" title="Audio Call" style="margin-left: 10px; cursor: pointer;">
+        <span class="material-icons">call</span>
+    </span>
+    <span id="start-call" title="Video Call" style="margin-left: 5px; cursor: pointer;">
+        <span class="material-icons">videocam</span>
+    </span>
+`;
 
 
     backButton.style.display = 'block';
