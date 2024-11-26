@@ -2392,6 +2392,8 @@ async function loadMessageHistory() {
 
 
 
+let lastDisplayedMessageId = null; // ID posljednje prikazane poruke
+
 function listenForNewMessages() {
     const messagesCollection = collection(db, 'poruke');
     const q = query(messagesCollection, 
@@ -2441,7 +2443,7 @@ function listenForNewMessages() {
                 messageElement.classList.add('recipient');
 
                 // Play the receive sound for new incoming messages only
-                if (querySnapshot.docChanges().some(change => change.type === 'added' && change.doc.data().sender !== username)) {
+                if (messageData.id !== lastDisplayedMessageId) {
                     receiveSound.play();
                 }
             }
@@ -2449,10 +2451,16 @@ function listenForNewMessages() {
             messagesDiv.appendChild(messageElement);
         });
 
+        // Postavi ID posljednje poruke
+        if (messages.length > 0) {
+            lastDisplayedMessageId = messages[messages.length - 1].id;
+        }
+
         // Automatski skroluj na dno nakon što se prikažu poruke
         scrollToBottom();
     });
 }
+
 
 
 
