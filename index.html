@@ -3001,7 +3001,7 @@ async function startCall(userId, userName, stream) {
     const callDoc = await addDoc(callRef, {
         caller: username,
         recipientId: userId,
-        recipientName: userName, // Dodano ime i prezime
+        recipientName: userName,
         answered: false,
         ongoing: true,
         timestamp: new Date(),
@@ -3009,7 +3009,7 @@ async function startCall(userId, userName, stream) {
         answer: null
     });
 
-    showCallingNotification(userName); // Prikaz poziva sa imenom i prezimenom
+    showCallingNotification(userName);
     console.log(`Calling user ${userName}.`);
 
     // Add local video
@@ -3053,13 +3053,26 @@ async function startCall(userId, userName, stream) {
         if (data.answer && !peerConnection.currentRemoteDescription) {
             const answerDescription = new RTCSessionDescription(data.answer);
             peerConnection.setRemoteDescription(answerDescription);
+            // Show "End Call" button for caller
             showEndCallButton(callDoc.id, peerConnection);
         }
     });
 
+    // Listen for callee's ICE candidates
+    const calleeCandidatesCollection = collection(callDoc, 'calleeCandidates');
+    onSnapshot(calleeCandidatesCollection, snapshot => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+                const candidate = new RTCIceCandidate(change.doc.data());
+                peerConnection.addIceCandidate(candidate).catch(e => {
+                    console.error('Error adding received ICE candidate', e);
+                });
+            }
+        });
+    });
+
     console.log("Call established at caller.");
 }
-
 
 // Function to accept the call
 async function acceptCall(callId, stream) {
@@ -3201,7 +3214,7 @@ function showCallingNotification(recipientName) {
     callingOverlay.classList.add('calling-overlay');
     callingOverlay.innerHTML = 
         `<div class="calling-content">
-            <p>Calling ${recipientName}...</p> <!-- Dodano ime i prezime -->
+            <p>Calling ${recipientName}...</p>
         </div>`;
     
     callingOverlay.style.position = 'fixed';
@@ -3209,7 +3222,7 @@ function showCallingNotification(recipientName) {
     callingOverlay.style.left = '0';
     callingOverlay.style.width = '100vw';
     callingOverlay.style.height = '100vh';
-    callingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    callingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'; // Transparent dark background
     callingOverlay.style.color = 'white';
     callingOverlay.style.display = 'flex';
     callingOverlay.style.flexDirection = 'column';
@@ -3221,14 +3234,13 @@ function showCallingNotification(recipientName) {
     document.body.appendChild(callingOverlay);
 }
 
-
 // Function to show incoming call notification (callee side)
 function showIncomingCallNotification(callerName, callId) {
     const incomingCallOverlay = document.createElement('div');
     incomingCallOverlay.classList.add('incoming-call-overlay');
     incomingCallOverlay.innerHTML = 
         `<div class="incoming-call-content">
-            <p>${callerName} is calling you...</p> <!-- Dodano ime i prezime -->
+            <p>${callerName} is calling you...</p>
             <div class="incoming-call-buttons-container" style="background-color: white; padding: 10px; border-radius: 8px; margin-top: 10px;">
                 <button id="answer-call-${callId}" style="background-color: green; color: white; padding: 10px 20px; margin-right: 10px; border-radius: 5px;">Accept</button>
                 <button id="decline-call-${callId}" style="background-color: red; color: white; padding: 10px 20px; border-radius: 5px;">Decline</button>
@@ -3240,7 +3252,7 @@ function showIncomingCallNotification(callerName, callId) {
     incomingCallOverlay.style.left = '0';
     incomingCallOverlay.style.width = '100vw';
     incomingCallOverlay.style.height = '100vh';
-    incomingCallOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    incomingCallOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'; // Transparent dark background
     incomingCallOverlay.style.color = 'white';
     incomingCallOverlay.style.display = 'flex';
     incomingCallOverlay.style.flexDirection = 'column';
@@ -3261,9 +3273,9 @@ function showIncomingCallNotification(callerName, callId) {
     // Event for declining the call
     document.getElementById(`decline-call-${callId}`).addEventListener('click', () => {
         document.body.removeChild(incomingCallOverlay); // Remove overlay
+        // Optionally, update call document to indicate call was declined
     });
 }
-
 
 
 // Function to show "End Call" button
