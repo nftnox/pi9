@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil korisnika</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+
+   <style>
+input,
+textarea {
+    touch-action: manipulation; /* Omogućava manipulaciju bez zumiranja */
+    
+}
+
+
+      
+
+
+/* User info styling */
+
+
+
+
+
+
+
+
+
+
+
+
+/* Main container for all products */
+.marketplace-outline {
+    padding: 20px;
+    border: 2px solid #ccc; /* Outer border for the entire marketplace */
+    background-color: #fff; /* White background */
+    border-radius: 10px;
+    max-width: 1200px;
+    margin: 0 auto; /* Center the container */
+}
+
+/* Container for individual products */
+.product {
+        border: 5px solid; /* Postavite debljinu obruba */
+        border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+        border-radius: 8px; /* Zaobljeni uglovi */
+        padding: 10px; /* Unutarnji razmak */
+        margin: 10px; /* Vanjski razmak između proizvoda */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); /* Blaga sjena za bolji izgled */
+    }
+
+    .product img {
+        width: 200px;
+        height: 200px;
+        object-fit: cover;
+        margin-bottom: 10px;
+        border-radius: 8px;
+    }
+
+    .product-list-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px; /* Razmak između proizvoda */
+        justify-content: center; /* Centriranje proizvoda */
+    }
+
+/* Individual product box */
+.product-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 200px; /* Set fixed width */
+    height: 300px; /* Set fixed height */
+    padding: 10px;
+    background-color: #f9f9f9; /* Light background for products */
+    border: 1px solid #ccc; /* Border for each product */
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Image styling for each product */
+.product-box img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+/* Product name styling */
+.product-name {
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+/* Product price styling */
+.product-price {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+/* 'Kupi' button styling */
+.buy-button {
+    width: 100%;
+    padding: 8px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.buy-button:hover {
+    background-color: #45a049;
+}
+
+.marketplace-outline h2 {
+        text-align: center; /* Centrira tekst naslova */
+        margin-bottom: 20px; /* Dodaje razmak ispod naslova */
+        font-weight: bold; /* Podebljava naslov */
+    }
+
+        /* Stilovi za profilnu stranicu */
+        .profile-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+
+
+
+
+
+       .profile-outline {
+            padding: 20px;
+            border: 2px solid #ccc; /* Outer border for the entire profile */
+            background-color: #fff; /* White background */
+            border-radius: 10px;
+            max-width: 1200px;
+            margin: 0 auto; /* Center the container */
+        }
+
+        .profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Razmak između naslova i slike */
+    margin-bottom: 20px;
+}
+        /* Title styling within the large outline box */
+        .profile-title {
+    font-size: 24px; /* Vraćen originalni font za bolju vidljivost */
+    padding: 10px;
+    color: #fff;
+    background-color: #4b0078;
+    border-radius: 8px;
+    text-align: center;
+    margin: 0 auto 20px auto; /* Centriranje naslova */
+    max-width: 400px; /* Smanjena maksimalna širina */
+    transform: translateX(58px); /* Podesite vrijednost px po px */
+}
+
+@media screen and (max-width: 768px) {
+    .profile-title {
+        max-width: 280px; /* Smanjena maksimalna širina za tablete i manje ekrane */
+    }
+}
+
+#eth-account-section {
+    max-width: 400px; /* Ograničenje širine na desktopu */
+    margin: 0 auto; /* Centriranje na desktopu */
+}
+
+@media screen and (max-width: 768px) {
+    #eth-account-section {
+        max-width: 280px; /* Ograničenje širine za mobilne uređaje */
+        margin: 0 auto; /* Centriranje na mobilnim uređajima */
+    }
+
+    #eth-address-input {
+        width: 100%; /* Prilagođavanje širine polja za unos */
+    }
+}
+
+        /* Container for individual products */
+        .product {
+            border: 5px solid;
+            border-image: linear-gradient(to right, #5a99cd, #4b0078) 1;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .product img {
+    width: 250px; /* Povećana širina slike */
+    height: 250px; /* Povećana visina slike */
+    object-fit: cover;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+
+        .product-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .product-price {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .buy-button, .set-price-button {
+            padding: 8px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .buy-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .set-price-button {
+            background-color: #4b0078;
+            color: white;
+        }
+
+        .input-price {
+            width: 100px;
+            padding: 5px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .product-list-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        #current-price-display {
+    font-weight: bold; /* Podebljava sav tekst unutar div-a */
+    padding-left: 400px; /* Standardni padding za veće ekrane */
+}
+
+/* Media query za mobilne uređaje */
+@media (max-width: 768px) {
+    #current-price-display {
+        padding-left: 120px; /* Prilagodba za mobilne uređaje */
+    }
+}
+
+/* Main transaction history container */
+#transaction-history {
+    max-width: 800px;
+    padding: 15px;
+    background-color: #333;
+    border-radius: 10px;
+    margin: 20px auto;
+    color: white;
+}
+
+/* Each transaction item in a fixed-height, single-column list */
+.transaction-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #444;
+    border-radius: 5px;
+    height: 80px;
+    width: 100%;
+    position: relative; /* Enables absolute positioning within */
+}
+
+/* Image styling for a consistent size */
+.transaction-item img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 15px;
+}
+
+/* Transaction details container with more spacing between items */
+.transaction-details {
+    display: flex;
+    align-items: center;
+    color: white;
+    width: 100%;
+}
+
+/* Left-aligned name with fixed width */
+.transaction-name {
+    font-size: 14px;
+    font-weight: bold;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Centered price */
+.transaction-price {
+    font-size: 14px;
+    position: absolute;
+    left: 50%; /* Center in the middle */
+    transform: translateX(-50%); /* Adjusts to center perfectly */
+    white-space: nowrap;
+}
+
+/* Right-aligned date */
+.transaction-time {
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+    margin-left: auto; /* Pushes it to the right */
+}
+/* Hide date on screens smaller than 768px */
+@media (max-width: 768px) {
+    .transaction-time {
+        display: none;
+    }
+}
+@media (max-width: 768px) {
+    .transaction-price {
+        left: 80%; /* Moves the price further to the right on mobile */
+        transform: translateX(-50%);
+    }
+}
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 768px) {
+    .profile-title {
+        font-size: 18px; /* Smanjena veličina fonta za mobilne uređaje */
+        text-align: left; /* Poravnanje naslova ulijevo */
+        max-width: 45%; /* Uklanja ograničenje širine za mobilne uređaje */
+        transform: translateX(0); /* Vraća naslov u normalan položaj */
+    }
+}
+
+
+    </style>
+</head>
+<body>
+
+    <header class="header-container">
+        <div id="greeting">
+            <span class="material-icons">description</span> 
+            <span id="logged-in-user"></span>
+        </div>
+        
+        <div id="current-price-display">Whitepaper <span id="current-price"></div>
+        
+        <!-- Toggle button for mobile devices -->
+        <button id="toggle-menu-button" class="toggle-button">☰</button>
+        
+        <!-- Desktop menu -->
+        <nav id="desktop-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+
+
+        <nav id="toggle-menu">
+            <a href="#"><span class="material-icons">home</span> Home</a>
+            <a href="#"><span class="material-icons">group</span> Team</a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">person</span> Profile</a>
+        </nav>
+    </header>
+  
+
+</script>
+
+
+    
+    <script>
+        const toggleMenuButton = document.getElementById('toggle-menu-button');
+        const toggleMenu = document.getElementById('toggle-menu');
+
+        toggleMenuButton.addEventListener('click', () => {
+            // Togglovanje prikaza menija
+            if (toggleMenu.style.display === 'flex') {
+                toggleMenu.style.display = 'none'; // Sakrij meni
+            } else {
+                toggleMenu.style.display = 'flex'; // Prikaži meni
+            }
+        });
+    </script>
+
+   
+
+
+    
+    <div class="image-container">
+        <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
+    </div>
+
+    
+
+
+
+
+
+
+
+
+
+   
+
+
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">info</span>
+            <strong>1. Introduction</strong> <br>
+            LUNA Token is an innovative digital asset designed to enhance the user experience in the blockchain ecosystem. With LUNA Token, users can earn rewards, convert them into tokens, trade NFTs, and communicate via integrated chat and video call features. The project's mission is to create a secure, efficient, and interactive environment for the blockchain community.        </p>
+    </div>
+
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">error_outline</span>
+            <strong>2. Problem </strong><br>
+            Traditional platforms for earning rewards, communication, and NFT trading are often inefficient, costly, or insecure. Key challenges include:
+            
+            Limited opportunities for earning and converting rewards into usable tokens.
+            High transaction fees for trading and transfers.
+            Lack of integrated tools for real-time user interaction.        </p>
+    </div>
+
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">lightbulb</span>
+            <strong> 3. Solution: LUNA Token </strong> <br>
+            LUNA Token addresses these challenges through:
+            
+            Effortless token minting: Users can accumulate rewards and mint them into LUNA tokens using a simple on-site feature.
+            NFT Marketplace: LUNA tokens can be used to purchase NFTs directly on the platform.
+            Communication features: Integrated chat and video calls allow users to interact in real time.
+            Low transaction fees: A highly efficient transfer system with minimal fees maximizes user benefits.        </p>
+    </div>
+
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">monetization_on</span>
+            <strong>4. Tokenomics</strong><br>
+            LUNA Token Specifications:
+            <ul>
+                <li><strong>Name:</strong> LUNA</li>
+                <li><strong>Symbol:</strong> LUN</li>
+                <li><strong>Maximum Supply:</strong>  50,000,000 LUN</li>
+                <li><strong>Mintable Supply:</strong>  25,000,000 LUN</li>
+                <li><strong>Reserved for Exchanges:</strong> 25,000,000 LUN</li>
+                <li><strong>Transfer Fee:</strong> 1% (allocated to the project address for development).</li>
+            </ul>
+            <strong>Token Distribution:</strong>
+            <ul>
+                <li><strong>Mintable Tokens:</strong> Users earn tokens through platform activities.</li>
+                <li><strong>Reserved Tokens:</strong> Allocated for liquidity and exchange partnerships.</li>
+            </ul>
+        </p>
+        <!-- Canvas for the Chart -->
+        <canvas id="tokenomics-chart"></canvas>
+
+    </div>
+    
+
+    <style>
+        #tokenomics-chart {
+            max-width: 400px; /* Postavite željenu širinu */
+            max-height: 400px; /* Postavite željenu visinu */
+            margin: 0 auto; /* Centriranje grafikona */
+        }
+
+        #tokenomics-chart-container {
+        text-align: center; /* Centriranje sadržaja u kontejneru */
+    }
+
+    #tokenomics-chart {
+        display: inline-block; /* Osigurava pravilan prikaz grafikona */
+    }
+    </style>
+    
+
+
+    <!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Select the canvas element
+    const ctx = document.getElementById('tokenomics-chart').getContext('2d');
+
+    // Create the doughnut chart
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Mintable Tokens', 'Reserved Tokens'],
+            datasets: [{
+                data: [25000000, 25000000], // Token amounts
+                backgroundColor: ['#4CAF50', '#FFC107'], // Colors for each section
+                hoverBackgroundColor: ['#45A049', '#FFD54F']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const value = context.raw;
+                            return `${value.toLocaleString()} LUN`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">code</span>
+            <strong>5. Tehnical Details </strong><br>
+            LUNA Token is developed using Solidity on the Ethereum blockchain. Key functionalities include:
+            
+            Minting: Users can mint LUNA tokens from their accumulated rewards.
+            Reserved Token Distribution: Reserved tokens are allocated for collaboration with exchanges.
+            Transaction Fees: A 1% transfer fee is implemented, with exemptions available for specific addresses.
+            Security Features: Users can be blacklisted to maintain network integrity.
+            Trading Control: Token trading is enabled only after approval by the project owner.        </p>
+    </div>
+
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">attach_money</span>
+            <strong>6. Use of Funds </strong><br>
+            Funds raised through the LUNA project will be allocated to:
+            
+            Developing the NFT marketplace and improving user experience.
+            Maintaining and optimizing blockchain infrastructure.
+            Marketing and attracting new users.
+                    </p>
+    </div>
+
+
+
+    
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">timeline</span>
+            <strong>7. Roadmap </strong><br>
+            <ul>
+                <li><strong>Q1 2024:</strong> Launch of LUNA Token and core functionalities.</li>
+                <li><strong>Q2 2024:</strong> Addition of chat and video call features, and partnerships with exchanges for token listing.</li>
+                <li><strong>Q3 2024:</strong> Launch of mobile application and expansion of NFT categories.</li>
+                <li><strong>Q4 2024:</strong> Introduction of staking options and global promotion.</li>
+                <li><strong>2025:</strong> Integration with decentralized finance (DeFi) platforms and partnerships with global enterprises.</li>
+                <li><strong>2026:</strong> Expansion into metaverse applications, enabling NFT interoperability and real-world token use cases.</li>
+            </ul>
+        </p>
+    </div>
+    
+
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">check_circle_outline</span>
+            <strong>8. Conclusion</strong><br>
+            LUNA Token bridges the gap between earning, trading, and user interaction in the blockchain world. With an innovative approach, user-centric focus, and technically advanced functionalities, LUNA Token has the potential to become a key player in decentralized applications and the NFT marketplace.                    </p>
+    </div>
+
+
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">stars</span>
+            <strong>9. Competitive Advantage</strong><br>
+            LUNA Token stands out from competitors due to:
+            <ul>
+                <li><strong>Integrated Ecosystem:</strong> Combines earning, trading, and communication in one platform.</li>
+                <li><strong>Low Fees:</strong> Minimal transaction costs compared to traditional NFT platforms.</li>
+                <li><strong>User-Friendly Design:</strong> Simple interface for both new and experienced users.</li>
+                <li><strong>Security:</strong> Advanced security measures, including blacklisting and trading controls.</li>
+                <li><strong>Global Reach:</strong> Plans to expand across multiple markets with strategic partnerships.</li>
+            </ul>
+        </p>
+    </div>
+    
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">thumb_up</span>
+            <strong>10. User Testimonials</strong><br>
+            Hear what our early adopters have to say:
+            <blockquote>
+                "LUNA Token revolutionized my NFT trading experience with its low fees and integrated communication tools." - Jane Doe
+            </blockquote>
+            <blockquote>
+                "The ability to earn and mint tokens seamlessly is a game-changer for the blockchain community." - John Smith
+            </blockquote>
+        </p>
+    </div>
+    
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">groups</span>
+            <strong>11. Partners and Collaborations</strong><br>
+            LUNA Token is proud to collaborate with:
+            <ul>
+                <li>Top NFT platforms</li>
+                <li>Decentralized exchanges</li>
+                <li>Leading blockchain service providers</li>
+                <li>Enterprise solutions for real-world token adoption</li>
+            </ul>
+        </p>
+    </div>
+    
+    <div class="partnership-box">
+        <p>
+            <span class="material-icons">people</span>
+            <strong>12. Meet the Team</strong><br>
+            Our team includes experienced blockchain developers, marketing experts, and NFT strategists:
+            <ul>
+                <li>
+                    <img src="images/1.jpg" alt="Jane Doe" class="team-image">
+                    <div>
+                        <p class="team-name"><strong>Greg Doe</strong></p>
+                        <p class="team-role">Blockchain Architect with 10 years of experience.</p>
+                    </div>
+                </li>
+                <li>
+                    <img src="images/2.jpg" alt="John Smith" class="team-image">
+                    <div>
+                        <p class="team-name"><strong>John Smith</strong></p>
+                        <p class="team-role">Marketing Specialist in Web3 ecosystems.</p>
+                    </div>
+                </li>
+                <li>
+                    <img src="images/3.jpg" alt="Emily Brown" class="team-image">
+                    <div>
+                        <p class="team-name"><strong>Emily Brown</strong></p>
+                        <p class="team-role">NFT Strategist and Creative Director.</p>
+                    </div>
+                </li>
+            </ul>
+            
+        </p>
+    </div>
+    
+    <style>
+       .team-image {
+    width: 80px !important; /* Eksplicitna širina slike */
+    height: 80px !important; /* Eksplicitna visina slike */
+    border-radius: 50%; /* Okrugla slika */
+    object-fit: cover; /* Prilagođavanje slike proporcijama */
+    margin-right: 10px; /* Razmak između slike i teksta */
+    display: inline-block; /* Pravilno prikazivanje u liniji */
+}
+
+.partnership-box ul {
+    padding-left: 0; /* Uklanja podrazumijevani padding liste */
+    margin-left: 0; /* Uklanja podrazumijevani margin liste */
+    list-style: none; /* Uklanja bullet točke iz liste */
+}
+
+.partnership-box ul li {
+    display: flex; /* Prikazuje sliku i tekst u redu */
+    align-items: center; /* Vertikalno poravnanje */
+    margin-bottom: 15px; /* Razmak između članova tima */
+}
+
+    </style>
+    
+
+    <div class="background blue"></div>
+    <div class="background purple"></div>
+
+
+
+
+
+    
+    
+   
+
+
+
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style>
+    body {
+        font-family: 'Roboto', sans-serif; /* Promjena fonta */
+        margin: 0;
+        padding: 0;
+        background-color: black;
+        
+       
+    }
+   
+
+    @media (max-width: 768px) {
+    html, body {
+        width: 100%;
+        overflow-x: hidden; /* Onemogućava horizontalno pomjeranje */
+        margin: 0; /* Uklanja podrazumijevane margine */
+        padding: 0; /* Uklanja podrazumijevane paddinge */
+    }
+
+    /* Osiguraj da svi kontejneri i elementi imaju odgovarajuću širinu */
+    * {
+        max-width: 100%; /* Ograničava širinu na 100% */
+        box-sizing: border-box; /* Uključuje padding i border u ukupnu širinu */
+    }
+
+    img {
+        max-width: 100%; /* Održava slike unutar širine kontejnera */
+        height: auto; /* Održava odnos slike */
+    }
+
+    /* Podesi širinu specifičnih elemenata ako je potrebno */
+    .some-element { /* Zameniti sa stvarnim klasama */
+        width: 100%; /* Ili odgovarajući procenat */
+    }
+}
+
+    .background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .blue {
+    background: linear-gradient(to bottom right, rgba(23, 135, 226, 0.6), rgba(0, 0, 0, 0) 50%);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 50%;
+    
+}
+
+
+.purple {
+    background: linear-gradient(to top left, rgba(128, 0, 128, 0.6), rgba(0, 0, 0, 0) 50%);
+    position: fixed; /* Changed to fixed to always stick to the bottom-right */
+    bottom: 0;
+    right: 0;
+    width: 50%;
+    height: 50%;
+    z-index: 1; /* Make sure it stays below other content if necessary */
+}
+
+
+
+        
+    nav {
+        display: flex;
+        gap: 20px;
+    }
+    nav a {
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+    nav .material-icons {
+        margin-right: 5px; /* Razmak između ikone i teksta */
+    }
+    .container {
+        display: flex;
+        
+        padding: 20px;
+    }
+    .icon-section {
+    flex: 2;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 20px;
+}
+
+.icon {
+    background-color: transparent; /* Prozirna pozadina */
+    border-radius: 0; /* Pravougaoni oblik */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 120px; /* Širina pravougaonika */
+    height: 60px; /* Visina pravougaonika */
+    font-size: 24px;
+    cursor: pointer;
+    position: relative;
+    background: transparent; /* Prozirna pozadina */
+    color: white; /* Bijela boja teksta */
+    border: 2px solid transparent; /* Prozirni obrub (outline) */
+    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+
+
+    
+
+    
+}
+
+   
+    .amount {
+        font-size: 24px;
+        margin-left: 2px;
+    }
+
+
+/* Stil za ikonice */
+.material-icons {
+    vertical-align: middle; /* Poravnanje ikone sa tekstom */
+    margin-right: 8px; /* Razmak između ikone i teksta */
+}
+
+
+#share-icon {
+    background-color: transparent; /* Prozirna pozadina */
+    border-radius: 0; /* Pravougaoni oblik */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 150px; /* Širina pravougaonika */
+    height: 60px; /* Visina pravougaonika */
+    font-size: 22px;
+    cursor: pointer;
+    position: relative;
+    background: transparent; /* Prozirna pozadina */
+    color: white; /* Bijela boja teksta */
+    border: 2px solid transparent; /* Prozirni obrub (outline) */
+    border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* Gradijentni obrub s lijeva na desno */
+
+
+}
+
+#share-icon span.material-icons {
+    font-size: 24px; /* Veličina ikone */
+}
+
+
+</style>
+
+
+
+
+<style>
+    .partnership-box {
+        border-width: 2px; /* debljina obruba */
+        border-style: solid; /* stil obruba */
+        border-image: linear-gradient(to right, #5a99cd, #4b0078) 1; /* gradijentni obrub s lijeva na desno */
+        padding: 20px; /* razmak unutar boxa */
+        margin: 20px auto; /* razmak iznad i ispod boxa, centrirano */
+        max-width: 600px; /* maksimalna širina boxa */
+        text-align: justify; /* opravdanje teksta */
+        background-color: #000; /* crna pozadina */
+        color: #fff; /* bijela boja teksta */
+        border-radius: 50px !important; /* povećanje zaobljenosti ivica */
+    }
+
+    .partnership-box p {
+        margin: 0; /* uklanja zadani razmak oko paragrafa */
+        text-indent: 0; /* nema uvlačenja prve linije */
+        line-height: 1.6; /* povećava razmak između redova */
+    }
+
+    .partnership-box img {
+    width: 100%; /* Postavi osnovnu širinu na 100% da se prilagođava */
+    max-width: 600px; /* Maksimalna širina za desktop */
+    height: auto; /* Automatsko prilagođavanje visine */
+}
+
+/* Za mobilne uređaje */
+@media only screen and (max-width: 768px) {
+    .partnership-box img {
+        max-width: 350px; /* Maksimalna širina za mobitele */
+    }
+}
+
+</style>
+
+
+
+
+<style>
+   header {
+
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  position: relative; /* Omogućuje apsolutno pozicioniranje menija */
+}
+
+
+/* Toggle dugme */
+.toggle-button {
+  display: none; /* Skriveno po defaultu */
+  font-size: 30px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+#toggle-menu {
+  display: none; /* Skriveno po defaultu */
+  flex-direction: column; /* Vertikalno poravnanje menija */
+  background: linear-gradient(to bottom, #000000, #4b0078); /* Gradijent od plave do tamno ljubičaste */
+  position: absolute;
+  right: 0px;
+  top: 60px;
+  width: 50%;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+
+
+
+
+#toggle-menu a {
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  display: block;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Stil za desktop meni */
+#desktop-menu {
+  display: flex;
+}
+
+#desktop-menu a {
+  margin-left: 20px;
+  text-decoration: none;
+  color: white;
+}
+
+/* Media query za mobilne uređaje */
+@media (max-width: 768px) {
+  /* Prikaži toggle dugme na mobilnim uređajima */
+  .toggle-button {
+      display: block;
+      transform: translateX(20px); /* Pomjera udesno za 20px */
+  }
+  /* Sakrij desktop meni na mobilnim uređajima */
+  #desktop-menu {
+      display: none;
+  }
+
+}
+
+.image-container {
+    display: flex;
+    justify-content: center; /* Centriraj sliku */
+    align-items: flex-start; /* Poravnaj gornji dio */
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .image-container {
+        align-items: flex-start; /* Gornji dio */
+        transform: translateY(10px); /* Pomakni prema dolje na mobilnim uređajima */
+    }
+}
+
+.image-container img {
+    animation: pulse 3s infinite; /* Animacija nazvana 'pulse' koja traje 2 sekunde i ponavlja se beskonačno */
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1); /* Početna veličina */
+    }
+    50% {
+        transform: scale(1.05); /* Blago povećanje veličine */
+    }
+    100% {
+        transform: scale(1); /* Vraćanje na početnu veličinu */
+    }
+}
+
+
+  </style>
+
+
+
+<style>
+    #current-price {
+        transform: translateX(130px); /* Podesi ovu vrijednost prema željenom pomjeranju */
+}
+
+@media only screen and (max-width: 768px) {
+    #current-price {
+        transform: translateX(40px); /* Podesi ovu vrijednost prema željenom pomjeranju */
+    }
+}
+
+#user-name {
+    position: relative;
+}
+
+@media only screen and (max-width: 768px) {
+    #user-name {
+        transform: translateX(-20px); /* Pomjeranje ulijevo, prilagodi prema potrebi */
+    }
+}
+
+
+</style>
+</body>
+</html>
