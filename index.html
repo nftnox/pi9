@@ -55,8 +55,7 @@
     </header>
 
 
-   <button id="connect-nft-contract">Connect with NFT Contract</button>
-
+   
 
     <!-- Vaš postojeći kod -->
 
@@ -1305,30 +1304,6 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-// Funkcija za povezivanje s NFT ugovorom
-document.getElementById('connect-nft-contract').addEventListener('click', async () => {
-    if (typeof window.ethereum === 'undefined') {
-        alert('MetaMask nije instaliran. Molimo instalirajte MetaMask ekstenziju.');
-        return;
-    }
-
-    try {
-        // Povezivanje sa MetaMask-om
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const currentAccount = accounts[0]; // Trenutno prijavljen MetaMask račun
-
-        // Prikaz poruke o uspješnom povezivanju
-        console.log(`Povezan s ugovorom NFT kao: ${currentAccount}`);
-        alert(`Uspješno povezano s NFT ugovorom kao ${currentAccount}.`);
-
-        // Provjera veza s ugovorom
-        const owner = await nftContract.methods.owner().call();
-        console.log(`Vlasnik ugovora: ${owner}`);
-    } catch (error) {
-        console.error('Greška prilikom povezivanja s ugovorom:', error);
-        alert('Došlo je do greške prilikom povezivanja s ugovorom.');
-    }
-});
 
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const contractAddress = "0x19C16A8eb27Bfd879e3BEB044A2f094568F9F672"; // Nova adresa ugovora
