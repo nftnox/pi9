@@ -55,7 +55,8 @@
     </header>
 
 
-   
+    <button id="connect-nft-contract">Connect with NFT Contract</button>
+
 
     <!-- Vaš postojeći kod -->
 
@@ -518,62 +519,84 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
 
     // Omogući MetaMask plaćanje
    // Omogući MetaMask plaćanje
-   buyWithCryptoButton.addEventListener('click', async () => {
+buyWithCryptoButton.addEventListener('click', async () => {
+    // Provjera da li je MetaMask instaliran
     if (typeof window.ethereum !== 'undefined') {
         try {
-            // Poveži MetaMask sa trenutnim uređajem
+            // Povežite se sa MetaMask-om i dobijte račune
             await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const web3 = new Web3(window.ethereum);
+            const web3 = new Web3(window.ethereum); // Inicijalizacija web3 objekta
 
+            // Dobijanje trenutnog računa
             const accounts = await web3.eth.getAccounts();
-            const buyerAddress = accounts[0];
+            const account = accounts[0]; // Prvi račun u nizu
+            console.log("Povezan račun:", account);
 
-            // Postavljanje veze sa NFT ugovorom
-            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-            // Provjera trenutnog vlasnika NFT-a
-            const tokenId = productData.tokenId;
-            const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-
-            if (currentOwner.toLowerCase() === buyerAddress.toLowerCase()) {
-                alert("Ne možete kupiti vlastiti NFT!");
-                return;
-            }
-
-            // Dodaj ovlaštenje za prijenos NFT-a
-            await nftContract.methods.approve(buyerAddress, tokenId).send({ from: currentOwner });
-
-            // Nastavi sa transakcijom (prijenos LUNA tokena + NFT-a)
+            // Provjera cijene u ETH
             const ethPrice = productData.cryptoPrice;
-            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
+            console.log("Cijena u ETH:", ethPrice);
 
+            // Konverzija cijene u wei koristeći preciznu konverziju
+            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
+            console.log("Vrijednost u Wei:", weiValue);
+
+            // Inicijacija transakcije
             const txParams = {
-                from: buyerAddress,
-                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9',
-                value: weiValue,
-                gas: 21000,
+                from: account,
+                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Ethereum adresa primatelja
+                value: weiValue, // Vrijednost u wei
+                gas: 21000 // Minimalan gas za slanje
             };
 
-            await web3.eth.sendTransaction(txParams);
-            await nftContract.methods.safeTransferFrom(currentOwner, buyerAddress, tokenId).send({ from: currentOwner });
+            // Slanje transakcije putem MetaMask-a
+            const transactionHash = await web3.eth.sendTransaction(txParams);
 
-            // Ažuriraj Firestore
-            await updateDoc(doc(db, 'products', productId), {
+            // Ako je transakcija uspješna, ažuriraj status proizvoda u Firestore-u
+            console.log(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
+
+            // Ažuriraj status proizvoda na 'prodato' i dodaj novog vlasnika u Firestore-u
+            const productDocRef = doc(db, 'products', productId);
+            await updateDoc(productDocRef, {
                 sold: true,
-                owner: buyerAddress,
-                ownerName: buyerName,
+                owner: userId,
+                ownerName: username // Dodaj ime korisnika kao vlasnika
             });
 
-            alert(`Kupili ste NFT za ${ethPrice} ETH!`);
+            // Dodavanje proizvoda u kupovine
+            const userPurchasesRef = collection(db, `network/${userId}/purchases`);
+            await addDoc(userPurchasesRef, {
+                name: productData.name,
+                imageUrl: productData.imageUrl,
+                price: productData.cryptoPrice,
+                purchaseTime: new Date()
+            });
+
+            // Promjena boje dugmeta na crvenu i teksta na 'Prodato'
+            buyWithCryptoButton.textContent = 'Prodato';
+            buyWithCryptoButton.style.backgroundColor = 'red';
+            buyWithCryptoButton.disabled = true;
+
+            // Prikaz novog vlasnika ispod 'Prodato'
+            ownerDiv.textContent = `Novi vlasnik: ${username}`;
+            ownerDiv.style.color = 'white';
+            ownerDiv.style.cursor = 'pointer';
+
+            // Klikom na ime vlasnika otvara se njegov profil
+            ownerDiv.addEventListener('click', () => {
+                window.location.href = `profile.html?ime=${username}`;
+            });
+
+            productDiv.appendChild(ownerDiv);
+
+            alert(`Kupili ste ${productData.name} za ${productData.cryptoPrice} ETH!`);
         } catch (error) {
-            console.error("Greška tokom kupovine:", error);
-            alert("Kupovina nije uspjela. Pokušajte ponovo.");
+            console.error('Greška prilikom MetaMask transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
         }
     } else {
-        alert("MetaMask nije instaliran!");
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
-
 
 
 
@@ -2541,6 +2564,33 @@ function openChatWithUser(userId) {
     document.getElementById("back-to-users").style.display = "block"; // Prikazi dugme za povratak
 }
 
+
+
+
+document.getElementById('connect-nft-contract').addEventListener('click', async () => {
+    try {
+        // Provjeri da li je MetaMask instaliran
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
+        // Poveži MetaMask s ugovorom
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+        console.log(`Povezani ste s računom: ${currentAccount}`);
+
+        // Poveži se s ugovorom
+        const nftContractInstance = new web3.eth.Contract(nftContractABI, nftContractAddress);
+        console.log('Uspješno povezano s NFT ugovorom:', nftContractInstance);
+
+        alert('Uspješno ste povezani s NFT ugovorom!');
+    } catch (error) {
+        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
+    }
+});
 
 
 
