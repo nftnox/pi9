@@ -613,14 +613,19 @@ async function handleLunaPurchase(productId, productData) {
                 .transfer(sellerEthAddress, requiredAmount)
                 .send({ from: buyerAccount });
 
-            // Ažuriranje baze podataka za proizvod
+            alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
+
+            // Pozovi funkciju za NFT transfer
+            await transferNFT(productId, productData);
+
+            // Ažuriraj vlasništvo proizvoda u Firestore-u
             await updateDoc(doc(db, 'products', productId), {
                 owner: loggedInUserId,
                 ownerName: loggedInUserIme,
                 sold: true
             });
 
-            // Dodavanje proizvoda u kupovine
+            // Dodavanje proizvoda u kupovine novog vlasnika
             const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
             await addDoc(userPurchasesRef, {
                 name: productData.name,
@@ -628,11 +633,6 @@ async function handleLunaPurchase(productId, productData) {
                 price: productData.price,
                 purchaseTime: new Date()
             });
-
-            alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
-
-            // Nakon uspješne transakcije tokenima, pokreni prijenos NFT-a
-            await transferNFT(productId, productData);
 
             loadProfileProducts(); // Osvježi prikaz
         } catch (error) {
@@ -643,6 +643,7 @@ async function handleLunaPurchase(productId, productData) {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
     }
 }
+
 
 
 
@@ -1366,13 +1367,16 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
             return;
         }
 
+        // Povezivanje sa MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
-
         const web3 = new Web3(window.ethereum);
+
         const accounts = await web3.eth.getAccounts();
-        const buyerAccount = accounts[0];
+        const buyerAccount = accounts[0]; // Adresa kupca
 
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // Dohvati trenutnog vlasnika NFT-a
         const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
 
         if (currentOwner.toLowerCase() !== productData.owner.toLowerCase()) {
@@ -1380,6 +1384,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
             return;
         }
 
+        // Prijenos NFT-a kupcu
         await nftContract.methods
             .safeTransferFrom(productData.owner, buyerAccount, productData.tokenId)
             .send({ from: productData.owner });
@@ -1390,6 +1395,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
         alert('Došlo je do greške prilikom prijenosa NFT-a.');
     }
 }
+
 
 
 
