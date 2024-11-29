@@ -745,6 +745,13 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 // Spremi ime prijavljenog korisnika u localStorage
 localStorage.setItem('loggedInUser', userParam);
 
+const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
+if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
+    alert('NFT ne pripada prodavcu!');
+    return;
+}
+
+
 // Povezivanje s NFT ugovorom
 const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
