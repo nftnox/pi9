@@ -518,67 +518,37 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
 
     // Omogući MetaMask plaćanje
    // Omogući MetaMask plaćanje
-   buyWithCryptoButton.addEventListener('click', async () => {
+  // Unutar vaše funkcije za kupovinu s kriptom
+buyWithCryptoButton.addEventListener('click', async () => {
     // Provjera da li je MetaMask instaliran
     if (typeof window.ethereum !== 'undefined') {
         try {
-            // Povezivanje sa MetaMask-om i dobijanje računa
+            // Povežite se sa MetaMask-om i dobijte račune
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum);
 
-            // Dohvati trenutni račun
+            // Dobijanje trenutnog računa
             const accounts = await web3.eth.getAccounts();
-            const currentAccount = accounts[0];
+            const buyerAccount = accounts[0];
 
-            console.log("Trenutni račun:", currentAccount);
+            // Dohvatite cijenu u Wei
+            const priceInWei = web3.utils.toWei(productData.cryptoPrice.toString(), 'ether');
 
-            // Povezivanje s NFT ugovorom
-            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            // Pozovite funkciju buyItem na marketplace ugovoru
+            await marketplaceContract.methods.buyItem(nftContractAddress, productData.tokenId).send({
+                from: buyerAccount,
+                value: priceInWei
+            });
 
-            // Dohvati tokenId iz podataka proizvoda
-            const tokenId = productData.tokenId;
-
-            // Provjeri trenutnog vlasnika
-            const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-            console.log("Trenutni vlasnik NFT-a:", currentOwner);
-
-            // Provjeri odobrenje za transfer
-            const isApproved = await nftContract.methods.isApprovedForAll(currentOwner, currentAccount).call();
-            if (!isApproved) {
-                console.log("Postavljanje odobrenja za transfer...");
-                await nftContract.methods.setApprovalForAll(currentAccount, true).send({ from: currentOwner });
-                console.log("Odobrenje postavljeno.");
-            }
-
-            // Provjeri cijenu u ETH
-            const ethPrice = productData.cryptoPrice;
-            console.log("Cijena u ETH:", ethPrice);
-
-            // Konverzija cijene u wei
-            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
-            console.log("Vrijednost u Wei:", weiValue);
-
-            // Inicijacija transakcije
-            const txParams = {
-                from: currentAccount,
-                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Adresa primatelja (prodavca)
-                value: weiValue, // Vrijednost u wei
-                gas: 21000 // Minimalni gas za transfer
-            };
-
-            // Slanje transakcije putem MetaMask-a
-            const transactionHash = await web3.eth.sendTransaction(txParams);
-            console.log("Uspješna uplata! Transakcija:", transactionHash);
-
-            // Ažuriranje baze podataka
+            // Ažurirajte status proizvoda u Firestore-u
             const productDocRef = doc(db, 'products', productId);
             await updateDoc(productDocRef, {
                 sold: true,
-                owner: currentAccount,
+                owner: userId,
                 ownerName: username
             });
 
-            // Ažuriranje UI-a
+            // Promjena izgleda nakon uspješne kupovine
             buyWithCryptoButton.textContent = 'Prodato';
             buyWithCryptoButton.style.backgroundColor = 'red';
             buyWithCryptoButton.disabled = true;
@@ -590,18 +560,18 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
             ownerDiv.addEventListener('click', () => {
                 window.location.href = `profile.html?ime=${username}`;
             });
-
             productDiv.appendChild(ownerDiv);
 
             alert(`Kupili ste ${productData.name} za ${productData.cryptoPrice} ETH!`);
         } catch (error) {
-            console.error('Greška prilikom obrade transakcije:', error);
+            console.error('Greška prilikom MetaMask transakcije:', error);
             alert('Došlo je do greške. Pokušajte ponovo.');
         }
     } else {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
+
 
 
 
@@ -1755,6 +1725,88 @@ mintButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
+
+
+// Uvezite ABI vašeg Marketplace ugovora
+const marketplaceABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "nftContract",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "buyItem",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "nftContract",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"name": "listItem",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "listings",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "seller",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+// Adresa vašeg Marketplace ugovora
+const marketplaceAddress = '0xc2a4cc9664457f650D6d1b5DE8f329c59FE8F7D2';
+
+// Kreirajte instancu ugovora
+const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
 
 
