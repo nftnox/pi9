@@ -2378,7 +2378,8 @@ async function loadMessageHistory() {
             messageElement.appendChild(imgElement);
         } else {
             // Ako nije slika, prikazuje tekstualnu poruku
-            messageElement.innerText = `${messageData.sender}: ${messageData.message}`;
+            messageElement.innerText = `${messageData.message}`;
+
         }
 
         // Dodaj odgovarajuću klasu za pošiljaoca ili primaoca
@@ -2433,7 +2434,7 @@ function listenForNewMessages() {
                 messageElement.appendChild(imgElement);
             } else {
                 // Ako nije slika, prikazuje tekstualnu poruku
-                messageElement.innerText = `${messageData.sender}: ${messageData.message}`;
+                messageElement.innerText = `${messageData.message}`;
             }
 
             // Dodaj odgovarajuću klasu za pošiljaoca ili primaoca
