@@ -2072,8 +2072,20 @@ document.getElementById('chat-link').addEventListener('click', async () => {
 
 // Funkcija za provjeru postojećeg zahtjeva za chat između dva korisnika
 async function checkExistingChatRequest(userId, userName) {
-    selectedUserId = userId; // Dodano: Postavljanje selectedUserId
+    selectedUserId = userId; // Postavljanje selectedUserId
     selectedUserName = userName;
+
+    // Provera da li je u pitanju grupa
+    const isGroup = allUsers.find(user => user.userId === userId && user.isGroup);
+
+    if (isGroup) {
+        // Ako je grupa, proverite da li grupa postoji i otvorite je
+        console.log(`Otvaram grupu: ${userName}`);
+        openGroupChat(userId, userName); // Otvaranje grupnog chata
+        return; // Izlazak iz funkcije
+    }
+
+    // Nastavak za privatne razgovore
     const chatRequestCollection = collection(db, 'chatRequests');
     const q = query(chatRequestCollection, 
                     where('requester', 'in', [username, userName]), 
@@ -2082,22 +2094,23 @@ async function checkExistingChatRequest(userId, userName) {
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
-        // Ako već postoji zahtjev, prikazujemo prompt za prihvatanje
+        // Ako već postoji zahtev, prikazujemo prompt za prihvatanje
         querySnapshot.forEach(doc => {
             const requestData = doc.data();
             if (requestData.recipientName === username && !requestData.accepted) {
-                showAcceptChatPrompt(requestData.requester, doc.id); // Korisnik prima zahtjev
+                showAcceptChatPrompt(requestData.requester, doc.id); // Korisnik prima zahtev
             } else if (requestData.requester === username && !requestData.accepted) {
-                alert(`Čekate da ${requestData.recipientName} prihvati vaš zahtjev.`);
+                alert(`Čekate da ${requestData.recipientName} prihvati vaš zahtev.`);
             } else {
-                openChat(userName); // Ako je zahtjev već prihvaćen, otvaramo chat
+                openChat(userName); // Ako je zahtev već prihvaćen, otvaramo chat
             }
         });
     } else {
-        // Ako ne postoji zahtjev, prikažemo prompt za početak chata
+        // Ako ne postoji zahtev, prikažemo prompt za početak chata
         showChatRequestPrompt(userName, userId);
     }
 }
+
 
 // Funkcija za prikazivanje prozora za početak chata
 function showChatRequestPrompt(userName, userId) {
