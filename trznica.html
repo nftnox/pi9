@@ -645,6 +645,9 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
     }
 });
 
+// Dajete dozvolu NFT ugovoru da upravlja svim NFT-ovima vlasnika
+await nftContract.methods.setApprovalForAll(nftContractAddress, true).send({ from: currentAccount });
+
 
     </script>
 </head>
