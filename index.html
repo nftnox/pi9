@@ -2868,31 +2868,27 @@ let imageInput = null;
 // Event listener for the "Send Image" button in group chat
 // Event listener za dugme 'send-image' koji radi za oba tipa chata
 document.getElementById('send-image').addEventListener('click', () => {
-    // Kreirajte prozor za odabir slike
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
 
     input.onchange = async (event) => {
         const file = event.target.files[0];
-        
         if (file) {
-            // Provjerite tip chata
-            const isGroupChat = document.getElementById('chat-header-title').dataset.groupId !== undefined;
-            const currentGroupId = document.getElementById('chat-header-title').dataset.groupId; // Za grupni chat
-            const selectedUserName = 'USERNAME_PRIVATNI'; // Postavite ime primaoca za privatni chat
+            const isGroupChat = !!document.getElementById('chat-header-title').dataset.groupId;
+            const groupId = document.getElementById('chat-header-title').dataset.groupId; // For group chat
+            const recipientName = selectedUserName; // For private chat
+            const recipientId = selectedUserId;
 
             try {
                 let imageUrl;
-
                 if (isGroupChat) {
-                    // Ako je grupni chat, kreirajte referencu za grupu
-                    const storageRef = ref(storage, 'groupChatImages/' + currentGroupId + '_' + file.name);
+                    // Group Chat Image Upload
+                    const storageRef = ref(storage, `groupChatImages/${groupId}_${file.name}`);
                     const snapshot = await uploadBytes(storageRef, file);
                     imageUrl = await getDownloadURL(snapshot.ref);
 
-                    // Spremanje poruke u Firestore za grupni chat
-                    const groupChatDoc = doc(db, 'groupChats', currentGroupId);
+                    const groupChatDoc = doc(db, 'groupChats', groupId);
                     const groupData = (await getDoc(groupChatDoc)).data();
                     const messages = groupData.messages || [];
 
@@ -2900,38 +2896,40 @@ document.getElementById('send-image').addEventListener('click', () => {
                         sender: username,
                         text: imageUrl,
                         timestamp: new Date(),
-                        isImage: true // Označava da je poruka slika
+                        isImage: true,
                     });
 
                     await updateDoc(groupChatDoc, { messages });
-                    console.log("Slika uspješno poslana u grupni chat:", imageUrl);
                 } else {
-                    // Ako je privatni chat, kreirajte referencu za privatni chat
-                    const storageRef = ref(storage, 'chatImages/' + selectedUserName + '_' + file.name);
+                    // Private Chat Image Upload
+                    if (!recipientId || !recipientName) {
+                        console.error('Recipient not properly selected for private chat.');
+                        return;
+                    }
+
+                    const storageRef = ref(storage, `chatImages/${username}_${recipientName}_${file.name}`);
                     const snapshot = await uploadBytes(storageRef, file);
                     imageUrl = await getDownloadURL(snapshot.ref);
 
-                    // Spremanje poruke u Firestore za privatni chat
-                    const messagesCollection = collection(db, 'poruke');
-                    await addDoc(messagesCollection, {
+                    await addDoc(collection(db, 'poruke'), {
                         sender: username,
-                        recipient: selectedUserName,
+                        recipient: recipientName,
                         message: imageUrl,
                         isImage: true,
-                        timestamp: new Date()
+                        timestamp: new Date(),
                     });
-
-                    console.log("Slika uspješno poslana u privatni chat:", imageUrl);
                 }
+
+                console.log("Image successfully sent:", imageUrl);
             } catch (error) {
-                console.error("Greška prilikom slanja slike:", error);
+                console.error("Error uploading and sending image:", error);
             }
         }
     };
 
-    // Otvori prozor za odabir datoteke
-    input.click();
+    input.click(); // Open file picker
 });
+
 
 
 
