@@ -645,13 +645,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
     }
 });
 
-// Mintanje NFT-a
-await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
-
-// Automatsko odobravanje ugovora za upravljanje NFT-ovima
-await nftContract.methods.setApprovalForAll(nftContractAddress, true).send({ from: currentAccount });
-console.log("Dozvola za upravljanje NFT-ovima je uspešno dodeljena ugovoru.");
-
 
     </script>
 </head>
