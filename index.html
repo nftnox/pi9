@@ -2280,7 +2280,7 @@ function openChat(userName) {
     messageInputDiv.style.display = 'flex';
 
     // Postavljanje naslova u zaglavlju chata
-    chatHeaderTitle.innerHTML = `Chat with ${userName} 
+    chatHeaderTitle.innerHTML = ` ${userName} 
     <span id="start-audio-call" title="Audio Call" style="margin-left: 10px; cursor: pointer;">
         <span class="material-icons">call</span>
     </span>
@@ -2954,16 +2954,23 @@ async function fetchUserGroups() {
 
     querySnapshot.forEach(doc => {
         const groupData = doc.data();
+        allUsers.push({
+            userName: groupData.groupName, // Koristimo naziv grupe kao ime
+            userId: doc.id, // ID grupe
+            profilePictureUrl: groupData.groupImageUrl || '', // Slika grupe ili prazno
+            isGroup: true // Označavamo da je ovo grupa
+        });
 
-        // Prosljeđivanje 'groupImageUrl' kako bismo znali ima li grupa sliku
+        // Prikaz u listi kontakata
         displayGroupChat({
             groupName: groupData.groupName,
             groupId: doc.id,
-            groupImageUrl: groupData.groupImageUrl, // Prosljeđujemo URL slike grupe
+            groupImageUrl: groupData.groupImageUrl,
             members: groupData.members,
         });
     });
 }
+
 
 
 
