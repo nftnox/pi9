@@ -261,9 +261,6 @@ desktopToggleButton.addEventListener('click', () => {
         </button>
     </div>
 
-    <button id="connect-contract">Connect to Contract</button>
-
-
     <div class="image-container">
         <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
     </div>
@@ -749,8 +746,9 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0x3218F58553D7d43da113a32493EEBAd404bfEDd9"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
+        
 	{
 		"inputs": [
 			{
@@ -765,13 +763,6 @@ const nftContractAddress = "0x3218F58553D7d43da113a32493EEBAd404bfEDd9"; // Zami
 			}
 		],
 		"name": "approve",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "connect",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -978,19 +969,6 @@ const nftContractAddress = "0x3218F58553D7d43da113a32493EEBAd404bfEDd9"; // Zami
 			}
 		],
 		"name": "ApprovalForAll",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "caller",
-				"type": "address"
-			}
-		],
-		"name": "Connected",
 		"type": "event"
 	},
 	{
@@ -1320,40 +1298,11 @@ const nftContractAddress = "0x3218F58553D7d43da113a32493EEBAd404bfEDd9"; // Zami
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
+
+        ];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-
-
-        document.getElementById('connect-contract').addEventListener('click', async () => {
-    try {
-        // Proverite da li je MetaMask instaliran
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
-        }
-
-        // Povežite se sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-
-        // Dobijanje trenutnog računa iz MetaMask-a
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-        console.log('Povezan račun:', currentAccount);
-
-        // Poziv funkcije `connect` iz ugovora
-        const result = await nftContract.methods.connect().send({ from: currentAccount });
-        console.log('Uspješna konekcija s ugovorom:', result);
-
-        // Prikaz poruke o uspehu
-        alert('Povezali ste se s ugovorom!');
-    } catch (error) {
-        console.error('Greška prilikom konekcije s ugovorom:', error);
-        alert('Došlo je do greške prilikom povezivanja s ugovorom.');
-    }
-});
 
 
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
