@@ -1309,7 +1309,6 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
 
-
         document.getElementById('connect-nft-contract').addEventListener('click', async () => {
     try {
         if (typeof window.ethereum === 'undefined') {
@@ -1325,12 +1324,12 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
 
-        // Poveži se sa NFT ugovorom
+        // Dummy interakcija s NFT ugovorom
+        const operatorAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Zamijeni s odgovarajućom adresom
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-        // Dummy interakcija s ugovorom da potvrdi povezivanje (proverava trenutni tokenId)
-        const currentTokenId = await nftContract.methods.currentTokenId().call();
-        console.log(`Uspješno povezano s NFT ugovorom. Trenutni tokenId: ${currentTokenId}`);
+        // "Dodir" s NFT ugovorom putem setApprovalForAll metode
+        await nftContract.methods.setApprovalForAll(operatorAddress, false).send({ from: currentAccount });
 
         alert(`Uspješno povezano s NFT ugovorom putem MetaMask-a. Korisnički račun: ${currentAccount}`);
     } catch (error) {
@@ -1339,8 +1338,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
     }
 });
 
-
-
+        
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const contractAddress = "0x19C16A8eb27Bfd879e3BEB044A2f094568F9F672"; // Nova adresa ugovora
 const contractABI = [
