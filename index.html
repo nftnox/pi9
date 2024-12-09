@@ -262,11 +262,12 @@ desktopToggleButton.addEventListener('click', () => {
     </div>
 
 
-    <button id="connect-nft-contract" style="background-color: blue; color: white; font-size: 16px; padding: 10px 20px; margin-top: 20px; border: none; border-radius: 5px; cursor: pointer;">
-        Connect with NFT Contract
-    </button>
-    
 
+    <div style="text-align: center; margin: 20px;">
+        <button id="connect-nft-contract" style="padding: 10px 20px; font-size: 16px; background-color: blue; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Connect with NFT Contract
+        </button>
+    </div>
 
     <div class="image-container">
         <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
@@ -520,46 +521,16 @@ buyWithCryptoButton.textContent = 'Buy with Crypto';
 buyWithCryptoButton.style.backgroundColor = 'purple';
 buyWithCryptoButton.style.color = 'white';
 buyWithCryptoButton.style.marginTop = '10px';
-buyWithCryptoButton.style.fontSize = '16px';
+buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
 
-// Funkcija za inicijalnu interakciju s NFT ugovorom kako bi se MetaMask "dotakao" ugovora i dopustio kasniji transfer
-async function initializeNFTContractInteraction() {
-    // Provjera da li je MetaMask instaliran
-    if (typeof window.ethereum === 'undefined') {
-        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
-        return false;
-    }
-    try {
-        // Povežite se sa MetaMask-om i dobijte račune
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
 
-        // "Dummy" transakcija prema NFT ugovoru, npr. setApprovalForAll s operatorom i approved=false
-        const operatorAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Promijenite u željenu adresu
-        await nftContract.methods.setApprovalForAll(operatorAddress, false).send({ from: currentAccount });
-        console.log('Uspješna inicijalna interakcija s NFT ugovorom.');
-        return true;
-    } catch (error) {
-        console.error('Greška prilikom inicijalne interakcije s NFT ugovorom:', error);
-        alert('Došlo je do greške prilikom pripreme za kupovinu NFT-a. Pokušajte ponovo.');
-        return false;
-    }
-}
-
+    // Omogući MetaMask plaćanje
+   // Omogući MetaMask plaćanje
 buyWithCryptoButton.addEventListener('click', async () => {
-    // Prvo inicijaliziramo NFT ugovor na novom uređaju/računu
-    const nftReady = await initializeNFTContractInteraction();
-    if (!nftReady) {
-        // Ako inicijalizacija ne uspije, prekidamo proces
-        return;
-    }
-
-    // Ako je inicijalna interakcija uspjela, nastavljamo s kupnjom kao i ranije
+    // Provjera da li je MetaMask instaliran
     if (typeof window.ethereum !== 'undefined') {
         try {
-            // Povežite se s MetaMask-om i dobijte račune
+            // Povežite se sa MetaMask-om i dobijte račune
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum); // Inicijalizacija web3 objekta
 
@@ -576,15 +547,15 @@ buyWithCryptoButton.addEventListener('click', async () => {
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
             console.log("Vrijednost u Wei:", weiValue);
 
-            // Inicijacija transakcije plaćanja ETH-om
+            // Inicijacija transakcije
             const txParams = {
                 from: account,
-                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Ethereum adresa prodavca
+                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Ethereum adresa primatelja
                 value: weiValue, // Vrijednost u wei
                 gas: 21000 // Minimalan gas za slanje
             };
 
-            // Slanje transakcije za plaćanje
+            // Slanje transakcije putem MetaMask-a
             const transactionHash = await web3.eth.sendTransaction(txParams);
 
             // Ako je transakcija uspješna, ažuriraj status proizvoda u Firestore-u
@@ -607,14 +578,17 @@ buyWithCryptoButton.addEventListener('click', async () => {
                 purchaseTime: new Date()
             });
 
-            // Promjena izgleda dugmeta i prikaz vlasnika
+            // Promjena boje dugmeta na crvenu i teksta na 'Prodato'
             buyWithCryptoButton.textContent = 'Prodato';
             buyWithCryptoButton.style.backgroundColor = 'red';
             buyWithCryptoButton.disabled = true;
 
+            // Prikaz novog vlasnika ispod 'Prodato'
             ownerDiv.textContent = `Novi vlasnik: ${username}`;
             ownerDiv.style.color = 'white';
             ownerDiv.style.cursor = 'pointer';
+
+            // Klikom na ime vlasnika otvara se njegov profil
             ownerDiv.addEventListener('click', () => {
                 window.location.href = `profile.html?ime=${username}`;
             });
@@ -630,7 +604,6 @@ buyWithCryptoButton.addEventListener('click', async () => {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
-
 
 
 
@@ -669,34 +642,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
-
-        async function ensureContactWithNFTContract() {
-    try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
-        }
-
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // Dohvati trenutni račun iz MetaMask-a
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-
-        // Poveži se s NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // Dummy interakcija - provjera trenutnog tokenId-a
-        const currentTokenId = await nftContract.methods.currentTokenId().call({ from: currentAccount });
-        console.log(`Kontakt sa NFT ugovorom uspješan. Trenutni tokenId: ${currentTokenId}`);
-    } catch (error) {
-        console.error('Greška prilikom kontakta s NFT ugovorom:', error);
-        alert('Došlo je do greške pri uspostavljanju kontakta s NFT ugovorom. Pokušajte ponovo.');
-    }
-}
-
+        
 
         buyButton.addEventListener('click', async () => {
     if (productData.sold) {
@@ -1365,9 +1311,40 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
         ];
 
-        const web3 = new Web3(window.ethereum);
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
+
+
+        
+        const connectNFTButton = document.getElementById('connect-nft-contract');
+
+    connectNFTButton.addEventListener('click', async () => {
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
+        try {
+            // Povezivanje sa MetaMask-om
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+
+            // Dobijanje trenutnog računa iz MetaMask-a
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0];
+
+            // Inicijalizacija NFT ugovora
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+            // Provera trenutnog tokenId-a za potvrdu povezivanja
+            const currentTokenId = await nftContract.methods.currentTokenId().call();
+            console.log(`Povezivanje uspešno! Trenutni tokenId: ${currentTokenId}`);
+
+            alert(`Uspješno ste se povezali sa NFT ugovorom koristeći račun: ${currentAccount}`);
+        } catch (error) {
+            console.error('Greška prilikom povezivanja sa NFT ugovorom:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    });
 
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const contractAddress = "0x19C16A8eb27Bfd879e3BEB044A2f094568F9F672"; // Nova adresa ugovora
@@ -1814,38 +1791,6 @@ mintButton.addEventListener('click', async () => {
 });
 
 
-document.getElementById('connect-nft-contract').addEventListener('click', async () => {
-    try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
-        }
-
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-
-        const web3 = new Web3(window.ethereum);
-
-        // Dohvati trenutni račun iz MetaMask-a
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-        console.log(`Povezani ste sa računom: ${currentAccount}`);
-
-        // Povezivanje sa NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // Postavljanje dummy operator adrese za testiranje
-        const dummyOperatorAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9';
-
-        // Poziv funkcije koja zahtijeva potvrdu putem MetaMask-a
-        await nftContract.methods.setApprovalForAll(dummyOperatorAddress, true).send({ from: currentAccount });
-
-        alert('Uspješno povezivanje sa NFT ugovorom putem potvrđene transakcije!');
-    } catch (error) {
-        console.error('Greška prilikom povezivanja sa NFT ugovorom:', error);
-        alert('Došlo je do greške prilikom povezivanja sa NFT ugovorom. Pokušajte ponovo.');
-    }
-});
 
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
