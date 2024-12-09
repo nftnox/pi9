@@ -255,9 +255,8 @@ desktopToggleButton.addEventListener('click', () => {
         </button>
         
         
-<button id="connect-nft-contract">
-            <span class="material-icons">link</span> Connect with NFT Contract
-        </button>
+        <button id="connect-contract">Connect to Contract</button>
+
 
         <!-- Ikona za dijeljenje -->
         <button id="share-icon">
@@ -753,6 +752,7 @@ localStorage.setItem('loggedInUser', userParam);
 const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
         
+        [
 	{
 		"inputs": [
 			{
@@ -767,6 +767,13 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 			}
 		],
 		"name": "approve",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "connect",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -973,6 +980,19 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 			}
 		],
 		"name": "ApprovalForAll",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "caller",
+				"type": "address"
+			}
+		],
+		"name": "Connected",
 		"type": "event"
 	},
 	{
@@ -1302,6 +1322,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 		"stateMutability": "view",
 		"type": "function"
 	}
+]
 
         ];
 
@@ -1310,7 +1331,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
 
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const contractAddress = "0x19C16A8eb27Bfd879e3BEB044A2f094568F9F672"; // Nova adresa ugovora
+const contractAddress = "0x3218F58553D7d43da113a32493EEBAd404bfEDd9"; // Nova adresa ugovora
 const contractABI = [
 	{
 		"inputs": [
@@ -1700,9 +1721,6 @@ const contractABI = [
 
 
 
-
-
-
 const mintButton = document.getElementById('mint-my-coin');
 
 mintButton.addEventListener('click', async () => {
@@ -1759,19 +1777,31 @@ mintButton.addEventListener('click', async () => {
 });
 
 
-// Funkcija za autorizaciju ugovora
-document.getElementById('connect-nft-contract').addEventListener('click', async () => {
+document.getElementById('connect-contract').addEventListener('click', async () => {
     try {
-        const accounts = await web3.eth.requestAccounts(); // Poveži se s MetaMask-om
+        // Proverite da li je MetaMask instaliran
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
+        // Povežite se sa MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+        // Dobijanje trenutnog računa iz MetaMask-a
+        const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
+        console.log('Povezan račun:', currentAccount);
 
-        // Postavljanje dozvole za interakciju s NFT-om
-        await nftContract.methods.setApprovalForAll("0x96c475e10479018cc028D39c71973470fD19f063", true).send({ from: currentAccount });
+        // Poziv funkcije `connect` iz ugovora
+        const result = await nftContract.methods.connect().send({ from: currentAccount });
+        console.log('Uspješna konekcija s ugovorom:', result);
 
-        alert("Uspješno povezano s NFT ugovorom!");
+        // Prikaz poruke o uspehu
+        alert('Povezali ste se s ugovorom!');
     } catch (error) {
-        console.error("Greška prilikom povezivanja s NFT ugovorom:", error);
-        alert("Povezivanje nije uspjelo. Pokušajte ponovo.");
+        console.error('Greška prilikom konekcije s ugovorom:', error);
+        alert('Došlo je do greške prilikom povezivanja s ugovorom.');
     }
 });
 
