@@ -261,13 +261,9 @@ desktopToggleButton.addEventListener('click', () => {
         </button>
     </div>
 
+    <button id="connect-nft-contract">Connect with NFT Contract</button>
 
 
-    <div style="text-align: center; margin: 20px;">
-        <button id="connect-nft-contract" style="padding: 10px 20px; font-size: 16px; background-color: blue; color: white; border: none; border-radius: 5px; cursor: pointer;">
-            Connect with NFT Contract
-        </button>
-    </div>
 
     <div class="image-container">
         <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
@@ -641,8 +637,6 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
 
         }
-
-        
 
         buyButton.addEventListener('click', async () => {
     if (productData.sold) {
@@ -1311,41 +1305,40 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
         ];
 
+        const web3 = new Web3(window.ethereum);
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
 
 
-        
-        connectNFTButton.addEventListener('click', async () => {
-    if (typeof window.ethereum === 'undefined') {
-        alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-        return;
-    }
-
+        document.getElementById('connect-nft-contract').addEventListener('click', async () => {
     try {
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
         // Povezivanje sa MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // Dobijanje trenutnog računa iz MetaMask-a
+        // Dohvati trenutni račun iz MetaMask-a
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
 
-        // Inicijalizacija NFT ugovora
+        // Poveži se sa NFT ugovorom
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-        // "Dummy" transakcija: postavljanje odobrenja za dummy adresu
-        const dummyOperator = "0x0000000000000000000000000000000000000000"; // Dummy adresa
-        const approveTransaction = await nftContract.methods
-            .setApprovalForAll(dummyOperator, false)
-            .send({ from: currentAccount });
+        // Dummy interakcija s ugovorom da potvrdi povezivanje (proverava trenutni tokenId)
+        const currentTokenId = await nftContract.methods.currentTokenId().call();
+        console.log(`Uspješno povezano s NFT ugovorom. Trenutni tokenId: ${currentTokenId}`);
 
-        console.log(`Povezivanje uspešno! Transakcija: ${approveTransaction.transactionHash}`);
-        alert(`Uspješno ste se povezali sa NFT ugovorom koristeći račun: ${currentAccount}`);
+        alert(`Uspješno povezano s NFT ugovorom putem MetaMask-a. Korisnički račun: ${currentAccount}`);
     } catch (error) {
-        console.error('Greška prilikom povezivanja sa NFT ugovorom:', error);
-        alert('Došlo je do greške. Pokušajte ponovo.');
+        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
+        alert('Došlo je do greške prilikom povezivanja. Pokušajte ponovo.');
     }
 });
+
 
 
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
