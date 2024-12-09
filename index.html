@@ -513,16 +513,46 @@ buyWithCryptoButton.textContent = 'Buy with Crypto';
 buyWithCryptoButton.style.backgroundColor = 'purple';
 buyWithCryptoButton.style.color = 'white';
 buyWithCryptoButton.style.marginTop = '10px';
-buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
+buyWithCryptoButton.style.fontSize = '16px';
 
-
-    // Omogući MetaMask plaćanje
-   // Omogući MetaMask plaćanje
-buyWithCryptoButton.addEventListener('click', async () => {
+// Funkcija za inicijalnu interakciju s NFT ugovorom kako bi se MetaMask "dotakao" ugovora i dopustio kasniji transfer
+async function initializeNFTContractInteraction() {
     // Provjera da li je MetaMask instaliran
+    if (typeof window.ethereum === 'undefined') {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
+        return false;
+    }
+    try {
+        // Povežite se sa MetaMask-om i dobijte račune
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+
+        // "Dummy" transakcija prema NFT ugovoru, npr. setApprovalForAll s operatorom i approved=false
+        const operatorAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Promijenite u željenu adresu
+        await nftContract.methods.setApprovalForAll(operatorAddress, false).send({ from: currentAccount });
+        console.log('Uspješna inicijalna interakcija s NFT ugovorom.');
+        return true;
+    } catch (error) {
+        console.error('Greška prilikom inicijalne interakcije s NFT ugovorom:', error);
+        alert('Došlo je do greške prilikom pripreme za kupovinu NFT-a. Pokušajte ponovo.');
+        return false;
+    }
+}
+
+buyWithCryptoButton.addEventListener('click', async () => {
+    // Prvo inicijaliziramo NFT ugovor na novom uređaju/računu
+    const nftReady = await initializeNFTContractInteraction();
+    if (!nftReady) {
+        // Ako inicijalizacija ne uspije, prekidamo proces
+        return;
+    }
+
+    // Ako je inicijalna interakcija uspjela, nastavljamo s kupnjom kao i ranije
     if (typeof window.ethereum !== 'undefined') {
         try {
-            // Povežite se sa MetaMask-om i dobijte račune
+            // Povežite se s MetaMask-om i dobijte račune
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum); // Inicijalizacija web3 objekta
 
@@ -539,15 +569,15 @@ buyWithCryptoButton.addEventListener('click', async () => {
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
             console.log("Vrijednost u Wei:", weiValue);
 
-            // Inicijacija transakcije
+            // Inicijacija transakcije plaćanja ETH-om
             const txParams = {
                 from: account,
-                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Ethereum adresa primatelja
+                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Ethereum adresa prodavca
                 value: weiValue, // Vrijednost u wei
                 gas: 21000 // Minimalan gas za slanje
             };
 
-            // Slanje transakcije putem MetaMask-a
+            // Slanje transakcije za plaćanje
             const transactionHash = await web3.eth.sendTransaction(txParams);
 
             // Ako je transakcija uspješna, ažuriraj status proizvoda u Firestore-u
@@ -570,17 +600,14 @@ buyWithCryptoButton.addEventListener('click', async () => {
                 purchaseTime: new Date()
             });
 
-            // Promjena boje dugmeta na crvenu i teksta na 'Prodato'
+            // Promjena izgleda dugmeta i prikaz vlasnika
             buyWithCryptoButton.textContent = 'Prodato';
             buyWithCryptoButton.style.backgroundColor = 'red';
             buyWithCryptoButton.disabled = true;
 
-            // Prikaz novog vlasnika ispod 'Prodato'
             ownerDiv.textContent = `Novi vlasnik: ${username}`;
             ownerDiv.style.color = 'white';
             ownerDiv.style.cursor = 'pointer';
-
-            // Klikom na ime vlasnika otvara se njegov profil
             ownerDiv.addEventListener('click', () => {
                 window.location.href = `profile.html?ime=${username}`;
             });
@@ -596,6 +623,7 @@ buyWithCryptoButton.addEventListener('click', async () => {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja.');
     }
 });
+
 
 
 
@@ -668,8 +696,6 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         alert('Ovaj proizvod je već prodan.');
         return;
     }
-
-    await ensureContactWithNFTContract();
 
     if (typeof window.ethereum === 'undefined') {
         alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
