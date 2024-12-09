@@ -634,11 +634,42 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
+
+        async function ensureContactWithNFTContract() {
+    try {
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
+        // Povezivanje sa MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
+
+        // Dohvati trenutni račun iz MetaMask-a
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+
+        // Poveži se s NFT ugovorom
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // Dummy interakcija - provjera trenutnog tokenId-a
+        const currentTokenId = await nftContract.methods.currentTokenId().call({ from: currentAccount });
+        console.log(`Kontakt sa NFT ugovorom uspješan. Trenutni tokenId: ${currentTokenId}`);
+    } catch (error) {
+        console.error('Greška prilikom kontakta s NFT ugovorom:', error);
+        alert('Došlo je do greške pri uspostavljanju kontakta s NFT ugovorom. Pokušajte ponovo.');
+    }
+}
+
+
         buyButton.addEventListener('click', async () => {
     if (productData.sold) {
         alert('Ovaj proizvod je već prodan.');
         return;
     }
+
+    await ensureContactWithNFTContract();
 
     if (typeof window.ethereum === 'undefined') {
         alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
