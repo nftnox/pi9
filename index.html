@@ -635,10 +635,17 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         }
 
         buyButton.addEventListener('click', async () => {
+    const sellerAddress = productData.sellerAddress; // Proverite da li je adresa prodavca sačuvana
+    if (!sellerAddress) {
+        alert('Adresa prodavca nije definisana.');
+        return;
+    }
+
     if (productData.sold) {
         alert('Ovaj proizvod je već prodan.');
         return;
     }
+
 
     if (typeof window.ethereum === 'undefined') {
         alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
