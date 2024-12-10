@@ -270,10 +270,8 @@ desktopToggleButton.addEventListener('click', () => {
         Delta Coins Majning: <span id="coins-spent">0</span>/27,000,000
     </div>
     
-    <button id="connect-nft" style="background-color: purple; color: white; font-size: 16px; margin-top: 10px;">
-        Spoji se s NFT ugovorom
-    </button>
-    
+    <button id="connect-nft-contract">Poveži se s NFT ugovorom</button>
+
 
 <!-- Virtuelna tržnica -->
 <div id="virtual-marketplace" class="marketplace-outline">
@@ -1752,10 +1750,12 @@ mintButton.addEventListener('click', async () => {
     }
 });
 
-document.getElementById('connect-nft').addEventListener('click', async () => {
+// Povezivanje s NFT ugovorom (bez stvarnog mintanja)
+document.getElementById('connect-nft-contract').addEventListener('click', async () => {
     try {
+        // Provjera da li je MetaMask instaliran
         if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            alert('Molimo instalirajte MetaMask kako biste koristili ovu funkcionalnost.');
             return;
         }
 
@@ -1763,29 +1763,22 @@ document.getElementById('connect-nft').addEventListener('click', async () => {
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // Povezivanje s NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, '0x96c475e10479018cc028D39c71973470fD19f063');
-
-        // Dohvati trenutni račun
+        // Dohvat računa povezanog s MetaMask-om
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
-        console.log("Povezan račun:", currentAccount);
+        console.log('Povezani račun:', currentAccount);
 
-        // Simulacija transakcije: pozivanje "approve" metode
-        const spenderAddress = currentAccount; // Kao primjer, sami sebi dajemo odobrenje
-        const dummyTokenId = 1; // Dummy token ID za simulaciju
-        const gasEstimate = await nftContract.methods.approve(spenderAddress, dummyTokenId).estimateGas({ from: currentAccount });
+        // Povezivanje s NFT ugovorom
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-        console.log("Procijenjeni gas za interakciju:", gasEstimate);
+        // Pokretanje autorizacije putem MetaMask-a (bez stvarnog mintanja)
+        const gasEstimate = await nftContract.methods.approve(currentAccount, 1).estimateGas({ from: currentAccount });
+        await nftContract.methods.approve(currentAccount, 1).send({ from: currentAccount, gas: gasEstimate });
 
-        // Pokretanje transakcije koja traži MetaMask potvrdu
-        await nftContract.methods.approve(spenderAddress, dummyTokenId)
-            .send({ from: currentAccount, gas: gasEstimate });
-
-        alert('Uspješno ste spojeni i interakcija s NFT ugovorom je izvršena!');
+        alert('Uspješno ste autorizirali interakciju s NFT ugovorom putem MetaMask-a!');
     } catch (error) {
-        console.error('Greška prilikom spajanja s NFT ugovorom:', error);
-        alert('Došlo je do greške prilikom spajanja. Molimo pokušajte ponovo.');
+        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
+        alert('Došlo je do greške prilikom povezivanja s NFT ugovorom.');
     }
 });
 
