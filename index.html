@@ -254,6 +254,9 @@ desktopToggleButton.addEventListener('click', () => {
             <span class="material-icons">rocket_launch</span> Mint My Coins
         </button>
         
+        <button id="connect-nft-contract">Poveži se sa NFT ugovorom</button>
+
+
         
         <!-- Ikona za dijeljenje -->
         <button id="share-icon">
@@ -746,8 +749,9 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0xD37292E4c49E3478fAf7cE80ca48D705961Bba0D"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
+        
 	{
 		"inputs": [
 			{
@@ -762,24 +766,6 @@ const nftContractAddress = "0xD37292E4c49E3478fAf7cE80ca48D705961Bba0D"; // Zami
 			}
 		],
 		"name": "approve",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "approved",
-				"type": "bool"
-			}
-		],
-		"name": "approveAll",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -896,6 +882,30 @@ const nftContractAddress = "0xD37292E4c49E3478fAf7cE80ca48D705961Bba0D"; // Zami
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
+			}
+		],
+		"name": "mintNFT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "owner",
 				"type": "address"
 			}
@@ -963,30 +973,6 @@ const nftContractAddress = "0xD37292E4c49E3478fAf7cE80ca48D705961Bba0D"; // Zami
 		],
 		"name": "ApprovalForAll",
 		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "recipient",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string"
-			}
-		],
-		"name": "mintNFT",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -1315,10 +1301,45 @@ const nftContractAddress = "0xD37292E4c49E3478fAf7cE80ca48D705961Bba0D"; // Zami
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
+
+        ];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+
+
+        document.getElementById('connect-nft-contract').addEventListener('click', async () => {
+    try {
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
+        // Povezivanje sa MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
+
+        // Dohvati trenutni račun iz MetaMask-a
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+
+        // Poveži se sa NFT ugovorom
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // Zahtjev za odobrenje bez stvarnog mintanja
+        const approval = await nftContract.methods
+            .approve(currentAccount, 1) // Zamijenite `1` ID-om tokena za testiranje, ako je potrebno
+            .send({ from: currentAccount });
+
+        console.log('Povezivanje s NFT ugovorom uspješno:', approval);
+
+        alert('Povezivanje s NFT ugovorom uspješno. MetaMask je odobrio pristup!');
+    } catch (error) {
+        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
+        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+    }
+});
 
 
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
