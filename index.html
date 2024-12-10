@@ -635,9 +635,11 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         }
 
         buyButton.addEventListener('click', async () => {
-    const sellerAddress = productData.sellerAddress; // Proverite da li je adresa prodavca sačuvana
-    if (!sellerAddress) {
-        alert('Adresa prodavca nije definisana.');
+    const sellerAddress = productData.sellerAddress; // Adresa prodavca
+    const tokenId = productData.tokenId; // Token ID NFT-a
+
+    if (!sellerAddress || !tokenId) {
+        alert('Podaci o proizvodu nisu ispravni. Proverite Firestore unos.');
         return;
     }
 
@@ -646,79 +648,64 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         return;
     }
 
-    if (typeof window.ethereum === 'undefined') {
-        alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-        return;
-    }
-
     try {
+        // Proverite da li je MetaMask instaliran
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
         // Povezivanje sa MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // Trenutni korisnički račun
+        // Dobijanje trenutnog naloga
         const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-
-        // Povezivanje s NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // Provera da li je NFT autorizovan za transfer
-        const isApproved = await nftContract.methods.isApprovedForAll(sellerAddress, currentAccount).call();
-        if (!isApproved) {
-            try {
-                // Postavite odobrenje za transfer
-                await nftContract.methods.setApprovalForAll(currentAccount, true).send({ from: sellerAddress });
-                alert("Odobrenje za transfer NFT-a je uspešno postavljeno.");
-            } catch (error) {
-                console.error("Greška prilikom postavljanja odobrenja:", error);
-                alert("Ne možete nastaviti bez postavljenog odobrenja.");
-                return;
-            }
-        }
+        const buyerAddress = accounts[0]; // Adresa kupca
+        console.log('Kupac:', buyerAddress);
 
         // Provera vlasništva nad NFT-om
-        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-
         if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
-            alert('Greška: NFT ne pripada prodavcu!');
+            alert('NFT ne pripada prodavcu! Operacija je obustavljena.');
             return;
         }
 
-        // Transfer NFT-a
+        // Izvršite transfer NFT-a
         await nftContract.methods
-            .safeTransferFrom(sellerAddress, currentAccount, tokenId)
+            .safeTransferFrom(sellerAddress, buyerAddress, tokenId)
             .send({ from: sellerAddress });
 
-        // Ažuriranje Firestore baze podataka za proizvod
+        // Ažurirajte status proizvoda u Firestore-u
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: userId,
+            owner: buyerAddress,
             ownerName: username,
         });
 
-        // Promjena izgleda nakon uspješne kupovine
+        // Promenite izgled stranice nakon uspešne kupovine
         buyButton.textContent = 'Sold';
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
 
-        // Prikaz vlasnika
         ownerDiv.textContent = `Novi vlasnik: ${username}`;
         ownerDiv.style.color = 'white';
-        ownerDiv.style.cursor = 'pointer';
-        ownerDiv.addEventListener('click', () => {
-            window.location.href = `profile.html?ime=${username}`;
-        });
         productDiv.appendChild(ownerDiv);
 
-        alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
+        alert(`Kupili ste ${productData.name} za ${productData.cryptoPrice} ETH!`);
     } catch (error) {
         console.error('Greška prilikom obrade transakcije:', error);
-        alert('Došlo je do greške. Pokušajte ponovo.');
+
+        // Provera specifične greške
+        if (error.code === 4100) {
+            alert('Račun nije autorizovan. Molimo vas da autorizujete u MetaMask-u.');
+        } else {
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
     }
 });
+
 
 
 
