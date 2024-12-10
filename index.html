@@ -270,7 +270,8 @@ desktopToggleButton.addEventListener('click', () => {
         Delta Coins Majning: <span id="coins-spent">0</span>/27,000,000
     </div>
     
-    <button id="connect-wallet">Connect</button>
+    <!-- Dodajte ovo unutar <body> tag-a na odgovarajućem mjestu -->
+<button id="connect-nft-contract">Poveži se s NFT Ugovorom</button>
 
 
 <!-- Virtuelna tržnica -->
@@ -1750,50 +1751,29 @@ mintButton.addEventListener('click', async () => {
     }
 });
 
-// Pronađi dugme Connect
-const connectWalletButton = document.getElementById('connect-wallet');
-
-// Dodaj Event Listener za klik na dugme
-connectWalletButton.addEventListener('click', async () => {
-    try {
-        // Proveri da li je MetaMask instaliran
+// Dodavanje Event Listenera za novo dugme
+document.getElementById('connect-nft-contract').addEventListener('click', async () => {
         if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            alert('Molimo vas da instalirate MetaMask ekstenziju.');
             return;
         }
 
-        // Poveži se sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
+        try {
+            // Povezivanje sa MetaMask-om i dobivanje računa
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0];
+            console.log("Povezan račun:", currentAccount);
 
-        // Dohvati trenutni račun
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-        console.log(`Povezani ste sa MetaMask računom: ${currentAccount}`);
+            // Provjera vlasništva ili drugih interakcija s ugovorom
+            // Ovdje možete dodati funkcionalnosti koje želite izvršiti nakon povezivanja
 
-        // Poveži se sa NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // Pripremi transakciju
-        const txParams = {
-            from: currentAccount,
-            to: nftContractAddress, // Adresa vašeg NFT ugovora
-            value: web3.utils.toWei('0.01', 'ether'), // Prilagodite vrednost za gas fee ili transakciju
-            gas: 3000000, // Gas limit za transakciju
-            data: nftContract.methods.mintNFT(currentAccount, "https://example.com/nft-metadata.json").encodeABI()
-        };
-
-        // Pošalji transakciju kroz MetaMask
-        const txHash = await web3.eth.sendTransaction(txParams);
-
-        console.log(`Transakcija uspešna! Hash: ${txHash.transactionHash}`);
-        alert(`Transakcija uspešna! Hash: ${txHash.transactionHash}`);
-    } catch (error) {
-        console.error('Greška prilikom slanja transakcije:', error);
-        alert('Došlo je do greške prilikom slanja transakcije. Pokušajte ponovo.');
-    }
-});
-
+            alert('Uspješno ste povezani s NFT ugovorom!');
+        } catch (error) {
+            console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
+            alert('Došlo je do greške prilikom povezivanja. Pokušajte ponovo.');
+        }
+    });
 
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
