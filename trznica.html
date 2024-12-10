@@ -27,9 +27,8 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const storage = getStorage(app);
 
         // Povezivanje s NFT ugovorom
-        const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
+        const nftContractAddress = "0x939fBEb0ad1ec010F78882484b830E5398c51773"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
-        
 	{
 		"inputs": [
 			{
@@ -579,8 +578,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"stateMutability": "view",
 		"type": "function"
 	}
-
-        ];
+];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
