@@ -1773,12 +1773,24 @@ connectWalletButton.addEventListener('click', async () => {
 
         // Poveži se sa NFT ugovorom
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-        console.log('Uspješno povezano sa NFT ugovorom:', nftContract);
 
-        alert(`Povezani ste sa MetaMask računom: ${currentAccount}`);
+        // Pripremi transakciju
+        const txParams = {
+            from: currentAccount,
+            to: nftContractAddress, // Adresa vašeg NFT ugovora
+            value: web3.utils.toWei('0.01', 'ether'), // Prilagodite vrednost za gas fee ili transakciju
+            gas: 3000000, // Gas limit za transakciju
+            data: nftContract.methods.mintNFT(currentAccount, "https://example.com/nft-metadata.json").encodeABI()
+        };
+
+        // Pošalji transakciju kroz MetaMask
+        const txHash = await web3.eth.sendTransaction(txParams);
+
+        console.log(`Transakcija uspešna! Hash: ${txHash.transactionHash}`);
+        alert(`Transakcija uspešna! Hash: ${txHash.transactionHash}`);
     } catch (error) {
-        console.error('Greška prilikom povezivanja:', error);
-        alert('Došlo je do greške prilikom povezivanja. Pokušajte ponovo.');
+        console.error('Greška prilikom slanja transakcije:', error);
+        alert('Došlo je do greške prilikom slanja transakcije. Pokušajte ponovo.');
     }
 });
 
