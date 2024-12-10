@@ -271,7 +271,7 @@ desktopToggleButton.addEventListener('click', () => {
     </div>
     
     <!-- Dodajte ovo unutar <body> tag-a na odgovarajućem mjestu -->
-<button id="connect-nft-contract">Poveži se s NFT Ugovorom</button>
+<button id="interact-nft-contract">Interakcija s NFT Ugovorom</button>
 
 
 <!-- Virtuelna tržnica -->
@@ -1751,8 +1751,9 @@ mintButton.addEventListener('click', async () => {
     }
 });
 
-// Dodavanje Event Listenera za novo dugme
-document.getElementById('connect-nft-contract').addEventListener('click', async () => {
+
+ // Dodavanje Event Listenera za novo dugme
+ document.getElementById('interact-nft-contract').addEventListener('click', async () => {
         if (typeof window.ethereum === 'undefined') {
             alert('Molimo vas da instalirate MetaMask ekstenziju.');
             return;
@@ -1765,16 +1766,17 @@ document.getElementById('connect-nft-contract').addEventListener('click', async 
             const currentAccount = accounts[0];
             console.log("Povezan račun:", currentAccount);
 
-            // Provjera vlasništva ili drugih interakcija s ugovorom
-            // Ovdje možete dodati funkcionalnosti koje želite izvršiti nakon povezivanja
-
-            alert('Uspješno ste povezani s NFT ugovorom!');
+            // Primjer transakcije: Pozivanje funkcije koja mijenja stanje na ugovoru
+            // Zamijenite 'yourContractMethod' s metodom koju želite pozvati
+            const receipt = await nftContract.methods.yourContractMethod().send({ from: currentAccount });
+            
+            console.log('Transakcija uspješna:', receipt);
+            alert('Interakcija s NFT ugovorom je uspješna!');
         } catch (error) {
-            console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
-            alert('Došlo je do greške prilikom povezivanja. Pokušajte ponovo.');
+            console.error('Greška prilikom interakcije s NFT ugovorom:', error);
+            alert('Došlo je do greške prilikom interakcije. Pokušajte ponovo.');
         }
     });
-
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
 document.getElementById('exchange-link').addEventListener('click', () => {
