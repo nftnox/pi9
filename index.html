@@ -746,8 +746,9 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0x7BaD07eF47d05320926Be17fdF93488dFCfF2F54"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
+        
 	{
 		"inputs": [
 			{
@@ -1051,29 +1052,6 @@ const nftContractAddress = "0x7BaD07eF47d05320926Be17fdF93488dFCfF2F54"; // Zami
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "safeTransferNFT",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "operator",
 				"type": "address"
 			},
@@ -1084,19 +1062,6 @@ const nftContractAddress = "0x7BaD07eF47d05320926Be17fdF93488dFCfF2F54"; // Zami
 			}
 		],
 		"name": "setApprovalForAll",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "marketplace",
-				"type": "address"
-			}
-		],
-		"name": "setApprovalForMarketplace",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -1161,10 +1126,6 @@ const nftContractAddress = "0x7BaD07eF47d05320926Be17fdF93488dFCfF2F54"; // Zami
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
-	},
-	{
-		"stateMutability": "payable",
-		"type": "receive"
 	},
 	{
 		"inputs": [
@@ -1337,7 +1298,8 @@ const nftContractAddress = "0x7BaD07eF47d05320926Be17fdF93488dFCfF2F54"; // Zami
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
+
+        ];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
