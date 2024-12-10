@@ -634,32 +634,6 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
-
-
-        async function connectMetaMask() {
-    if (typeof window.ethereum === 'undefined') {
-        alert('MetaMask nije instaliran! Instalirajte MetaMask ekstenziju za korišćenje ove funkcije.');
-        return null;
-    }
-
-    try {
-        // Povezivanje sa MetaMask-om
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const currentAccount = accounts[0];
-        console.log('Povezan MetaMask račun:', currentAccount);
-        return currentAccount;
-    } catch (error) {
-        console.error('Greška prilikom povezivanja sa MetaMask-om:', error);
-        if (error.code === 4100) {
-            alert('MetaMask pristup nije autorizovan. Molimo vas da odobrite pristup.');
-        } else {
-            alert('Došlo je do greške prilikom povezivanja sa MetaMask-om. Pokušajte ponovo.');
-        }
-        return null;
-    }
-}
-
-
         buyButton.addEventListener('click', async () => {
     const sellerAddress = productData.sellerAddress;
     const tokenId = productData.tokenId;
@@ -682,6 +656,15 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
     try {
         const web3 = new Web3(window.ethereum);
 
+        // Proverite da li je prodavac već postavio dozvolu za marketplace
+        const isApproved = await nftContract.methods.isApprovedForAll(sellerAddress, '0x7BaD07eF47d05320926Be17fdF93488dFCfF2F54').call();
+
+        if (!isApproved) {
+            // Postavite dozvolu za marketplace
+            await nftContract.methods.setApprovalForAll('0x7BaD07eF47d05320926Be17fdF93488dFCfF2F54', true).send({ from: sellerAddress });
+            console.log('Marketplace dozvola uspešno postavljena za prodavca:', sellerAddress);
+        }
+
         // Provera vlasništva nad NFT-om
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
         if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
@@ -699,7 +682,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         await updateDoc(productDocRef, {
             sold: true,
             owner: buyerAddress,
-            ownerName: username,
+            ownerName: localStorage.getItem('loggedInUser'),
         });
 
         // Promenite izgled nakon kupovine
@@ -707,14 +690,13 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
 
-        ownerDiv.textContent = `Novi vlasnik: ${username}`;
+        ownerDiv.textContent = `Novi vlasnik: ${localStorage.getItem('loggedInUser')}`;
         productDiv.appendChild(ownerDiv);
 
         alert(`Kupili ste ${productData.name} za ${productData.cryptoPrice} ETH!`);
     } catch (error) {
         console.error('Greška prilikom obrade transakcije:', error);
 
-        // Specifične greške
         if (error.code === 4100) {
             alert('Račun nije autorizovan. Molimo vas da autorizujete u MetaMask-u.');
         } else {
