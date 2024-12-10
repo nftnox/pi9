@@ -270,9 +270,7 @@ desktopToggleButton.addEventListener('click', () => {
         Delta Coins Majning: <span id="coins-spent">0</span>/27,000,000
     </div>
     
-    <!-- Dodajte ovo unutar <body> tag-a na odgovarajućem mjestu -->
-<button id="approve-nft">Odobri NFT Ugovoru</button>
-
+    
 
 <!-- Virtuelna tržnica -->
 <div id="virtual-marketplace" class="marketplace-outline">
@@ -748,8 +746,9 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0xBe95CDAC0aF3c79A00a4E107a3151218ad9e56DB"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
+        
 	{
 		"inputs": [
 			{
@@ -877,6 +876,52 @@ const nftContractAddress = "0xBe95CDAC0aF3c79A00a4E107a3151218ad9e56DB"; // Zami
 		"type": "error"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
+			}
+		],
+		"name": "mintNFT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -927,26 +972,28 @@ const nftContractAddress = "0xBe95CDAC0aF3c79A00a4E107a3151218ad9e56DB"; // Zami
 		"type": "event"
 	},
 	{
+		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
 				"internalType": "address",
-				"name": "recipient",
+				"name": "previousOwner",
 				"type": "address"
 			},
 			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string"
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
 			}
 		],
-		"name": "mintNFT",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
@@ -1071,6 +1118,19 @@ const nftContractAddress = "0xBe95CDAC0aF3c79A00a4E107a3151218ad9e56DB"; // Zami
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "owner",
 				"type": "address"
 			}
@@ -1156,6 +1216,19 @@ const nftContractAddress = "0xBe95CDAC0aF3c79A00a4E107a3151218ad9e56DB"; // Zami
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -1225,7 +1298,8 @@ const nftContractAddress = "0xBe95CDAC0aF3c79A00a4E107a3151218ad9e56DB"; // Zami
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
+
+        ];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
@@ -1676,34 +1750,7 @@ mintButton.addEventListener('click', async () => {
 });
 
 
-// Dodavanje Event Listenera za novo dugme
-document.getElementById('approve-nft').addEventListener('click', async () => {
-        if (typeof window.ethereum === 'undefined') {
-            alert('Molimo vas da instalirate MetaMask ekstenziju.');
-            return;
-        }
 
-        try {
-            // Povezivanje sa MetaMask-om i dobivanje računa
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const accounts = await web3.eth.getAccounts();
-            const currentAccount = accounts[0];
-            console.log("Povezan račun:", currentAccount);
-
-            // Primjer funkcije za odobravanje
-            // Zamijenite 'approve' s funkcijom koju želite pozvati i osigurajte da imate potrebne parametre
-            const spenderAddress = "0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9"; // Adresa koja će biti odobrena
-            const tokenId = 1; // Zamijenite s odgovarajućim tokenId-om
-
-            const receipt = await nftContract.methods.approve(spenderAddress, tokenId).send({ from: currentAccount });
-            
-            console.log('Transakcija uspješna:', receipt);
-            alert('Odobrenje NFT-a je uspješno!');
-        } catch (error) {
-            console.error('Greška prilikom interakcije s NFT ugovorom:', error);
-            alert('Došlo je do greške prilikom interakcije. Pokušajte ponovo.');
-        }
-    });
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
 document.getElementById('exchange-link').addEventListener('click', () => {
