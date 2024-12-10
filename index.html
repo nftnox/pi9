@@ -646,7 +646,6 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         return;
     }
 
-
     if (typeof window.ethereum === 'undefined') {
         alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
         return;
@@ -667,8 +666,15 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         // Provera da li je NFT autorizovan za transfer
         const isApproved = await nftContract.methods.isApprovedForAll(sellerAddress, currentAccount).call();
         if (!isApproved) {
-            alert('NFT nije autoriziran za transfer.');
-            return;
+            try {
+                // Postavite odobrenje za transfer
+                await nftContract.methods.setApprovalForAll(currentAccount, true).send({ from: sellerAddress });
+                alert("Odobrenje za transfer NFT-a je uspešno postavljeno.");
+            } catch (error) {
+                console.error("Greška prilikom postavljanja odobrenja:", error);
+                alert("Ne možete nastaviti bez postavljenog odobrenja.");
+                return;
+            }
         }
 
         // Provera vlasništva nad NFT-om
@@ -693,15 +699,6 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             ownerName: username,
         });
 
-        // Dodavanje proizvoda u kupovine korisnika
-        const userPurchasesRef = collection(db, `network/${userId}/purchases`);
-        await addDoc(userPurchasesRef, {
-            name: productData.name,
-            imageUrl: productData.imageUrl,
-            price: productData.price,
-            purchaseTime: new Date(),
-        });
-
         // Promjena izgleda nakon uspješne kupovine
         buyButton.textContent = 'Sold';
         buyButton.style.backgroundColor = 'red';
@@ -722,6 +719,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
