@@ -1309,34 +1309,34 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
         document.getElementById('force-nft-contact').addEventListener('click', async () => {
     try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
-        }
-
-        // Povezivanje s MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
-
-        // Dobijanje trenutnog računa
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
         console.log('Povezan račun:', currentAccount);
 
-        // Povezivanje s NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+        // Simulacija transakcije (samo za autorizaciju)
+        const txParams = {
+            from: currentAccount,
+            to: nftContractAddress, // Adresa NFT ugovora
+            value: web3.utils.toWei('0.0001', 'ether'), // Minimalna vrijednost
+            gas: 21000,
+        };
 
-        // Simulacija poziva funkcije ugovora
-        // Poziv funkcije `currentTokenId` za prisilni kontakt
-        const currentTokenId = await nftContract.methods.currentTokenId().call();
-        console.log('Kontakt s ugovorom uspostavljen, trenutni token ID:', currentTokenId);
-
-        alert(`MetaMask je tražio odobrenje. Povezan račun: ${currentAccount}`);
+        await web3.eth.sendTransaction(txParams);
+        alert('MetaMask je tražio odobrenje. Kontakt uspostavljen.');
     } catch (error) {
-        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+        if (error.code === 4001) {
+            alert('Odbili ste zahtjev u MetaMask-u.');
+        } else if (error.code === 4100) {
+            alert('MetaMask nema dozvolu za izvršenje ove radnje.');
+        } else {
+            console.error('Greška prilikom izvršavanja transakcije:', error);
+            alert('Došlo je do greške. Molimo pokušajte ponovo.');
+        }
     }
 });
+
 
 
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
