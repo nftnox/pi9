@@ -271,7 +271,7 @@ desktopToggleButton.addEventListener('click', () => {
     </div>
     
     <!-- Dodajte ovo unutar <body> tag-a na odgovarajućem mjestu -->
-<button id="interact-nft-contract">Interakcija s NFT Ugovorom</button>
+<button id="approve-nft">Odobri NFT Ugovoru</button>
 
 
 <!-- Virtuelna tržnica -->
@@ -1752,8 +1752,8 @@ mintButton.addEventListener('click', async () => {
 });
 
 
- // Dodavanje Event Listenera za novo dugme
- document.getElementById('interact-nft-contract').addEventListener('click', async () => {
+// Dodavanje Event Listenera za novo dugme
+document.getElementById('approve-nft').addEventListener('click', async () => {
         if (typeof window.ethereum === 'undefined') {
             alert('Molimo vas da instalirate MetaMask ekstenziju.');
             return;
@@ -1766,12 +1766,15 @@ mintButton.addEventListener('click', async () => {
             const currentAccount = accounts[0];
             console.log("Povezan račun:", currentAccount);
 
-            // Primjer transakcije: Pozivanje funkcije koja mijenja stanje na ugovoru
-            // Zamijenite 'yourContractMethod' s metodom koju želite pozvati
-            const receipt = await nftContract.methods.yourContractMethod().send({ from: currentAccount });
+            // Primjer funkcije za odobravanje
+            // Zamijenite 'approve' s funkcijom koju želite pozvati i osigurajte da imate potrebne parametre
+            const spenderAddress = "0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9"; // Adresa koja će biti odobrena
+            const tokenId = 1; // Zamijenite s odgovarajućim tokenId-om
+
+            const receipt = await nftContract.methods.approve(spenderAddress, tokenId).send({ from: currentAccount });
             
             console.log('Transakcija uspješna:', receipt);
-            alert('Interakcija s NFT ugovorom je uspješna!');
+            alert('Odobrenje NFT-a je uspješno!');
         } catch (error) {
             console.error('Greška prilikom interakcije s NFT ugovorom:', error);
             alert('Došlo je do greške prilikom interakcije. Pokušajte ponovo.');
