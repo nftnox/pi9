@@ -671,13 +671,15 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const tokenId = await nftContract.methods.currentTokenId().call();
 
         // Spremanje proizvoda u Firestore s tokenId-om
-        const docRef = await addDoc(collection(db, 'products'), {
-            name,
-            price,
-            cryptoPrice,
-            imageUrl,
-            tokenId, // Dodaj tokenId u inicijalni zapis
-        });
+		const docRef = await addDoc(collection(db, 'products'), {
+    name,
+    price,
+    cryptoPrice,
+    imageUrl,
+    tokenId,
+    sellerAddress: currentAccount, // Adresa korisnika koji je mintovao NFT
+});
+
 
         alert('Proizvod uspješno objavljen i NFT mintovan!');
     } catch (error) {
