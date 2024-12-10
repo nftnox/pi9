@@ -645,16 +645,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
     }
 });
 
-// Nakon što si uspješno izvršio:
-await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
-
-// Sada pozovi setApprovalForAll.
-// Ovdje dajemo globalnu dozvolu adresi 0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9
-// da upravlja svim NFT-ovima koje posjeduje currentAccount (koji je i vlasnik NFT-a).
-await nftContract.methods.setApprovalForAll("0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9", true).send({ from: currentAccount });
-
-alert('Proizvod uspješno objavljen, NFT mintovan i sada je operator odobren za prijenos!');
-
 
     </script>
 </head>
