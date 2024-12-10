@@ -684,8 +684,9 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         // Transfer NFT-a
         await nftContract.methods
-            .safeTransferFrom(sellerAddress, currentAccount, tokenId)
-            .send({ from: sellerAddress });
+    .safeTransferFrom("0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9", currentAccount, tokenId)
+    .send({ from: "0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9" });
+
 
         // Ažuriranje Firestore baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
@@ -1748,7 +1749,6 @@ mintButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
-
 
 
 
