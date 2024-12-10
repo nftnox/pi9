@@ -254,8 +254,7 @@ desktopToggleButton.addEventListener('click', () => {
             <span class="material-icons">rocket_launch</span> Mint My Coins
         </button>
         
-        <button id="connect-nft-contract">Poveži se sa NFT ugovorom</button>
-
+        <button id="connect-nft">Poveži se s NFT ugovorom</button>
 
         
         <!-- Ikona za dijeljenje -->
@@ -1308,40 +1307,6 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
 
-
-        document.getElementById('connect-nft-contract').addEventListener('click', async () => {
-    try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
-        }
-
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // Dohvati trenutni račun iz MetaMask-a
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-
-        // Poveži se sa NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // Zahtjev za odobrenje bez stvarnog mintanja
-        const approval = await nftContract.methods
-            .approve(currentAccount, 1) // Zamijenite `1` ID-om tokena za testiranje, ako je potrebno
-            .send({ from: currentAccount });
-
-        console.log('Povezivanje s NFT ugovorom uspješno:', approval);
-
-        alert('Povezivanje s NFT ugovorom uspješno. MetaMask je odobrio pristup!');
-    } catch (error) {
-        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
-    }
-});
-
-
 ///////////////////////////////////MINT////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const contractAddress = "0x19C16A8eb27Bfd879e3BEB044A2f094568F9F672"; // Nova adresa ugovora
 const contractABI = [
@@ -1787,6 +1752,36 @@ mintButton.addEventListener('click', async () => {
 });
 
 
+// Dugme za povezivanje s NFT ugovorom
+const connectNFTButton = document.getElementById('connect-nft');
+
+connectNFTButton.addEventListener('click', async () => {
+    try {
+        if (typeof window.ethereum === 'undefined') {
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+            return;
+        }
+
+        // Povezivanje sa MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
+
+        // Dohvati trenutni račun iz MetaMask-a
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+        console.log("Povezan račun:", currentAccount);
+
+        // Poveži se s NFT ugovorom
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // Simulacija poziva funkcije NFT ugovora (bez stvarnog mintanja)
+        console.log("Uspješno povezivanje s NFT ugovorom.");
+        alert('Povezali ste se s NFT ugovorom putem MetaMask-a.');
+    } catch (error) {
+        console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
+        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+    }
+});
 
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
