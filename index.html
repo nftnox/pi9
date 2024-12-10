@@ -1771,13 +1771,18 @@ document.getElementById('connect-nft').addEventListener('click', async () => {
         const currentAccount = accounts[0];
         console.log("Povezan račun:", currentAccount);
 
-        // Simulacija transakcije bez stvarnog mintanja
-        const gasEstimate = await nftContract.methods.name().estimateGas({ from: currentAccount });
+        // Simulacija transakcije: pozivanje "approve" metode
+        const spenderAddress = currentAccount; // Kao primjer, sami sebi dajemo odobrenje
+        const dummyTokenId = 1; // Dummy token ID za simulaciju
+        const gasEstimate = await nftContract.methods.approve(spenderAddress, dummyTokenId).estimateGas({ from: currentAccount });
+
         console.log("Procijenjeni gas za interakciju:", gasEstimate);
 
-        // Inicijalizacija interakcije (čitanje imena ugovora kao primjer)
-        const contractName = await nftContract.methods.name().call();
-        alert(`Uspješno spojeno s NFT ugovorom: ${contractName}`);
+        // Pokretanje transakcije koja traži MetaMask potvrdu
+        await nftContract.methods.approve(spenderAddress, dummyTokenId)
+            .send({ from: currentAccount, gas: gasEstimate });
+
+        alert('Uspješno ste spojeni i interakcija s NFT ugovorom je izvršena!');
     } catch (error) {
         console.error('Greška prilikom spajanja s NFT ugovorom:', error);
         alert('Došlo je do greške prilikom spajanja. Molimo pokušajte ponovo.');
