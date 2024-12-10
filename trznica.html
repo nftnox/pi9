@@ -27,7 +27,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const storage = getStorage(app);
 
         // Povezivanje s NFT ugovorom
-        const nftContractAddress = "0xdf8dF8eEd831DaDB6d907812ff91Da0e81551cDD"; // Zamijeni s adresom svog ugovora
+        const nftContractAddress = "0xD37292E4c49E3478fAf7cE80ca48D705961Bba0D"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
 	{
 		"inputs": [
@@ -43,6 +43,24 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 			}
 		],
 		"name": "approve",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "approved",
+				"type": "bool"
+			}
+		],
+		"name": "approveAll",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -159,30 +177,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "recipient",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string"
-			}
-		],
-		"name": "mintNFT",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "owner",
 				"type": "address"
 			}
@@ -250,6 +244,30 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		],
 		"name": "ApprovalForAll",
 		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
+			}
+		],
+		"name": "mintNFT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"anonymous": false,
