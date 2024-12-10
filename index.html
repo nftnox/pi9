@@ -657,7 +657,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         // Kreiraj instancu NFT ugovora
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-        // Provjeri trenutnog vlasnika tokena
+        // Dohvati trenutnog vlasnika tokena
         const tokenId = productData.tokenId; // Token ID preuzet iz Firestore-a
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
 
@@ -670,12 +670,10 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-        // Simuliraj transfer vlasništva (bez stvarne transakcije)
-        console.log(`Priprema za prijenos tokena ${tokenId} s vlasnika ${currentOwner} na ${currentAccount}`);
-
-        // Opcionalno: Prijenos vlasništva ako želite
-        // await nftContract.methods.safeTransferFrom(sellerAddress, currentAccount, tokenId)
-        //     .send({ from: sellerAddress });
+        // Transfer vlasništva nad NFT-om
+        console.log(`Prijenos tokena ${tokenId} s vlasnika ${currentOwner} na ${currentAccount}`);
+        await nftContract.methods.safeTransferFrom(sellerAddress, currentAccount, tokenId)
+            .send({ from: sellerAddress });
 
         // Ažuriraj Firestore status proizvoda
         const productDocRef = doc(db, 'products', productId);
@@ -685,7 +683,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             ownerName: username,
         });
 
-        alert(`Interakcija s NFT ugovorom za token ${tokenId} uspješna!`);
+        alert(`Uspješno ste kupili NFT token ${tokenId}!`);
 
         // Ažuriraj izgled proizvoda
         buyButton.textContent = 'Sold';
@@ -700,7 +698,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         });
         productDiv.appendChild(ownerDiv);
     } catch (error) {
-        console.error('Greška prilikom interakcije s NFT ugovorom:', error);
+        console.error('Greška prilikom prijenosa vlasništva NFT-a:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
