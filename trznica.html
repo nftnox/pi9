@@ -27,7 +27,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const storage = getStorage(app);
 
         // Povezivanje s NFT ugovorom
-        const nftContractAddress = "0x4a1e937030e16639b1b9ef067670b43789A3f57c"; // Zamijeni s adresom svog ugovora
+        const nftContractAddress = "0xe2b1BB603BF539ceEcfEA5824747C11Dd39514BB"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
 	{
 		"inputs": [
@@ -48,13 +48,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_globalOperator",
-				"type": "address"
-			}
-		],
+		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
@@ -353,19 +347,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_operator",
-				"type": "address"
-			}
-		],
-		"name": "setGlobalOperator",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -467,19 +448,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 			}
 		],
 		"name": "getApproved",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "globalOperator",
 		"outputs": [
 			{
 				"internalType": "address",
@@ -615,7 +583,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-		document.getElementById('publish-product').addEventListener('click', async () => {
+        document.getElementById('publish-product').addEventListener('click', async () => {
     const name = document.getElementById('product-name').value;
     const price = parseFloat(document.getElementById('product-price').value);
     const cryptoPrice = parseFloat(document.getElementById('product-crypto-price').value);
@@ -654,20 +622,10 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         // Mintanje NFT-a
         const accounts = await web3.eth.requestAccounts();
         const currentAccount = accounts[0];
-
-        // Provjera da li je globalOperator odobren
-        const globalOperator = await nftContract.methods.globalOperator().call();
-        const isApproved = await nftContract.methods.isApprovedForAll(currentAccount, globalOperator).call();
-        if (!isApproved) {
-            await nftContract.methods.setApprovalForAll(globalOperator, true).send({ from: currentAccount });
-            console.log("Global operator odobren.");
-        }
-
         await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
 
         // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
-        console.log("NFT mintovan s token ID: ", tokenId);
 
         // Spremanje proizvoda u Firestore s tokenId-om
         const docRef = await addDoc(collection(db, 'products'), {
@@ -678,18 +636,12 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
             tokenId, // Dodaj tokenId u inicijalni zapis
         });
 
-        alert(`Proizvod uspješno objavljen i NFT mintovan! Token ID: ${tokenId}`);
+        alert('Proizvod uspješno objavljen i NFT mintovan!');
     } catch (error) {
         console.error('Greška prilikom objave proizvoda ili mintanja NFT-a:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
-
-await nftContract.methods.setApprovalForAll(globalOperator, true).send({ from: currentAccount });
-
-
-const globalOperator = await nftContract.methods.globalOperator().call();
-console.log("Trenutni globalni operator je: ", globalOperator);
 
 
     </script>
