@@ -4211,14 +4211,22 @@ function startFlappyBird() {
 
     const flappyGameContainer = document.createElement('canvas');
     flappyGameContainer.id = 'flappy-game-container';
-    flappyGameContainer.width = 500; // Povećana širina
-    flappyGameContainer.height = 700; // Povećana visina
+    flappyGameContainer.width = 700; // Povećana širina
+    flappyGameContainer.height = 900; // Povećana visina
     flappyGameContainer.style = `
         background-color: lightblue; 
         border: 2px solid white; 
         display: block;
         margin: auto;
     `;
+
+// Povećaj cijeli okvir za mobilne uređaje
+if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
+    gameWrapper.style.width = '90vw'; // Postavlja širinu okvira na 90% ekrana
+    gameWrapper.style.height = '90vh'; // Postavlja visinu okvira na 90% ekrana
+}
+
+    
     gameWrapper.appendChild(flappyGameContainer);
 
     document.body.appendChild(gameWrapper);
@@ -4339,10 +4347,7 @@ function startFlappyBird() {
 }
 
 
-if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
-    flappyGameContainer.width = 600; // Širina igre na mobilnim uređajima
-    flappyGameContainer.height = 900; // Visina igre na mobilnim uređajima
-}
+
 
 
     // Učitaj proizvode nakon učitavanja stranice
@@ -4364,6 +4369,9 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
 
 
 <style>
+
+
+
 
     /* Sprečavanje zoomiranja na mobilnim uređajima */
     input,
