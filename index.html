@@ -746,7 +746,7 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0x97Ff848f367AcBeabB8c1B4d1EBd0Aea5B71dF72"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0xDccBbd731D81cfD443A32bA5B417c9fc0347448A"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
 	{
 		"inputs": [
@@ -767,13 +767,7 @@ const nftContractAddress = "0x97Ff848f367AcBeabB8c1B4d1EBd0Aea5B71dF72"; // Zami
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "initialOwner",
-				"type": "address"
-			}
-		],
+		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
@@ -1130,6 +1124,25 @@ const nftContractAddress = "0x97Ff848f367AcBeabB8c1B4d1EBd0Aea5B71dF72"; // Zami
 		"name": "transferOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "autoApprovedAddresses",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -1751,14 +1764,6 @@ mintButton.addEventListener('click', async () => {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
-
-    const isApprovedForAll = await nftContract.methods.isApprovedForAll(currentAccount, nftContractAddress).call();
-if (!isApprovedForAll) {
-    await nftContract.methods.setApprovalForAll(nftContractAddress, true).send({ from: currentAccount });
-    console.log("Adresa ugovora je odobrena za upravljanje NFT-ovima.");
-}
-
-
 });
 
 
