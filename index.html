@@ -3916,6 +3916,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 function startSnakeGame() {
+    // Dodaj zamagljenje pozadine
+    const overlay = document.createElement('div');
+    overlay.id = 'overlay';
+    overlay.style = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        z-index: 999;
+    `;
+    document.body.appendChild(overlay);
+
     const gameWrapper = document.createElement('div');
     gameWrapper.id = 'game-wrapper';
     gameWrapper.style = `
@@ -3945,8 +3960,8 @@ function startSnakeGame() {
     snakeGameContainer.style = `
         position: relative; 
         background-color: black; 
-        width: 400px; 
-        height: 400px; 
+        width: 300px; /* Smanjena širina */
+        height: 300px; /* Smanjena visina */
         border: 2px solid white; 
         overflow: hidden;
     `;
@@ -3954,10 +3969,10 @@ function startSnakeGame() {
 
     document.body.appendChild(gameWrapper);
 
-    const gridSize = 400;
-    const cellSize = 20;
+    const gridSize = 300; // Veličina tabele
+    const cellSize = 15; // Veličina svake ćelije
 
-    let snake = [{ x: 200, y: 200 }];
+    let snake = [{ x: 150, y: 150 }];
     let food = generateFood();
     let direction = { x: 0, y: 0 };
     let nextDirection = { x: 0, y: 0 };
@@ -4016,7 +4031,7 @@ function startSnakeGame() {
 
         const deltaTime = timestamp - lastTimestamp;
 
-        if (deltaTime > 200) { // **Povećan interval za smanjenje brzine**
+        if (deltaTime > 150) {
             lastTimestamp = timestamp;
 
             // Ažuriraj pravac
@@ -4028,7 +4043,7 @@ function startSnakeGame() {
                 y: (snake[0].y + direction.y + gridSize) % gridSize,
             };
 
-            // Sudar sa telom (ignorisanje glave)
+            // Sudar sa telom
             if (snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y)) {
                 alert('Game Over!');
                 if (score > highscore) {
@@ -4036,6 +4051,7 @@ function startSnakeGame() {
                     localStorage.setItem('snakeHighscore', highscore);
                 }
                 document.body.removeChild(gameWrapper);
+                document.body.removeChild(overlay); // Ukloni zamagljenje
                 return;
             }
 
@@ -4065,14 +4081,14 @@ function startSnakeGame() {
     }
 
     function handleTouchStart(event) {
-        event.preventDefault(); // **Onemogućava pomeranje stranice**
+        event.preventDefault();
         const touch = event.touches[0];
         this.startX = touch.clientX;
         this.startY = touch.clientY;
     }
 
     function handleTouchMove(event) {
-        event.preventDefault(); // **Onemogućava pomeranje stranice**
+        event.preventDefault();
         if (!this.startX || !this.startY) return;
 
         const touch = event.touches[0];
@@ -4080,11 +4096,11 @@ function startSnakeGame() {
         const dy = touch.clientY - this.startY;
 
         if (Math.abs(dx) > Math.abs(dy)) {
-            if (dx > 0 && direction.x === 0) nextDirection = { x: cellSize, y: 0 }; // Right
-            if (dx < 0 && direction.x === 0) nextDirection = { x: -cellSize, y: 0 }; // Left
+            if (dx > 0 && direction.x === 0) nextDirection = { x: cellSize, y: 0 };
+            if (dx < 0 && direction.x === 0) nextDirection = { x: -cellSize, y: 0 };
         } else {
-            if (dy > 0 && direction.y === 0) nextDirection = { x: 0, y: cellSize }; // Down
-            if (dy < 0 && direction.y === 0) nextDirection = { x: 0, y: -cellSize }; // Up
+            if (dy > 0 && direction.y === 0) nextDirection = { x: 0, y: cellSize };
+            if (dy < 0 && direction.y === 0) nextDirection = { x: 0, y: -cellSize };
         }
 
         this.startX = null;
@@ -4101,7 +4117,7 @@ function startSnakeGame() {
 
 window.addEventListener('keydown', (event) => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-        event.preventDefault(); // **Onemogućava pomeranje stranice na desktopu**
+        event.preventDefault();
     }
 });
 
