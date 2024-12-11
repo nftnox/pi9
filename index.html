@@ -363,6 +363,7 @@ desktopToggleButton.addEventListener('click', () => {
         let userId = ""; // ID trenutnog korisnika
         let username = ""; // Pravi username korisnika
         let currentPrice = 0.00; // Trenutna cijena korisnika
+        
         let lastClickTime = null; // Vrijeme posljednjeg klika
         let referralBonus = 0.01; // Početni bonus za novog korisnika (0.01 za 5 sekundi)
 
@@ -3860,8 +3861,7 @@ function showConfetti() {
 
 
 
-
-//////////////////////////////////////SNAKE///////////////////////////
+//////////////////////////////////////IGREEEEEEEEEEEEEEEEEEEE///////////////////////////
 
 document.addEventListener('DOMContentLoaded', () => {
     // Pronađi sve elemente sa ID-jem "games-link"
@@ -3890,12 +3890,15 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             gamesModal.innerHTML = `
-                <h3 style="color: black;">Games</h3>
-                <button id="snake-game" style="padding: 10px 20px; background-color: #ddd; border: none; cursor: pointer;">
-                    <span class="material-icons">pets</span> Snake
-                </button>
-                <button id="close-games-modal" style="margin-top: 20px; padding: 10px 20px; background-color: red; color: white; border: none; cursor: pointer;">Close</button>
-            `;
+    <h3 style="color: black;">Games</h3>
+    <button id="snake-game" style="padding: 10px 20px; background-color: #ddd; border: none; cursor: pointer;">
+        <span class="material-icons">pets</span> Snake
+    </button>
+    <button id="flappy-game" style="padding: 10px 20px; background-color: #ddd; border: none; cursor: pointer;">
+        <span class="material-icons">flight</span> Flappy Bird
+    </button>
+    <button id="close-games-modal" style="margin-top: 20px; padding: 10px 20px; background-color: red; color: white; border: none; cursor: pointer;">Close</button>
+`;
 
             document.body.appendChild(gamesModal);
 
@@ -3909,6 +3912,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 startSnakeGame();
                 document.body.removeChild(gamesModal);
             });
+            document.getElementById('flappy-game').addEventListener('click', () => {
+    startFlappyBird();
+    document.body.removeChild(gamesModal);
+});
         });
     });
 });
@@ -4022,63 +4029,66 @@ function startSnakeGame() {
         snakeGameContainer.appendChild(foodDiv);
     }
 
-    function updateSnake(timestamp) {
-        if (!lastTimestamp) {
-            lastTimestamp = timestamp;
-            requestAnimationFrame(updateSnake);
+    async function updateSnake(timestamp) {
+    if (!lastTimestamp) {
+        lastTimestamp = timestamp;
+        requestAnimationFrame(updateSnake);
+        return;
+    }
+
+    const deltaTime = timestamp - lastTimestamp;
+
+    if (deltaTime > 150) {
+        lastTimestamp = timestamp;
+
+        // Ažuriraj pravac
+        direction = nextDirection;
+
+        // Glava zmije
+        const head = {
+            x: (snake[0].x + direction.x + gridSize) % gridSize,
+            y: (snake[0].y + direction.y + gridSize) % gridSize,
+        };
+
+        // Sudar sa telom
+        if (snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y)) {
+            if (score > highscore) {
+                highscore = score;
+                localStorage.setItem('snakeHighscore', highscore);
+
+                // Ažuriraj trenutnu cenu korisnika u Firestore
+                await updateCurrentPriceForHighscore(userId, score);
+
+                // Pokreni konfete animaciju
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+            alert('Game Over!');
+            document.body.removeChild(gameWrapper);
+            document.body.removeChild(overlay); // Ukloni zamagljenje
             return;
         }
 
-        const deltaTime = timestamp - lastTimestamp;
+        snake.unshift(head);
 
-        if (deltaTime > 150) {
-            lastTimestamp = timestamp;
-
-            // Ažuriraj pravac
-            direction = nextDirection;
-
-            // Glava zmije
-            const head = {
-                x: (snake[0].x + direction.x + gridSize) % gridSize,
-                y: (snake[0].y + direction.y + gridSize) % gridSize,
-            };
-
-            // Sudar sa telom
-            if (snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y)) {
-    if (score > highscore) {
-        highscore = score;
-        localStorage.setItem('snakeHighscore', highscore);
-
-        // Pokreni konfete animaciju
-        confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 }
-        });
-    }
-    alert('Game Over!');
-    document.body.removeChild(gameWrapper);
-    document.body.removeChild(overlay); // Ukloni zamagljenje
-    return;
-}
-
-
-            snake.unshift(head);
-
-            // Proveri da li zmija jede hranu
-            if (head.x === food.x && head.y === food.y) {
-                score++;
-                document.getElementById('score').textContent = score;
-                food = generateFood();
-            } else {
-                snake.pop();
-            }
-
-            drawGame();
+        // Proveri da li zmija jede hranu
+        if (head.x === food.x && head.y === food.y) {
+            score++;
+            document.getElementById('score').textContent = score;
+            food = generateFood();
+        } else {
+            snake.pop();
         }
 
-        requestAnimationFrame(updateSnake);
+        drawGame();
     }
+
+    requestAnimationFrame(updateSnake);
+}
+
 
     function changeDirection(event) {
         const key = event.key;
@@ -4130,6 +4140,198 @@ window.addEventListener('keydown', (event) => {
 });
 
 
+async function updateCurrentPriceForHighscore(userId, amount) {
+    const userDocRef = doc(db, 'network', userId);
+    try {
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            let currentPrice = userData.currentPrice || 0;
+            currentPrice += amount; // Dodaj iznos u trenutnu cenu
+            await updateDoc(userDocRef, {
+                currentPrice: currentPrice
+            });
+            console.log(`Updated currentPrice for user ${userId} by ${amount}. New currentPrice: ${currentPrice}`);
+
+            // Ažuriraj prikazani iznos ako je trenutni korisnik
+            if (userId === loggedInUserId) {
+                document.getElementById('amount').innerText = currentPrice.toFixed(2);
+            }
+        } else {
+            console.error('User document not found:', userId);
+        }
+    } catch (error) {
+        console.error('Error updating currentPrice:', error);
+    }
+}
+
+/////////////////////////////FLAPPY BIRD////////////////////////////////
+
+
+
+function startFlappyBird() {
+    // Dodaj zamagljenje pozadine
+    const overlay = document.createElement('div');
+    overlay.id = 'overlay';
+    overlay.style = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        z-index: 999;
+    `;
+    document.body.appendChild(overlay);
+
+    const gameWrapper = document.createElement('div');
+    gameWrapper.id = 'game-wrapper';
+    gameWrapper.style = `
+        position: fixed; 
+        top: 50%; 
+        left: 50%; 
+        transform: translate(-50%, -50%); 
+        text-align: center;
+        z-index: 1000;
+    `;
+
+    const scoreContainer = document.createElement('div');
+    scoreContainer.id = 'score-container';
+    scoreContainer.style = `
+        color: white; 
+        margin-bottom: 10px; 
+        font-family: Arial, sans-serif;
+    `;
+    scoreContainer.innerHTML = `
+        <h2 style="margin: 0;">Score: <span id="flappy-score">0</span></h2>
+        <h3 style="margin: 0;">Highscore: <span id="flappy-highscore">0</span></h3>
+    `;
+    gameWrapper.appendChild(scoreContainer);
+
+    const flappyGameContainer = document.createElement('canvas');
+    flappyGameContainer.id = 'flappy-game-container';
+    flappyGameContainer.width = 400;
+    flappyGameContainer.height = 600;
+    flappyGameContainer.style = `
+        background-color: lightblue; 
+        border: 2px solid white; 
+        display: block;
+        margin: auto;
+    `;
+    gameWrapper.appendChild(flappyGameContainer);
+
+    document.body.appendChild(gameWrapper);
+
+    const ctx = flappyGameContainer.getContext('2d');
+    let bird = { x: 50, y: 300, radius: 10, velocity: 0 };
+    let gravity = 0.5;
+    let score = 0;
+    let highscore = localStorage.getItem('flappyHighscore') || 0;
+    let pipes = [];
+    let gameOver = false;
+
+    document.getElementById('flappy-highscore').textContent = highscore;
+
+    function drawBird() {
+        ctx.beginPath();
+        ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'yellow';
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function drawPipes() {
+        ctx.fillStyle = 'green';
+        pipes.forEach(pipe => {
+            ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+            ctx.fillRect(pipe.x, flappyGameContainer.height - pipe.bottom, pipe.width, pipe.bottom);
+        });
+    }
+
+    function updatePipes() {
+        if (pipes.length === 0 || pipes[pipes.length - 1].x < 300) {
+            const gap = 150; // Povećan razmak između cijevi
+            const top = Math.random() * (flappyGameContainer.height - gap - 200) + 50;
+            pipes.push({ x: flappyGameContainer.width, width: 50, top, bottom: flappyGameContainer.height - top - gap });
+        }
+
+        pipes.forEach(pipe => {
+            pipe.x -= 2;
+        });
+
+        pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
+    }
+
+    function checkCollision() {
+        if (bird.y - bird.radius <= 0 || bird.y + bird.radius >= flappyGameContainer.height) {
+            return true;
+        }
+
+        for (let pipe of pipes) {
+            if (
+                bird.x + bird.radius > pipe.x &&
+                bird.x - bird.radius < pipe.x + pipe.width &&
+                (bird.y - bird.radius < pipe.top || bird.y + bird.radius > flappyGameContainer.height - pipe.bottom)
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function gameLoop() {
+        if (gameOver) return;
+
+        ctx.clearRect(0, 0, flappyGameContainer.width, flappyGameContainer.height);
+
+        bird.velocity += gravity;
+        bird.y += bird.velocity;
+
+        updatePipes();
+        drawBird();
+        drawPipes();
+
+        if (checkCollision()) {
+            if (score > highscore) {
+                highscore = score;
+                localStorage.setItem('flappyHighscore', highscore);
+
+                updateCurrentPriceForHighscore(userId, score);
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+
+            alert('Game Over!');
+            document.body.removeChild(gameWrapper);
+            document.body.removeChild(overlay);
+            gameOver = true;
+        }
+
+        pipes.forEach(pipe => {
+            if (pipe.x + pipe.width < bird.x && !pipe.passed) {
+                pipe.passed = true;
+                score++;
+                document.getElementById('flappy-score').textContent = score;
+            }
+        });
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !gameOver) {
+            bird.velocity = -8; // Postavlja brzinu prema gore
+        }
+    });
+
+    flappyGameContainer.addEventListener('touchstart', () => {
+        if (!gameOver) {
+            bird.velocity = -8; // Postavlja brzinu prema gore
+        }
+    });
+
+    gameLoop();
+}
 
 
 
