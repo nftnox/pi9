@@ -4211,8 +4211,8 @@ function startFlappyBird() {
 
     const flappyGameContainer = document.createElement('canvas');
     flappyGameContainer.id = 'flappy-game-container';
-    flappyGameContainer.width = 400;
-    flappyGameContainer.height = 600;
+    flappyGameContainer.width = 500; // Povećana širina
+    flappyGameContainer.height = 700; // Povećana visina
     flappyGameContainer.style = `
         background-color: lightblue; 
         border: 2px solid white; 
@@ -4224,21 +4224,19 @@ function startFlappyBird() {
     document.body.appendChild(gameWrapper);
 
     const ctx = flappyGameContainer.getContext('2d');
-    let bird = { x: 50, y: 300, radius: 10, velocity: 0 };
+    let bird = { x: 50, y: 300, width: 40, height: 40, velocity: 0 }; // Dimenzije ptice
     let gravity = 0.5;
     let score = 0;
     let highscore = localStorage.getItem('flappyHighscore') || 0;
     let pipes = [];
     let gameOver = false;
+    const birdImage = new Image();
+    birdImage.src = 'images/91453.png'; // Putanja do vaše slike
 
     document.getElementById('flappy-highscore').textContent = highscore;
 
     function drawBird() {
-        ctx.beginPath();
-        ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'yellow';
-        ctx.fill();
-        ctx.closePath();
+        ctx.drawImage(birdImage, bird.x, bird.y, bird.width, bird.height);
     }
 
     function drawPipes() {
@@ -4249,9 +4247,16 @@ function startFlappyBird() {
         });
     }
 
+    function calculateGap(score) {
+        if (score < 14) return 200; // Lako
+        if (score < 30) return 150; // Malo teže
+        if (score < 42) return 120; // Još teže
+        return 100; // Najteže
+    }
+
     function updatePipes() {
         if (pipes.length === 0 || pipes[pipes.length - 1].x < 300) {
-            const gap = 150; // Povećan razmak između cijevi
+            const gap = calculateGap(score);
             const top = Math.random() * (flappyGameContainer.height - gap - 200) + 50;
             pipes.push({ x: flappyGameContainer.width, width: 50, top, bottom: flappyGameContainer.height - top - gap });
         }
@@ -4264,15 +4269,15 @@ function startFlappyBird() {
     }
 
     function checkCollision() {
-        if (bird.y - bird.radius <= 0 || bird.y + bird.radius >= flappyGameContainer.height) {
+        if (bird.y <= 0 || bird.y + bird.height >= flappyGameContainer.height) {
             return true;
         }
 
         for (let pipe of pipes) {
             if (
-                bird.x + bird.radius > pipe.x &&
-                bird.x - bird.radius < pipe.x + pipe.width &&
-                (bird.y - bird.radius < pipe.top || bird.y + bird.radius > flappyGameContainer.height - pipe.bottom)
+                bird.x + bird.width > pipe.x &&
+                bird.x < pipe.x + pipe.width &&
+                (bird.y < pipe.top || bird.y + bird.height > flappyGameContainer.height - pipe.bottom)
             ) {
                 return true;
             }
@@ -4332,7 +4337,6 @@ function startFlappyBird() {
 
     gameLoop();
 }
-
 
 
     // Učitaj proizvode nakon učitavanja stranice
