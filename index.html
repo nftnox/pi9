@@ -746,9 +746,8 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0xe2b1BB603BF539ceEcfEA5824747C11Dd39514BB"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
-        
 	{
 		"inputs": [
 			{
@@ -1298,8 +1297,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 		"stateMutability": "view",
 		"type": "function"
 	}
-
-        ];
+];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
