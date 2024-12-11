@@ -27,7 +27,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const storage = getStorage(app);
 
         // Povezivanje s NFT ugovorom
-        const nftContractAddress = "0xe2b1BB603BF539ceEcfEA5824747C11Dd39514BB"; // Zamijeni s adresom svog ugovora
+        const nftContractAddress = "0x97Ff848f367AcBeabB8c1B4d1EBd0Aea5B71dF72"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
 	{
 		"inputs": [
@@ -48,7 +48,13 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "initialOwner",
+				"type": "address"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
@@ -642,6 +648,13 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
+
+const isApprovedForAll = await nftContract.methods.isApprovedForAll(currentAccount, nftContractAddress).call();
+if (!isApprovedForAll) {
+    await nftContract.methods.setApprovalForAll(nftContractAddress, true).send({ from: currentAccount });
+}
+console.log("Adresa ugovora ima odobrenje za NFT.");
 
 
     </script>
