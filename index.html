@@ -4045,15 +4045,23 @@ function startSnakeGame() {
 
             // Sudar sa telom
             if (snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y)) {
-                alert('Game Over!');
-                if (score > highscore) {
-                    highscore = score;
-                    localStorage.setItem('snakeHighscore', highscore);
-                }
-                document.body.removeChild(gameWrapper);
-                document.body.removeChild(overlay); // Ukloni zamagljenje
-                return;
-            }
+    if (score > highscore) {
+        highscore = score;
+        localStorage.setItem('snakeHighscore', highscore);
+
+        // Pokreni konfete animaciju
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 }
+        });
+    }
+    alert('Game Over!');
+    document.body.removeChild(gameWrapper);
+    document.body.removeChild(overlay); // Ukloni zamagljenje
+    return;
+}
+
 
             snake.unshift(head);
 
