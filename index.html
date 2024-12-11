@@ -4016,7 +4016,7 @@ function startSnakeGame() {
 
         const deltaTime = timestamp - lastTimestamp;
 
-        if (deltaTime > 100) {
+        if (deltaTime > 200) { // **Povećan interval za smanjenje brzine**
             lastTimestamp = timestamp;
 
             // Ažuriraj pravac
@@ -4065,12 +4065,14 @@ function startSnakeGame() {
     }
 
     function handleTouchStart(event) {
+        event.preventDefault(); // **Onemogućava pomeranje stranice**
         const touch = event.touches[0];
         this.startX = touch.clientX;
         this.startY = touch.clientY;
     }
 
     function handleTouchMove(event) {
+        event.preventDefault(); // **Onemogućava pomeranje stranice**
         if (!this.startX || !this.startY) return;
 
         const touch = event.touches[0];
@@ -4097,13 +4099,12 @@ function startSnakeGame() {
     snakeGameContainer.addEventListener('touchmove', handleTouchMove, false);
 }
 
-
-
 window.addEventListener('keydown', (event) => {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-        event.preventDefault();
+        event.preventDefault(); // **Onemogućava pomeranje stranice na desktopu**
     }
 });
+
 
 
 
