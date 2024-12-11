@@ -4339,6 +4339,12 @@ function startFlappyBird() {
 }
 
 
+if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
+    flappyGameContainer.width = 600; // Širina igre na mobilnim uređajima
+    flappyGameContainer.height = 900; // Visina igre na mobilnim uređajima
+}
+
+
     // Učitaj proizvode nakon učitavanja stranice
     window.onload = () => {
         loadUserId();
