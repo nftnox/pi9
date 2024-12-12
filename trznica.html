@@ -626,10 +626,9 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const currentAccount = accounts[0];
         await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
 
-		await nftContract.methods
-    .setApprovalForAll('0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', true)
+await nftContract.methods
+    .setApprovalForAll(marketplaceAddress, true) // Daj dozvolu NFT ugovoru
     .send({ from: currentAccount });
-
 
         // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
@@ -649,6 +648,337 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
+
+
+
+
+
+// Dodajte nakon NFT ugovora:
+const marketplaceAddress = "0xD60B4fa9B5cA437A26bAC778c65C5D4563Bc719A"; // Adresa vašeg Marketplace ugovora
+const marketplaceABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "buy",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "cancelListing",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"name": "listNFT",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_lunaToken",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_productNFT",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "buyer",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "seller",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"name": "NFTBought",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "seller",
+				"type": "address"
+			}
+		],
+		"name": "NFTListed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "listings",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "seller",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "active",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "lunaToken",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "productNFT",
+		"outputs": [
+			{
+				"internalType": "contract IERC721",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
+
+document.getElementById('publish-product').addEventListener('click', async () => {
+    const name = document.getElementById('product-name').value;
+    const price = parseFloat(document.getElementById('product-price').value);
+    const cryptoPrice = parseFloat(document.getElementById('product-crypto-price').value);
+    const file = document.getElementById('product-image').files[0];
+
+    if (!name || !price || !cryptoPrice || !file) {
+        alert('Molimo popunite sva polja.');
+        return;
+    }
+
+    try {
+        // Upload slike na Firebase
+        const storageRef = ref(storage, 'productImages/' + file.name);
+        const snapshot = await uploadBytes(storageRef, file);
+        const imageUrl = await getDownloadURL(snapshot.ref);
+
+        // Kreiraj metadata JSON
+        const metadata = {
+            name: name,
+            description: 'Proizvod na Tržnici',
+            image: imageUrl,
+        };
+        const metadataString = JSON.stringify(metadata);
+        const metadataBlob = new Blob([metadataString], { type: 'application/json' });
+        const metadataRef = ref(storage, 'metadata/' + name + '.json');
+        const metadataSnapshot = await uploadBytes(metadataRef, metadataBlob);
+        const metadataUrl = await getDownloadURL(metadataSnapshot.ref);
+
+        // Mint NFT
+        const accounts = await web3.eth.requestAccounts();
+        const currentAccount = accounts[0];
+        await nftContract.methods.mintNFT(currentAccount, metadataUrl).send({ from: currentAccount });
+
+        // Dohvati tokenId
+        const tokenId = await nftContract.methods.currentTokenId().call();
+
+        // Daj marketplace ugovoru odobrenje da upravlja svim vašim NFT-ovima
+        await nftContract.methods
+            .setApprovalForAll(marketplaceAddress, true)
+            .send({ from: currentAccount });
+
+        // Pretpostavimo da će se cijena na marketplace-u koristiti u LUNA tokenima
+        // Ako koristite price kao ETH ili fiat, treba jasno definirati kako konvertirati
+        // Primjer: ako je price fiat ili cryptoPrice ETH, a želite LUNA (u Wei), napravite konverziju.
+        // Ovdje samo uzimamo price i pretpostavljamo da je već u odgovarajućem formatu.
+        // Ako je price u normalnim brojevima, konvertujte u Wei:
+        const priceInWei = web3.utils.toWei(price.toString(), 'ether'); 
+
+        // Listaj NFT na Marketplace
+        await marketplaceContract.methods.listNFT(tokenId, priceInWei).send({ from: currentAccount });
+
+        // Spremi podatke o proizvodu u Firestore
+        await addDoc(collection(db, 'products'), {
+            name,
+            price,
+            cryptoPrice,
+            imageUrl,
+            tokenId
+        });
+
+        alert('Proizvod uspješno objavljen, NFT mintovan i listan na Marketplace!');
+    } catch (error) {
+        console.error('Greška prilikom objave proizvoda ili mintanja NFT-a:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
+    }
+});
+
+
+
+
+
+
 
 
     </script>
