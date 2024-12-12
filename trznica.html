@@ -627,8 +627,9 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
 
 		await nftContract.methods
-    .setApprovalForAll(nftContractAddress, true) // Daj dozvolu NFT ugovoru
+    .setApprovalForAll('0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', true)
     .send({ from: currentAccount });
+
 
         // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
