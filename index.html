@@ -548,16 +548,12 @@ buyWithCryptoButton.addEventListener('click', async () => {
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
             console.log("Vrijednost u Wei:", weiValue);
 
-            // Inicijacija transakcije
-            const txParams = {
-                from: account,
-                to: '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9', // Ethereum adresa primatelja
-                value: weiValue, // Vrijednost u wei
-                gas: 21000 // Minimalan gas za slanje
-            };
+            await marketplaceContract.methods.buyItemWithETH(productData.tokenId)
+    .send({ from: account, value: weiValue });
 
-            // Slanje transakcije putem MetaMask-a
-            const transactionHash = await web3.eth.sendTransaction(txParams);
+// Nakon uspješnog poziva buyItemWithETH, Marketplace je automatski prebacio NFT kupcu.
+// Sad ažuriraj Firestore (sold, ownerName, itd.) isto kao što si radio nakon uspješne transakcije.
+
 
             // Ako je transakcija uspješna, ažuriraj status proizvoda u Firestore-u
             console.log(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
@@ -675,26 +671,8 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-        // Prijenos tokena prodavcu
-        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
-        await lunaTokenContract.methods
-            .transfer(sellerAddress, requiredAmount)
-            .send({ from: currentAccount });
+        await marketplaceContract.methods.buyItemWithLUNA(productData.tokenId).send({ from: currentAccount });
 
-        // Prijenos vlasništva nad NFT-om
-        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-        const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-
-        if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
-            alert('Greška: NFT ne pripada prodavcu!');
-            return;
-        }
-
-        // Transfer NFT-a
-        await nftContract.methods
-            .safeTransferFrom(sellerAddress, currentAccount, tokenId)
-            .send({ from: sellerAddress });
 
         // Ažuriranje Firestore baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
@@ -1759,6 +1737,35 @@ mintButton.addEventListener('click', async () => {
 });
 
 
+const marketplaceAddress = "0x1AB83291B298846a94966DbA3F0F65De6399cE87";
+const marketplaceABI = [
+    {
+        "inputs": [
+            {"internalType": "address","name":"_nftContractAddress","type":"address"},
+            {"internalType": "address","name":"_lunaTokenAddress","type":"address"}
+        ],
+        "stateMutability":"nonpayable","type":"constructor"
+    },
+    {
+        "inputs":[
+            {"internalType":"uint256","name":"tokenId","type":"uint256"},
+            {"internalType":"address","name":"seller","type":"address"},
+            {"internalType":"uint256","name":"price","type":"uint256"},
+            {"internalType":"uint8","name":"paymentType","type":"uint8"}
+        ],
+        "name":"listItem","outputs":[],"stateMutability":"nonpayable","type":"function"
+    },
+    {
+        "inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
+        "name":"buyItemWithETH","outputs":[],"stateMutability":"payable","type":"function"
+    },
+    {
+        "inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
+        "name":"buyItemWithLUNA","outputs":[],"stateMutability":"nonpayable","type":"function"
+    }
+];
+
+const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
 
 //////////////////////////////////////////////////// Open and close modal for "Exchange"////////////////////////////////////////////////////////////////////////////////
