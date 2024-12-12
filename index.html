@@ -691,6 +691,12 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
+        await nftContract.methods
+    .approve(currentAccount, tokenId) // Odobri transfer na adresu kupca
+    .send({ from: sellerAddress });
+
+
+
         // Transfer NFT-a
         await nftContract.methods
             .safeTransferFrom(sellerAddress, currentAccount, tokenId)
