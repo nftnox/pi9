@@ -649,76 +649,60 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         return;
     }
 
-    if (typeof window.ethereum === 'undefined') {
-        alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-        return;
-    }
-
     try {
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // Trenutni korisnički račun
-        const accounts = await web3.eth.getAccounts();
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
         const buyerAccount = accounts[0];
+        console.log('Trenutni račun kupca:', buyerAccount);
 
-        // Povezivanje s LUNA token ugovorom
-        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+        const tokenId = productData.tokenId;
+        const sellerAccount = await nftContract.methods.ownerOf(tokenId).call();
+        console.log('Prodavac:', sellerAccount);
 
-        // Provjera balansa korisnika
-        const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
-
-        if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
-            alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
+        if (sellerAccount.toLowerCase() === buyerAccount.toLowerCase()) {
+            alert('Ne možete kupiti vlastiti NFT.');
             return;
         }
 
-        // Povezivanje s NFT ugovorom
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-        const tokenId = productData.tokenId;
-        const sellerAccount = await nftContract.methods.ownerOf(tokenId).call();
+        const isApproved = await nftContract.methods
+            .isApprovedForAll(sellerAccount, buyerAccount)
+            .call();
 
-        // Postavite dozvolu ako je potrebno
-        const isApproved = await nftContract.methods.isApprovedForAll(sellerAccount, buyerAccount).call();
         if (!isApproved) {
-            await nftContract.methods.setApprovalForAll(buyerAccount, true).send({ from: sellerAccount });
+            alert('Prodavac nije dao dozvolu za prijenos ovog NFT-a.');
+            return;
         }
 
-        // Prijenos vlasništva nad NFT-om
+        const priceInWei = web3.utils.toWei(productData.price.toString(), 'ether');
+
         await nftContract.methods
             .safeTransferFrom(sellerAccount, buyerAccount, tokenId)
             .send({ from: sellerAccount });
 
-        // Prijenos LUNA tokena prodavcu
+        console.log('NFT uspješno prenesen.');
+
+        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
         await lunaTokenContract.methods
-            .transfer(sellerAccount, requiredAmount)
+            .transfer(sellerAccount, priceInWei)
             .send({ from: buyerAccount });
 
-        // Ažuriranje Firestore baze podataka za proizvod
-        const productDocRef = doc(db, 'products', productId);
-        await updateDoc(productDocRef, {
+        console.log('Tokeni uspješno poslani prodavcu.');
+
+        await updateDoc(doc(db, 'products', productId), {
             sold: true,
             owner: buyerAccount,
             ownerName: username,
         });
 
-        // Promjena izgleda nakon uspješne kupovine
-        buyButton.textContent = 'Prodano';
-        buyButton.style.backgroundColor = 'red';
-        buyButton.disabled = true;
-
-        ownerDiv.textContent = `Novi vlasnik: ${username}`;
-        ownerDiv.style.color = 'white';
-        ownerDiv.style.cursor = 'pointer';
-
-        alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
+        alert(`Uspješno ste kupili ${productData.name}!`);
     } catch (error) {
-        console.error('Greška prilikom obrade transakcije:', error);
-        alert('Došlo je do greške. Pokušajte ponovo.');
+        if (error.code === 4100) {
+            alert('Transakcija nije autorizovana od strane korisnika.');
+        } else {
+            console.error('Greška prilikom obrade transakcije:', error);
+        }
     }
 });
+
 
 
 
