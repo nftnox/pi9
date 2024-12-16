@@ -677,8 +677,8 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         // Prenesi NFT na kupca
         await nftContract.methods
-            .safeTransferFrom(currentOwner, buyerAccount, tokenId)
-            .send({ from: currentOwner }); // Od sadašnji vlasnik šalje NFT na kupca
+    .safeTransferFrom(currentOwner, buyerAccount, tokenId)
+    .send({ from: buyerAccount });
 
         // Ažuriraj Firestore sa novim vlasnikom
         const productDocRef = doc(db, 'products', productId);
