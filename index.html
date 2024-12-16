@@ -643,56 +643,57 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
-        buyButton.addEventListener('click', async () => {
+const currentAccount = accounts[0]; // Trenutni račun kupca
+
+
+buyButton.addEventListener('click', async () => {
     try {
         if (typeof window.ethereum === 'undefined') {
             alert('MetaMask nije instaliran! Molimo instalirajte ga.');
             return;
         }
 
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
+        // Zatraži autorizaciju MetaMask-a
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
         const accounts = await web3.eth.getAccounts();
-        const buyerAccount = accounts[0]; // Trenutni kupac
+        const buyerAccount = accounts[0]; // Adresa kupca
 
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-        const tokenId = productData.tokenId; // ID NFT-a koji se kupuje
+        const tokenId = productData.tokenId;
 
-        // Dobij trenutnog vlasnika NFT-a
+        // 1. Dobij trenutnog vlasnika NFT-a
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-        console.log("Trenutni vlasnik:", currentOwner);
-        console.log("Kupac:", buyerAccount);
 
         if (currentOwner.toLowerCase() === buyerAccount.toLowerCase()) {
-            alert("Već posjedujete ovaj NFT.");
+            alert('Već posjedujete ovaj NFT.');
             return;
         }
 
-        // Proveri da li vlasnik dozvoljava transfer NFT-a
-        const isApproved = await nftContract.methods.isApprovedForAll(currentOwner, nftContractAddress).call();
+        // 2. Provjeri da li je setApprovalForAll već postavljen
+        const isApproved = await nftContract.methods.isApprovedForAll(currentOwner, buyerAccount).call();
+
         if (!isApproved) {
-            alert("Greška: Trenutni vlasnik nije dao dozvolu za transfer ovog NFT-a.");
+            alert("Trenutni vlasnik nije dao dozvolu za transfer ovog NFT-a.");
             return;
         }
 
-        // Povezivanje sa LUNA token ugovorom i prenos tokena
+        // 3. Prijenos LUNA tokena prodavcu
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Cena u Wei
-        await lunaTokenContract.methods
-            .transfer(currentOwner, requiredAmount)
-            .send({ from: buyerAccount });
+        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
+        await lunaTokenContract.methods.transfer(currentOwner, requiredAmount).send({ from: buyerAccount });
 
-        console.log("LUNA tokeni preneseni prodavcu.");
+        console.log('LUNA tokeni uspješno preneseni prodavcu.');
 
-        // Prenos vlasništva nad NFT-om
+        // 4. Prenesi NFT na kupca
         await nftContract.methods
             .safeTransferFrom(currentOwner, buyerAccount, tokenId)
             .send({ from: currentOwner });
 
-        console.log("NFT uspješno prenesen.");
+        console.log('NFT uspješno prenesen kupcu.');
 
-        // Ažuriraj Firestore podatke
+        // 5. Ažuriraj Firestore bazu podataka
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
@@ -700,16 +701,10 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             ownerName: username,
         });
 
-        // Ažuriraj UI
-        buyButton.textContent = 'Sold';
-        buyButton.style.backgroundColor = 'red';
-        buyButton.disabled = true;
-
-        alert("Uspješno ste kupili NFT!");
-
+        alert('Uspješno ste kupili NFT!');
     } catch (error) {
-        console.error("Greška prilikom kupovine NFT-a:", error);
-        alert("Došlo je do greške. Pokušajte ponovo.");
+        console.error('Greška prilikom kupovine NFT-a:', error);
+        alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
 
