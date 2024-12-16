@@ -665,27 +665,42 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const tokenId = productData.tokenId;
         const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
 
-        // Hardkodirana adresa prodavca
-        const sellerAddress = "0x29E0E1494e48726c3B4EC6730a8007cD79C41e4b"; // Adresa prodavca
+        // 1. Dohvati vlasnika NFT-a
+        const sellerAddress = await nftContract.methods.ownerOf(tokenId).call();
+        console.log(`Trenutni vlasnik NFT-a: ${sellerAddress}`);
 
-        // Provjera balansa kupca
+        if (sellerAddress.toLowerCase() === buyerAccount.toLowerCase()) {
+            alert("Ne možete kupiti vlastiti NFT!");
+            return;
+        }
+
+        // 2. Provjera balansa kupca
         const buyerBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
         if (parseFloat(buyerBalance) < parseFloat(requiredAmount)) {
             alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
             return;
         }
 
-        // 1. Prenos LUNA tokena prodavcu
+        // 3. Prenos LUNA tokena prodavcu
+        console.log("Prenos LUNA tokena prodavcu...");
         await lunaTokenContract.methods
             .transfer(sellerAddress, requiredAmount)
             .send({ from: buyerAccount });
 
-        // 2. Prenos NFT-a kupcu
+        // 4. Provjera da li prodavac ima dozvolu za transfer NFT-a
+        const isApproved = await nftContract.methods.isApprovedForAll(sellerAddress, buyerAccount).call();
+        if (!isApproved) {
+            alert("Prodavac nije dao dozvolu za transfer ovog NFT-a.");
+            return;
+        }
+
+        // 5. Prenos NFT-a sa prodavca na kupca
+        console.log("Prenos NFT-a kupcu...");
         await nftContract.methods
             .safeTransferFrom(sellerAddress, buyerAccount, tokenId)
-            .send({ from: buyerAccount }); // Kupac pokreće transfer
+            .send({ from: sellerAddress });
 
-        // 3. Ažuriraj Firestore (prodano)
+        // 6. Ažuriraj Firestore (prodano)
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
