@@ -643,56 +643,53 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
-
-
-buyButton.addEventListener('click', async () => {
+        buyButton.addEventListener('click', async () => {
     try {
         if (typeof window.ethereum === 'undefined') {
             alert('MetaMask nije instaliran! Molimo instalirajte ga.');
             return;
         }
 
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // Zatraži autorizaciju MetaMask-a
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
         const accounts = await web3.eth.getAccounts();
-        const buyerAccount = accounts[0]; // Adresa kupca
+        const buyerAccount = accounts[0]; // Trenutni kupac
 
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-        const tokenId = productData.tokenId;
+        const tokenId = productData.tokenId; // ID NFT-a koji se kupuje
 
-        // 1. Dobij trenutnog vlasnika NFT-a
+        // Proveri vlasnika NFT-a
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
 
-        if (currentOwner.toLowerCase() === buyerAccount.toLowerCase()) {
-            alert('Već posjedujete ovaj NFT.');
-            return;
-        }
-
-        // 2. Provjeri da li je setApprovalForAll već postavljen
-        const isApproved = await nftContract.methods.isApprovedForAll(currentOwner, buyerAccount).call();
-
+        // Proveri da li je vlasnik dao dozvolu za transfer
+        const isApproved = await nftContract.methods.isApprovedForAll(currentOwner, nftContractAddress).call();
         if (!isApproved) {
-            alert("Trenutni vlasnik nije dao dozvolu za transfer ovog NFT-a.");
+            alert("Greška: Trenutni vlasnik nije dao dozvolu za transfer ovog NFT-a.");
             return;
         }
 
-        // 3. Prijenos LUNA tokena prodavcu
+        // Proveri da li kupac ima dovoljno LUNA tokena
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
-        await lunaTokenContract.methods.transfer(currentOwner, requiredAmount).send({ from: buyerAccount });
+        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Cena u Wei
+        const buyerBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
+        if (parseFloat(buyerBalance) < parseFloat(requiredAmount)) {
+            alert("Nemate dovoljno LUNA tokena za ovu kupovinu.");
+            return;
+        }
 
-        console.log('LUNA tokeni uspješno preneseni prodavcu.');
+        // Prenesi LUNA tokene prodavcu
+        const sellerAddress = currentOwner; // Adresa trenutnog vlasnika
+        await lunaTokenContract.methods
+            .transfer(sellerAddress, requiredAmount)
+            .send({ from: buyerAccount });
 
-        // 4. Prenesi NFT na kupca
+        // Prenesi vlasništvo nad NFT-om
         await nftContract.methods
             .safeTransferFrom(currentOwner, buyerAccount, tokenId)
-            .send({ from: currentOwner });
+            .send({ from: buyerAccount });
 
-        console.log('NFT uspješno prenesen kupcu.');
-
-        // 5. Ažuriraj Firestore bazu podataka
+        // Ažuriraj status u Firestore bazi
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
@@ -700,10 +697,15 @@ buyButton.addEventListener('click', async () => {
             ownerName: username,
         });
 
-        alert('Uspješno ste kupili NFT!');
+        // Promeni prikaz dugmeta na prodato
+        buyButton.textContent = 'Sold';
+        buyButton.style.backgroundColor = 'red';
+        buyButton.disabled = true;
+
+        alert("Uspešno ste kupili NFT!");
     } catch (error) {
-        console.error('Greška prilikom kupovine NFT-a:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+        console.error("Greška prilikom obrade transakcije:", error);
+        alert("Došlo je do greške prilikom kupovine NFT-a. Pokušajte ponovo.");
     }
 });
 
