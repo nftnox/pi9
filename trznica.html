@@ -582,6 +582,12 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 
         ];
 
+
+		await nftContract.methods
+    .setApprovalForAll(nftContractAddress, true)
+    .send({ from: currentAccount });
+
+
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
