@@ -665,6 +665,9 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const tokenId = productData.tokenId;
         const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
 
+        // Hardkodirana adresa prodavca
+        const sellerAddress = "0x29E0E1494e48726c3B4EC6730a8007cD79C41e4b"; // Adresa prodavca
+
         // Provjera balansa kupca
         const buyerBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
         if (parseFloat(buyerBalance) < parseFloat(requiredAmount)) {
@@ -672,18 +675,15 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-        // Trenutni vlasnik NFT-a
-        const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-
         // 1. Prenos LUNA tokena prodavcu
         await lunaTokenContract.methods
-            .transfer(currentOwner, requiredAmount)
+            .transfer(sellerAddress, requiredAmount)
             .send({ from: buyerAccount });
 
-        // 2. Prenos NFT-a kupcu (kupac pokreće transfer jer je setApprovalForAll već aktiviran)
+        // 2. Prenos NFT-a kupcu
         await nftContract.methods
-            .safeTransferFrom(currentOwner, buyerAccount, tokenId)
-            .send({ from: buyerAccount });
+            .safeTransferFrom(sellerAddress, buyerAccount, tokenId)
+            .send({ from: buyerAccount }); // Kupac pokreće transfer
 
         // 3. Ažuriraj Firestore (prodano)
         const productDocRef = doc(db, 'products', productId);
@@ -699,6 +699,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
