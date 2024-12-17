@@ -27,8 +27,9 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const storage = getStorage(app);
 
         // Povezivanje s NFT ugovorom
-        const nftContractAddress = "0xE3632F720e3655368bA86DF1FDaC956850DB6168"; // Zamijeni s adresom svog ugovora
+        const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
+        
 	{
 		"inputs": [
 			{
@@ -48,26 +49,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "buyNFT",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_paymentToken",
-				"type": "address"
-			}
-		],
+		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
@@ -178,6 +160,30 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
+			}
+		],
+		"name": "mintNFT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "owner",
 				"type": "address"
 			}
@@ -245,35 +251,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		],
 		"name": "ApprovalForAll",
 		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "recipient",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "price",
-				"type": "uint256"
-			}
-		],
-		"name": "mintNFT",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -552,57 +529,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "paymentToken",
-		"outputs": [
-			{
-				"internalType": "contract IERC20",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "prices",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "sellers",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "bytes4",
@@ -653,10 +579,8 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
 
-
-		
+        ];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
@@ -700,23 +624,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         // Mintanje NFT-a
         const accounts = await web3.eth.requestAccounts();
         const currentAccount = accounts[0];
-		await nftContract.methods.mintNFT(currentAccount, tokenURI, web3.utils.toWei(cryptoPrice.toString(), 'ether'))
-    .send({ from: currentAccount });
-
-// Postavi dozvolu pametnom ugovoru za upravljanje svim NFT-ovima mintanim od strane korisnika
-const isApproved = await nftContract.methods
-    .isApprovedForAll(currentAccount, nftContractAddress)
-    .call();
-
-if (!isApproved) {
-    await nftContract.methods
-        .setApprovalForAll(nftContractAddress, true)
-        .send({ from: currentAccount });
-}
-
-// NFT je već mintan na `currentAccount`, pa dodatni prijenos nije potreban
-
-
+        await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
 
         // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
