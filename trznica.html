@@ -704,9 +704,22 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
     .send({ from: currentAccount });
 
 // Postavi dozvolu pametnom ugovoru za upravljanje svim NFT-ovima mintanim od strane korisnika
+// Provjeri je li MetaMask adresa odobrena za prijenos NFT-a
+const isApproved = await nftContract.methods
+    .isApprovedForAll(sellerAddress, currentAccount)
+    .call();
+
+if (!isApproved) {
+    await nftContract.methods
+        .setApprovalForAll(currentAccount, true)
+        .send({ from: sellerAddress });
+}
+
+// Prenesi NFT nakon što se dozvola osigura
 await nftContract.methods
-    .setApprovalForAll(nftContractAddress, true) // Omogući ugovoru da upravlja svim NFT-ovima
+    .safeTransferFrom(sellerAddress, currentAccount, tokenId)
     .send({ from: currentAccount });
+
 
 
         // Dohvati tokenId iz pametnog ugovora
