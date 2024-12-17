@@ -643,53 +643,52 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
-       buyButton.addEventListener('click', async () => {
+        buyButton.addEventListener('click', async () => {
     try {
+        // Poveži se s MetaMask-om
         if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo instalirajte ga.');
+            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
             return;
         }
 
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
-
         const accounts = await web3.eth.getAccounts();
-        const buyerAccount = accounts[0]; // Trenutni kupac
+        const buyerAccount = accounts[0];
 
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-        const tokenId = productData.tokenId; // ID NFT-a koji se kupuje
-
-        // Proveri vlasnika NFT-a
-        const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
-
-        // Proveri da li je vlasnik dao dozvolu za transfer
-        const isApproved = await nftContract.methods.isApprovedForAll(currentOwner, nftContractAddress).call();
-        if (!isApproved) {
-            alert("Greška: Trenutni vlasnik nije dao dozvolu za transfer ovog NFT-a.");
-            return;
-        }
-
-        // Proveri da li kupac ima dovoljno LUNA tokena
+        // Poveži se s LUNA token i NFT ugovorima
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Cena u Wei
-        const buyerBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
-        if (parseFloat(buyerBalance) < parseFloat(requiredAmount)) {
-            alert("Nemate dovoljno LUNA tokena za ovu kupovinu.");
-            return;
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        const tokenId = productData.tokenId; // Token ID iz Firestore-a
+        const sellerAddress = productData.owner || '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9';
+
+        // Korak 1: Odobri LUNA tokene
+        const priceInWei = web3.utils.toWei(productData.price.toString(), 'ether');
+        console.log(`Odobravanje LUNA tokena za iznos: ${priceInWei} wei`);
+
+        await lunaTokenContract.methods
+            .approve(sellerAddress, priceInWei)
+            .send({ from: buyerAccount });
+
+        alert('Uspješno odobreno korištenje LUNA tokena!');
+
+        // Korak 2: Provjeri i odobri dozvolu za NFT ako je potrebno
+        const isApproved = await nftContract.methods.getApproved(tokenId).call();
+        if (isApproved.toLowerCase() !== buyerAccount.toLowerCase()) {
+            console.log('Odobravanje NFT-a za prijenos...');
+            await nftContract.methods.approve(buyerAccount, tokenId).send({ from: sellerAddress });
         }
 
-        // Prenesi LUNA tokene prodavcu
-        const sellerAddress = currentOwner; // Adresa trenutnog vlasnika
-        await lunaTokenContract.methods
-            .transfer(sellerAddress, requiredAmount)
-            .send({ from: buyerAccount });
-
-        // Prenesi vlasništvo nad NFT-om
+        // Korak 3: Prenesi NFT
+        console.log('Prijenos NFT-a...');
         await nftContract.methods
-            .safeTransferFrom(currentOwner, buyerAccount, tokenId)
-            .send({ from: buyerAccount });
+            .safeTransferFrom(sellerAddress, buyerAccount, tokenId)
+            .send({ from: sellerAddress });
 
-        // Ažuriraj status u Firestore bazi
+        alert(`Uspješno ste kupili NFT ${productData.name}!`);
+
+        // Korak 4: Ažuriraj Firestore
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
@@ -697,15 +696,17 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             ownerName: username,
         });
 
-        // Promeni prikaz dugmeta na prodato
+        // Ažuriraj izgled gumba
         buyButton.textContent = 'Sold';
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
 
-        alert("Uspešno ste kupili NFT!");
+        ownerDiv.textContent = `Novi vlasnik: ${username}`;
+        productDiv.appendChild(ownerDiv);
+
     } catch (error) {
-        console.error("Greška prilikom obrade transakcije:", error);
-        alert("Došlo je do greške prilikom kupovine NFT-a. Pokušajte ponovo.");
+        console.error('Greška prilikom obrade kupovine:', error);
+        alert('Došlo je do greške. Molimo provjerite MetaMask i pokušajte ponovo.');
     }
 });
 
