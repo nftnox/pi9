@@ -703,10 +703,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		await nftContract.methods.mintNFT(currentAccount, tokenURI, web3.utils.toWei(cryptoPrice.toString(), 'ether'))
     .send({ from: currentAccount });
 
-// Postavi dozvolu pametnom ugovoru za upravljanje svim NFT-ovima mintanim od strane korisnika
-await nftContract.methods
-    .setApprovalForAll(nftContractAddress, true) // Omogući ugovoru da upravlja svim NFT-ovima
-    .send({ from: currentAccount });
+
 
 
         // Dohvati tokenId iz pametnog ugovora
