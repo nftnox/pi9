@@ -644,77 +644,65 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         }
 
         buyButton.addEventListener('click', async () => {
-    try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo instalirajte ga.');
-            return;
-        }
+    if (productData.sold) {
+        alert('Ovaj proizvod je već prodan.');
+        return;
+    }
 
+    try {
         // Povezivanje sa MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // Trenutni korisnički račun (kupac)
+        // Dohvati trenutni račun
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
-        // Učitaj ugovore
+        // Dohvati podatke o NFT-u
+        const tokenId = productData.tokenId; // Token ID iz Firestore-a
+        const sellerAddress = productData.owner || '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
+
+        // Povezivanje sa NFT ugovorom
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
 
-        const tokenId = productData.tokenId;
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
+        // Provjeri ima li dozvolu za prijenos
+        const isApproved = await nftContract.methods
+            .getApproved(tokenId)
+            .call();
 
-        // 1. Dohvati vlasnika NFT-a
-        const sellerAddress = await nftContract.methods.ownerOf(tokenId).call();
-        console.log(`Trenutni vlasnik NFT-a: ${sellerAddress}`);
-
-        if (sellerAddress.toLowerCase() === buyerAccount.toLowerCase()) {
-            alert("Ne možete kupiti vlastiti NFT!");
-            return;
+        if (isApproved.toLowerCase() !== buyerAccount.toLowerCase()) {
+            console.log('Postavljam dozvolu za prijenos NFT-a...');
+            await nftContract.methods
+                .approve(buyerAccount, tokenId)
+                .send({ from: sellerAddress });
         }
 
-        // 2. Provjera balansa kupca
-        const buyerBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
-        if (parseFloat(buyerBalance) < parseFloat(requiredAmount)) {
-            alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
-            return;
-        }
-
-        // 3. Prenos LUNA tokena prodavcu
-        console.log("Prenos LUNA tokena prodavcu...");
-        await lunaTokenContract.methods
-            .transfer(sellerAddress, requiredAmount)
-            .send({ from: buyerAccount });
-
-        // 4. Provjera da li prodavac ima dozvolu za transfer NFT-a
-        const isApproved = await nftContract.methods.isApprovedForAll(sellerAddress, buyerAccount).call();
-        if (!isApproved) {
-            alert("Prodavac nije dao dozvolu za transfer ovog NFT-a.");
-            return;
-        }
-
-        // 5. Prenos NFT-a sa prodavca na kupca
-        console.log("Prenos NFT-a kupcu...");
+        // Prijenos NFT-a
+        console.log('Prijenos NFT-a...');
         await nftContract.methods
             .safeTransferFrom(sellerAddress, buyerAccount, tokenId)
             .send({ from: sellerAddress });
 
-        // 6. Ažuriraj Firestore (prodano)
+        // Ažuriranje Firestore baze podataka
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
             owner: buyerAccount,
-            ownerName: username, // Dodaj korisničko ime novog vlasnika
+            ownerName: username,
         });
 
-        alert(`Uspješno ste kupili NFT za ${productData.price} LUNA tokena!`);
+        // Ažuriraj izgled stranice
+        buyButton.textContent = 'Sold';
+        buyButton.style.backgroundColor = 'red';
+        buyButton.disabled = true;
+
+        ownerDiv.textContent = `Novi vlasnik: ${username}`;
+        alert(`Uspješno ste kupili ${productData.name}!`);
     } catch (error) {
-        console.error('Greška pri kupovini NFT-a:', error);
-        alert('Došlo je do greške. Pokušajte ponovo.');
+        console.error('Greška prilikom kupovine NFT-a:', error);
+        alert('Došlo je do greške prilikom kupovine. Molimo pokušajte ponovo.');
     }
 });
-
 
 
 
@@ -738,9 +726,8 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0xE3632F720e3655368bA86DF1FDaC956850DB6168"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
-        
 	{
 		"inputs": [
 			{
@@ -760,7 +747,26 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "buyNFT",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_paymentToken",
+				"type": "address"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
@@ -871,30 +877,6 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "recipient",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string"
-			}
-		],
-		"name": "mintNFT",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "owner",
 				"type": "address"
 			}
@@ -962,6 +944,35 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 		],
 		"name": "ApprovalForAll",
 		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"name": "mintNFT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -1240,6 +1251,57 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "paymentToken",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "prices",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "sellers",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "bytes4",
@@ -1290,8 +1352,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 		"stateMutability": "view",
 		"type": "function"
 	}
-
-        ];
+];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
