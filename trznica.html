@@ -700,7 +700,8 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         // Mintanje NFT-a
         const accounts = await web3.eth.requestAccounts();
         const currentAccount = accounts[0];
-        await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
+		await nftContract.methods.mintNFT(currentAccount, tokenURI, web3.utils.toWei(cryptoPrice.toString(), 'ether'))
+    .send({ from: currentAccount });
 
 // Postavi dozvolu pametnom ugovoru za upravljanje svim NFT-ovima mintanim od strane korisnika
 await nftContract.methods
