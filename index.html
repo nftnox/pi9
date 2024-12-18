@@ -755,8 +755,9 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0x0d12B59de586dD30B6Bd7a32ed2585D1CB808458"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
+        
 	{
 		"inputs": [
 			{
@@ -884,6 +885,52 @@ const nftContractAddress = "0x0d12B59de586dD30B6Bd7a32ed2585D1CB808458"; // Zami
 		"type": "error"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
+			}
+		],
+		"name": "mintNFT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -934,26 +981,28 @@ const nftContractAddress = "0x0d12B59de586dD30B6Bd7a32ed2585D1CB808458"; // Zami
 		"type": "event"
 	},
 	{
+		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
 				"internalType": "address",
-				"name": "recipient",
+				"name": "previousOwner",
 				"type": "address"
 			},
 			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string"
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
 			}
 		],
-		"name": "mintNFT",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
@@ -1078,6 +1127,19 @@ const nftContractAddress = "0x0d12B59de586dD30B6Bd7a32ed2585D1CB808458"; // Zami
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "owner",
 				"type": "address"
 			}
@@ -1163,6 +1225,19 @@ const nftContractAddress = "0x0d12B59de586dD30B6Bd7a32ed2585D1CB808458"; // Zami
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -1232,7 +1307,8 @@ const nftContractAddress = "0x0d12B59de586dD30B6Bd7a32ed2585D1CB808458"; // Zami
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
+
+        ];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
