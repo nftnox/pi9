@@ -643,35 +643,17 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
     }
 
     try {
-        // Povezivanje sa MetaMask-om
+        // 1. Povezivanje sa MetaMask-om ako nije već povezano
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
-
-        // Trenutni korisnički račun
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
 
-        // Povezivanje s LUNA token ugovorom
-        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Provjera balansa korisnika
-        const userBalance = await lunaTokenContract.methods.balanceOf(currentAccount).call();
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
-
-        if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
-            alert('Nemate dovoljno LUNA tokena za ovu transakciju.');
-            return;
-        }
-
-        // Prijenos tokena prodavcu
-        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9'; // Adresa prodavca
-        await lunaTokenContract.methods
-            .transfer(sellerAddress, requiredAmount)
-            .send({ from: currentAccount });
-
-        // Prijenos vlasništva nad NFT-om
-        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
+        // 2. Povezivanje s NFT ugovorom
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // 3. Provjera vlasništva nad NFT-om
+        const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
 
         if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
@@ -679,12 +661,18 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
-        // Transfer NFT-a
-        await nftContract.methods
-            .safeTransferFrom(sellerAddress, currentAccount, tokenId)
-            .send({ from: sellerAddress });
+        // 4. Odobrenje za transfer ako nije već postavljeno
+        const isApproved = await nftContract.methods.isApprovedForAll(currentOwner, nftContractAddress).call();
+        if (!isApproved) {
+            await nftContract.methods.setApprovalForAll(nftContractAddress, true).send({ from: currentOwner });
+        }
 
-        // Ažuriranje Firestore baze podataka za proizvod
+        // 5. Transfer NFT-a
+        await nftContract.methods
+            .safeTransferFrom(currentOwner, currentAccount, tokenId)
+            .send({ from: currentOwner });
+
+        // 6. Ažuriranje Firestore baze podataka za proizvod
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
@@ -692,7 +680,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             ownerName: username,
         });
 
-        // Dodavanje proizvoda u kupovine korisnika
+        // 7. Dodavanje proizvoda u kupovine korisnika
         const userPurchasesRef = collection(db, `network/${userId}/purchases`);
         await addDoc(userPurchasesRef, {
             name: productData.name,
@@ -701,7 +689,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             purchaseTime: new Date(),
         });
 
-        // Promjena izgleda nakon uspješne kupovine
+        // 8. Promjena izgleda nakon uspješne kupovine
         buyButton.textContent = 'Sold';
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
@@ -717,10 +705,17 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         alert(`Kupili ste ${productData.name} za ${productData.price} LUNA tokena!`);
     } catch (error) {
-        console.error('Greška prilikom obrade transakcije:', error);
-        alert('Došlo je do greške. Pokušajte ponovo.');
+        if (error.code === 4001) {
+            alert("Transakcija odbijena od strane korisnika.");
+        } else if (error.code === 4100) {
+            alert("Nemate ovlašćenje za ovu radnju. Proverite MetaMask dozvole.");
+        } else {
+            console.error('Greška prilikom obrade transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
     }
 });
+
 
 
 
@@ -743,7 +738,7 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 localStorage.setItem('loggedInUser', userParam);
 
 // Povezivanje s NFT ugovorom
-const nftContractAddress = "0xEB220060d0795803d2B614E2122754B84c59B930"; // Zamijeni s adresom svog ugovora
+const nftContractAddress = "0xf536C5bD90881021d7Eb6Bae46eF43D83Eb3b6E3"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
 	{
 		"inputs": [
