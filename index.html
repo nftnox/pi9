@@ -274,32 +274,36 @@ desktopToggleButton.addEventListener('click', () => {
     </button>
 
     <script>
-        // Funkcija za povezivanje s NFT ugovorom
         document.getElementById('connect-nft-contract').addEventListener('click', async () => {
-            // Provjera da li je MetaMask instaliran
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    // Povezivanje s MetaMask-om
-                    await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const accounts = await web3.eth.getAccounts(); // Dobijanje MetaMask računa
-                    const currentAccount = accounts[0];
-    
-                    console.log('Povezan MetaMask račun:', currentAccount);
-    
-                    // Povezivanje s NFT ugovorom
-                    const contractResponse = await nftContract.methods.connectAction().call({ from: currentAccount });
-    
-                    // Simulacija interakcije s ugovorom
-                    console.log('Interakcija s ugovorom uspješna:', contractResponse);
-                    alert('Povezivanje s NFT ugovorom je uspješno!');
-                } catch (error) {
-                    console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
-                    alert('Došlo je do greške. Pokušajte ponovo.');
-                }
-            } else {
-                alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            }
-        });
+    // Proverite da li je MetaMask instaliran
+    if (typeof window.ethereum !== 'undefined') {
+        try {
+            // Inicijalizacija Web3 objekta
+            const web3 = new Web3(window.ethereum);
+
+            // Povezivanje s MetaMask-om
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const accounts = await web3.eth.getAccounts(); // Dobijanje računa korisnika
+            const currentAccount = accounts[0]; // Prvi (trenutni) račun
+
+            console.log('Povezan MetaMask račun:', currentAccount);
+
+            // Povezivanje s NFT ugovorom
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+            // Poziv funkcije connectAction
+            await nftContract.methods.connectAction().call({ from: currentAccount });
+
+            alert('Povezivanje s NFT ugovorom je uspješno!');
+        } catch (error) {
+            console.error('Greška prilikom povezivanja s NFT ugovorom:', error);
+            alert('Došlo je do greške prilikom povezivanja s NFT ugovorom.');
+        }
+    } else {
+        alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+    }
+});
+
     </script>
     
 
