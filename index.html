@@ -651,23 +651,6 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const accounts = await web3.eth.getAccounts();
         const currentAccount = accounts[0];
 
-        // Dohvatanje podataka proizvoda iz Firestore baze
-        const productDocRef = doc(db, 'products', productId);
-        const productDocSnap = await getDoc(productDocRef);
-
-        if (!productDocSnap.exists()) {
-            alert('Podaci o proizvodu nisu pronađeni.');
-            return;
-        }
-
-        const productData = productDocSnap.data();
-        const sellerAddress = productData.sellerAddress; // Dinamičko dohvaćanje adrese prodavca
-
-        if (!sellerAddress) {
-            alert('Adresa prodavca nije definisana.');
-            return;
-        }
-
         // Povezivanje s LUNA token ugovorom
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
 
@@ -680,12 +663,15 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
+        // Hardkodirana adresa prodavca
+        const sellerAddress = '0x6CB206Ac2FA76dee5eD03253942FE2fda92b48E9';
+
         // Prijenos tokena prodavcu
         await lunaTokenContract.methods
             .transfer(sellerAddress, requiredAmount)
             .send({ from: currentAccount });
 
-        // Povezivanje s NFT ugovorom
+        // Prijenos vlasništva nad NFT-om
         const tokenId = productData.tokenId; // Dodajte tokenId u Firestore prilikom mintanja
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
         const currentOwner = await nftContract.methods.ownerOf(tokenId).call();
@@ -701,6 +687,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             .send({ from: sellerAddress });
 
         // Ažuriranje Firestore baze podataka za proizvod
+        const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
             owner: userId,
@@ -736,6 +723,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
