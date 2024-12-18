@@ -27,7 +27,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const storage = getStorage(app);
 
         // Povezivanje s NFT ugovorom
-        const nftContractAddress = "0xf536C5bD90881021d7Eb6Bae46eF43D83Eb3b6E3"; // Zamijeni s adresom svog ugovora
+        const nftContractAddress = "0x0d12B59de586dD30B6Bd7a32ed2585D1CB808458"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
 	{
 		"inputs": [
@@ -367,13 +367,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 	},
 	{
 		"inputs": [],
-		"name": "connectAction",
-		"outputs": [],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "currentTokenId",
 		"outputs": [
 			{
@@ -556,10 +549,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const accounts = await web3.eth.requestAccounts();
         const currentAccount = accounts[0];
         await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
-
-		await nftContract.methods
-    .setApprovalForAll(nftContractAddress, true) // Omogući ugovoru da upravlja svim NFT-ovima
-    .send({ from: currentAccount });
 
         // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
