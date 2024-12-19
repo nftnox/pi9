@@ -27,9 +27,8 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         const storage = getStorage(app);
 
         // Povezivanje s NFT ugovorom
-        const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
+        const nftContractAddress = "0x866c4f6df9b7AAbe3dc43f4a48C5158794bbBb27"; // Zamijeni s adresom svog ugovora
         const nftContractABI = [
-        
 	{
 		"inputs": [
 			{
@@ -157,52 +156,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"type": "error"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "recipient",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "uri",
-				"type": "string"
-			}
-		],
-		"name": "mintNFT",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -253,28 +206,26 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"type": "event"
 	},
 	{
-		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
 				"internalType": "address",
-				"name": "previousOwner",
+				"name": "recipient",
 				"type": "address"
 			},
 			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
 			}
 		],
-		"name": "OwnershipTransferred",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
+		"name": "mintNFT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
@@ -399,19 +350,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "owner",
 				"type": "address"
 			}
@@ -497,19 +435,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -579,13 +504,12 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 		"stateMutability": "view",
 		"type": "function"
 	}
-
-        ];
+];
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-        document.getElementById('publish-product').addEventListener('click', async () => {
+		document.getElementById('publish-product').addEventListener('click', async () => {
     const name = document.getElementById('product-name').value;
     const price = parseFloat(document.getElementById('product-price').value);
     const cryptoPrice = parseFloat(document.getElementById('product-crypto-price').value);
@@ -609,38 +533,31 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
             image: imageUrl,
         };
 
-        // Pretvori metadata objekt u JSON string
         const metadataString = JSON.stringify(metadata);
-
-        // Upload metadata JSON na Firebase Storage
         const metadataBlob = new Blob([metadataString], { type: 'application/json' });
         const metadataRef = ref(storage, 'metadata/' + name + '.json');
         const metadataSnapshot = await uploadBytes(metadataRef, metadataBlob);
         const metadataUrl = await getDownloadURL(metadataSnapshot.ref);
 
-        // Postavi tokenURI na URL metadata JSON datoteke
         const tokenURI = metadataUrl;
 
         // Mintanje NFT-a
         const accounts = await web3.eth.requestAccounts();
-        const currentAccount = accounts[0];
+        const currentAccount = accounts[0]; // Dohvati MetaMask račun
+
         await nftContract.methods.mintNFT(currentAccount, tokenURI).send({ from: currentAccount });
-
-		await nftContract.methods
-    .setApprovalForAll(nftContractAddress, true)
-    .send({ from: currentAccount });
-
 
         // Dohvati tokenId iz pametnog ugovora
         const tokenId = await nftContract.methods.currentTokenId().call();
 
-        // Spremanje proizvoda u Firestore s tokenId-om
-        const docRef = await addDoc(collection(db, 'products'), {
+        // Spremanje proizvoda u Firestore s MetaMask računom
+        await addDoc(collection(db, 'products'), {
             name,
             price,
             cryptoPrice,
             imageUrl,
-            tokenId, // Dodaj tokenId u inicijalni zapis
+            tokenId,
+            ownerAccount: currentAccount // Spremi MetaMask račun u Firestore
         });
 
         alert('Proizvod uspješno objavljen i NFT mintovan!');
@@ -649,6 +566,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
     </script>
