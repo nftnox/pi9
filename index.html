@@ -691,6 +691,17 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
+        const isApproved = await nftContract.methods
+    .isApprovedForAll(sellerAddress, nftContractAddress)
+    .call();
+
+if (!isApproved) {
+    await nftContract.methods
+        .setApprovalForAll(nftContractAddress, true)
+        .send({ from: sellerAddress });
+}
+
+
         // Transfer NFT-a
         await nftContract.methods
             .safeTransferFrom(sellerAddress, currentAccount, tokenId)
