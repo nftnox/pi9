@@ -899,12 +899,14 @@ await marketplaceContract.methods.listNFT(tokenId, priceInLuna).send({ from: cur
 
         // Spremanje proizvoda u Firestore s tokenId-om
         const docRef = await addDoc(collection(db, 'products'), {
-            name,
-            price,
-            cryptoPrice,
-            imageUrl,
-            tokenId, // Dodaj tokenId u inicijalni zapis
-        });
+    name,
+    price,
+    cryptoPrice,
+    imageUrl,
+    tokenId,
+    ownerAddress: currentAccount // Dodaj trenutnog vlasnika
+});
+
 
         alert('Proizvod uspješno objavljen i NFT mintovan!');
     } catch (error) {
