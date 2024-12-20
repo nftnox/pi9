@@ -643,6 +643,18 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
 
         }
 
+
+        async function getOwnerAddress(productId) {
+    const productDocRef = doc(db, 'products', productId);
+    const productDoc = await getDoc(productDocRef);
+    if (productDoc.exists()) {
+        return productDoc.data().ownerAddress;
+    } else {
+        throw new Error('Proizvod ne postoji u Firestore-u.');
+    }
+}
+
+
         buyButton.addEventListener('click', async () => {
     if (productData.sold) {
         alert('Ovaj proizvod je već prodan.');
@@ -655,37 +667,40 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
     }
 
     try {
-        // Povezivanje s MetaMask-om i dobavljanje računa kupca
+        // Povezivanje s MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
-        // Pretpostavimo da je productData.price u LUNA tokenima.
-        const priceInLuna = productData.price; 
-        // Konverzija u Wei (ako token ima 18 decimala)
-        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
+        // Dohvati adresu vlasnika proizvoda
+        const sellerAddress = await getOwnerAddress(productId);
 
-        // Povezivanje sa LUNA token ugovorom
+        if (!sellerAddress) {
+            alert('Adresa vlasnika nije pronađena.');
+            return;
+        }
+
+        // Provjera cijene
+        const priceInLuna = productData.price;
+        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether');
+
+        // Approve LUNA tokena za marketplace (kupac daje dozvolu za transfer)
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Prvo odobrite Marketplace kontraktu da povuče LUNA tokene s kupčeve adrese
-        // Ovdje morate pričekati potvrdu transakcije s await
         await lunaTokenContract.methods.approve(marketplaceAddress, requiredAmount).send({ from: buyerAccount });
 
-        // Nakon što je approve potvrđen, pozovite buyNFT na Marketplace ugovoru
-        // Također koristiti await
-        await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
+        // Transfer LUNA tokena od kupca ka prodavaču
+        await lunaTokenContract.methods.transferFrom(buyerAccount, sellerAddress, requiredAmount).send({ from: buyerAccount });
 
-        // Ako je sve prošlo ok, ažurirajte Firestore i UI
+        // Ažuriranje Firestore-a nakon uspješne kupovine
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: userId,
+            owner: buyerAccount,
             ownerName: username
         });
 
-        buyButton.textContent = 'Sold';
+        buyButton.textContent = 'Prodato';
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
 
@@ -695,6 +710,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         productDiv.appendChild(ownerDiv);
 
         alert(`Kupili ste ${productData.name} za ${priceInLuna} LUNA tokena!`);
+
     } catch (error) {
         console.error('Greška prilikom kupovine NFT-a:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
