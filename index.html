@@ -661,16 +661,28 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
-        // Pretpostavka: productData.price je cijena u LUNA tokenima koju ste upisali prilikom mintanja
-        const priceInLuna = productData.price;
-        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
+        // Cijena u LUNA tokenima (pretpostavljeni ERC20 s 18 decimala)
+        const priceInLuna = productData.price; 
+        // Konverzija u Wei (ako je 1 LUNA = 10^18 wei, isto kao ETH konverzija)
+        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether');
 
-        // Approve LUNA tokena za marketplace (omogućiti marketplace-u da povuče tokene)
-        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-        await lunaTokenContract.methods.approve(marketplaceAddress, requiredAmount).send({ from: buyerAccount });
+        console.log("Kupac:", buyerAccount);
+        console.log("Potrebna količina LUNA tokena:", requiredAmount, "wei");
 
-        // Poziv na marketplace kupovinu
-        await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
+        // 1. Odobrite marketplace-u da povuče requiredAmount LUNA tokena s računa kupca
+        console.log("Odobravanje (approve) LUNA tokena marketplace-u...");
+        await lunaTokenContract.methods
+            .approve(marketplaceAddress, requiredAmount)
+            .send({ from: buyerAccount });
+
+        console.log("Approve uspješan. Sada izvršavanje kupnje putem marketplace-a...");
+
+        // 2. Poziv na marketplace kupovinu koja će izvršiti transfer NFT-a i povlačenje LUNA tokena
+        await marketplaceContract.methods
+            .buyNFT(productData.tokenId)
+            .send({ from: buyerAccount });
+
+        console.log("Kupovina NFT-a uspješna. Ažuriranje Firestore...");
 
         // Nakon uspješne kupnje, ažuriraj Firestore i UI
         const productDocRef = doc(db, 'products', productId);
