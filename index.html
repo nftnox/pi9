@@ -546,18 +546,32 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
                 const buyerAccount = accounts[0];
 
                 // Dohvati prodavačevu adresu iz Firestore-a
-                // Prijenos LUNA tokena od kupca prodavaču
-try {
-    const sellerAddress = productData.sellerAddress;
+                try {
+    const sellerAddress = productData.sellerAddress; // Adresa prodavača
+    const priceInLuna = productData.price; // Cijena proizvoda u LUNA tokenima
 
+    // Validacija adrese prodavača
     if (!web3.utils.isAddress(sellerAddress)) {
         throw new Error('Prodavačka adresa nije validna.');
     }
 
-    await lunaTokenContract.methods.transfer(sellerAddress, requiredAmount).send({ from: buyerAccount });
+    // Konverzija cijene u najmanje jedinice (wei)
+    const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether');
+
+    // Povezivanje s ugovorom za LUNA tokene
+    const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+
+    // Poziv za prijenos tokena
+    const transaction = await lunaTokenContract.methods.transfer(sellerAddress, requiredAmount).send({
+        from: buyerAccount,
+        gas: 21000 // Standardni minimalni gas
+    });
+
+    console.log('Transakcija uspješna:', transaction);
+
 } catch (error) {
     console.error('Greška prilikom prijenosa LUNA tokena:', error);
-    alert('Došlo je do greške pri prijenosu tokena. Provjerite podatke i pokušajte ponovo.');
+    alert('Došlo je do greške pri prijenosu tokena. Molimo provjerite podatke i pokušajte ponovo.');
     return;
 }
 
