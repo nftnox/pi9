@@ -672,32 +672,64 @@ buyButton.addEventListener('click', async () => {
     }
 
     try {
+        // Povezivanje s MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
-
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
-        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Provjeri cijenu u LUNA tokenima
+        // Pretpostavka: productData.price je cijena u LUNA tokenima koju ste upisali prilikom mintanja
         const priceInLuna = productData.price;
+        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
 
-        // Approve tokena za Marketplace ugovor
+        // Instanciraj ugovore
+        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+        const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
+
+        // Approve LUNA tokena za Marketplace ugovor
         await lunaTokenContract.methods
-            .approve(marketplaceAddress, web3.utils.toWei(priceInLuna.toString(), 'ether'))
+            .approve(marketplaceAddress, requiredAmount)
             .send({ from: buyerAccount });
 
-        // Poziv na funkciju buyNFT
+        // Poziv na funkciju buyNFT u Marketplace ugovoru
         await marketplaceContract.methods
             .buyNFT(productData.tokenId)
             .send({ from: buyerAccount });
 
+        // Nakon uspješne kupovine, ažuriraj status proizvoda u Firestore
+        const productDocRef = doc(db, 'products', productId);
+        await updateDoc(productDocRef, {
+            sold: true,
+            owner: buyerAccount,
+            ownerName: username
+        });
+
+        // Ažuriranje UI nakon kupovine
+        buyButton.textContent = 'Sold';
+        buyButton.style.backgroundColor = 'red';
+        buyButton.disabled = true;
+
+        ownerDiv.textContent = `Novi vlasnik: ${username}`;
+        ownerDiv.style.color = 'white';
+        ownerDiv.style.cursor = 'pointer';
+
+        // Klikom na ime vlasnika otvara se profil vlasnika
+        ownerDiv.addEventListener('click', () => {
+            const prijavljeniKorisnik = localStorage.getItem('loggedInUser');
+            const trenutnaCijena = document.getElementById('amount').innerText;
+            window.location.href = `profile.html?ime=${username}&loggedInUser=${prijavljeniKorisnik}&trenutnaCijena=${trenutnaCijena}`;
+        });
+
+        productDiv.appendChild(ownerDiv);
+
         alert(`Kupili ste ${productData.name} za ${priceInLuna} LUNA tokena!`);
+
     } catch (error) {
-        console.error('Greška prilikom kupovine:', error);
+        console.error('Greška prilikom kupovine NFT-a:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
