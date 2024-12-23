@@ -678,22 +678,24 @@ buyButton.addEventListener('click', async () => {
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
-        // Pretpostavka: productData.price je cijena u LUNA tokenima koju ste upisali prilikom mintanja
-        const priceInLuna = productData.price;
-        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
+        // Pretpostavka: productData.price je cijena u LUNA tokenima
+        const priceInLuna = productData.price; // Cijena u LUNA tokenima
+        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether');
 
-        // Approve LUNA tokena za marketplace (omogućiti marketplace-u da povuče tokene)
+        // Poveži se sa LUNA token ugovorom
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+
+        // Odobri Marketplace ugovoru da povuče tokene
         await lunaTokenContract.methods.approve(marketplaceAddress, requiredAmount).send({ from: buyerAccount });
 
-        // Poziv na marketplace kupovinu
+        // Poziv na Marketplace kupovinu
         await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
 
         // Nakon uspješne kupnje, ažuriraj Firestore i UI
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: userId,
+            ownerAddress: buyerAccount,
             ownerName: username
         });
 
@@ -713,6 +715,7 @@ buyButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
