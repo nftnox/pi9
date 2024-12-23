@@ -678,50 +678,41 @@ buyButton.addEventListener('click', async () => {
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
-        // Pretpostavka: productData.price je cijena u LUNA tokenima sa 18 decimala
+        // Pretpostavka: productData.price je cijena u LUNA tokenima koju ste upisali prilikom mintanja
         const priceInLuna = productData.price;
         const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
 
-        // Povezivanje sa LUNA tokenom
+        // Approve LUNA tokena za marketplace (omogućiti marketplace-u da povuče tokene)
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Odobravanje Marketplace ugovoru da troši LUNA tokene
         await lunaTokenContract.methods.approve(marketplaceAddress, requiredAmount).send({ from: buyerAccount });
 
-        // Pozivanje buyNFT funkcije Marketplace ugovora
+        // Poziv na marketplace kupovinu
         await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
 
-        // Ažuriranje Firestore statusa proizvoda
+        // Nakon uspješne kupnje, ažuriraj Firestore i UI
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            ownerAddress: buyerAccount,
+            owner: userId,
             ownerName: username
         });
 
-        // Ažuriranje UI-a
-        buyButton.textContent = 'Prodato';
+        buyButton.textContent = 'Sold';
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
 
         ownerDiv.textContent = `Novi vlasnik: ${username}`;
         ownerDiv.style.color = 'white';
         ownerDiv.style.cursor = 'pointer';
-
-        // Dodavanje event listener-a za vlasnikov profil
-        ownerDiv.addEventListener('click', () => {
-            window.location.href = `profile.html?ime=${username}`;
-        });
-
         productDiv.appendChild(ownerDiv);
 
         alert(`Kupili ste ${productData.name} za ${priceInLuna} LUNA tokena!`);
+
     } catch (error) {
         console.error('Greška prilikom kupovine NFT-a:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
+        alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
-
 
 
 
@@ -1312,7 +1303,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
 //////////////////////MARKETPLACE//////////////
 
-const marketplaceAddress = "0x5b0457F06E42AdBb396da0CBC8befA2463B73Dd6"; // Adresa vašeg Marketplace ugovora
+const marketplaceAddress = "0xd60B272e834ab394721cFE909DF43C06adA66159"; // Adresa vašeg Marketplace ugovora
 const marketplaceABI = [
 	{
 		"inputs": [
@@ -1395,36 +1386,6 @@ const marketplaceABI = [
 		],
 		"name": "OwnableUnauthorizedAccount",
 		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			}
-		],
-		"name": "SafeERC20FailedOperation",
-		"type": "error"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "seller",
-				"type": "address"
-			}
-		],
-		"name": "ListingCancelled",
-		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -1590,6 +1551,7 @@ const marketplaceABI = [
 		"type": "function"
 	}
 ];
+
 
 const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
