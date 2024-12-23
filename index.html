@@ -546,35 +546,11 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
                 const buyerAccount = accounts[0];
 
                 // Dohvati prodavačevu adresu iz Firestore-a
-                try {
-    const sellerAddress = productData.sellerAddress; // Adresa prodavača
-    const priceInLuna = productData.price; // Cijena proizvoda u LUNA tokenima
-
-    // Validacija adrese prodavača
-    if (!web3.utils.isAddress(sellerAddress)) {
-        throw new Error('Prodavačka adresa nije validna.');
-    }
-
-    // Konverzija cijene u najmanje jedinice (wei)
-    const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether');
-
-    // Povezivanje s ugovorom za LUNA tokene
-    const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-
-    // Poziv za prijenos tokena
-    const transaction = await lunaTokenContract.methods.transfer(sellerAddress, requiredAmount).send({
-        from: buyerAccount,
-        gas: 21000 // Standardni minimalni gas
-    });
-
-    console.log('Transakcija uspješna:', transaction);
-
-} catch (error) {
-    console.error('Greška prilikom prijenosa LUNA tokena:', error);
-    alert('Došlo je do greške pri prijenosu tokena. Molimo provjerite podatke i pokušajte ponovo.');
-    return;
-}
-
+                const sellerAddress = productData.sellerAddress;
+                if (!sellerAddress) {
+                    alert('Prodavačka adresa nije dostupna.');
+                    return;
+                }
 
                 // Provjera cijene u ETH
                 const ethPrice = productData.cryptoPrice;
@@ -696,47 +672,29 @@ buyButton.addEventListener('click', async () => {
     }
 
     try {
-        // Povezivanje s MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
+
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
-
-        // Pretpostavka: productData.price je cijena u LUNA tokenima
-        const priceInLuna = productData.price;
-        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether');
-
-        // Approve LUNA tokena za marketplace (omogućiti marketplace-u da povuče tokene)
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-        await lunaTokenContract.methods.approve(marketplaceAddress, requiredAmount).send({ from: buyerAccount });
 
-        // Poziv na marketplace za kupovinu NFT-a
-        await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
+        // Provjeri cijenu u LUNA tokenima
+        const priceInLuna = productData.price;
 
-        // Prijenos LUNA tokena od kupca prodavaču
-        await lunaTokenContract.methods.transfer(productData.sellerAddress, requiredAmount).send({ from: buyerAccount });
+        // Approve tokena za Marketplace ugovor
+        await lunaTokenContract.methods
+            .approve(marketplaceAddress, web3.utils.toWei(priceInLuna.toString(), 'ether'))
+            .send({ from: buyerAccount });
 
-        // Nakon uspješne kupnje, ažuriraj Firestore i UI
-        const productDocRef = doc(db, 'products', productId);
-        await updateDoc(productDocRef, {
-            sold: true,
-            owner: userId,
-            ownerName: username
-        });
-
-        buyButton.textContent = 'Sold';
-        buyButton.style.backgroundColor = 'red';
-        buyButton.disabled = true;
-
-        ownerDiv.textContent = `Novi vlasnik: ${username}`;
-        ownerDiv.style.color = 'white';
-        ownerDiv.style.cursor = 'pointer';
-        productDiv.appendChild(ownerDiv);
+        // Poziv na funkciju buyNFT
+        await marketplaceContract.methods
+            .buyNFT(productData.tokenId)
+            .send({ from: buyerAccount });
 
         alert(`Kupili ste ${productData.name} za ${priceInLuna} LUNA tokena!`);
-
     } catch (error) {
-        console.error('Greška prilikom kupovine NFT-a:', error);
+        console.error('Greška prilikom kupovine:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
@@ -1329,7 +1287,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
 //////////////////////MARKETPLACE//////////////
 
-const marketplaceAddress = "0xe25922FB4CC65433826D9b46339c6e780cdC775E"; // Adresa vašeg Marketplace ugovora
+const marketplaceAddress = "0x28b56AD4598a7859724d1eC2ff4E41bF0B1be3f0"; // Adresa vašeg Marketplace ugovora
 const marketplaceABI = [
 	{
 		"inputs": [
