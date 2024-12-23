@@ -682,29 +682,21 @@ buyButton.addEventListener('click', async () => {
         const priceInLuna = productData.price;
         const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
 
-        // Instanciraj ugovore
+        // Approve LUNA tokena za marketplace (omogućiti marketplace-u da povuče tokene)
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-        const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
+        await lunaTokenContract.methods.approve(marketplaceAddress, requiredAmount).send({ from: buyerAccount });
 
-        // Approve LUNA tokena za Marketplace ugovor
-        await lunaTokenContract.methods
-            .approve(marketplaceAddress, requiredAmount)
-            .send({ from: buyerAccount });
+        // Poziv na marketplace kupovinu
+        await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
 
-        // Poziv na funkciju buyNFT u Marketplace ugovoru
-        await marketplaceContract.methods
-            .buyNFT(productData.tokenId)
-            .send({ from: buyerAccount });
-
-        // Nakon uspješne kupovine, ažuriraj status proizvoda u Firestore
+        // Nakon uspješne kupnje, ažuriraj Firestore i UI
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: buyerAccount,
+            owner: userId,
             ownerName: username
         });
 
-        // Ažuriranje UI nakon kupovine
         buyButton.textContent = 'Sold';
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
@@ -712,14 +704,6 @@ buyButton.addEventListener('click', async () => {
         ownerDiv.textContent = `Novi vlasnik: ${username}`;
         ownerDiv.style.color = 'white';
         ownerDiv.style.cursor = 'pointer';
-
-        // Klikom na ime vlasnika otvara se profil vlasnika
-        ownerDiv.addEventListener('click', () => {
-            const prijavljeniKorisnik = localStorage.getItem('loggedInUser');
-            const trenutnaCijena = document.getElementById('amount').innerText;
-            window.location.href = `profile.html?ime=${username}&loggedInUser=${prijavljeniKorisnik}&trenutnaCijena=${trenutnaCijena}`;
-        });
-
         productDiv.appendChild(ownerDiv);
 
         alert(`Kupili ste ${productData.name} za ${priceInLuna} LUNA tokena!`);
@@ -729,8 +713,6 @@ buyButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
-
-
 
 
 
@@ -1319,7 +1301,7 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
 //////////////////////MARKETPLACE//////////////
 
-const marketplaceAddress = "0x28b56AD4598a7859724d1eC2ff4E41bF0B1be3f0"; // Adresa vašeg Marketplace ugovora
+const marketplaceAddress = "0xe25922FB4CC65433826D9b46339c6e780cdC775E"; // Adresa vašeg Marketplace ugovora
 const marketplaceABI = [
 	{
 		"inputs": [
