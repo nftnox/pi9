@@ -633,7 +633,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 
 // Nakon što ste dobili tokenId iznad, ovdje dodajte kod za setApprovalForAll i listNFT.
 // Pretpostavimo da već imate definirane marketplaceAddress i marketplaceABI
-const marketplaceAddress = "0xd60B272e834ab394721cFE909DF43C06adA66159"; // Adresa marketplace ugovora
+const marketplaceAddress = "0x2Bcd15962B22AaF059C2DF5ffAbC1A2256E5a44a"; // Adresa marketplace ugovora
 const marketplaceABI = [
 	{
 		"inputs": [
@@ -881,6 +881,7 @@ const marketplaceABI = [
 		"type": "function"
 	}
 ]; // ABI marketplace ugovora
+
 
 const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
