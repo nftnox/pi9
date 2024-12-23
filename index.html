@@ -681,6 +681,8 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             return;
         }
 
+
+        
         // Provjera cijene
         const priceInLuna = productData.price;
         const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether');
@@ -699,6 +701,11 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
             owner: buyerAccount,
             ownerName: username
         });
+
+
+        await marketplaceContract.methods.buyNFT(tokenId).send({ from: buyerAccount });
+
+
 
         buyButton.textContent = 'Prodato';
         buyButton.style.backgroundColor = 'red';
