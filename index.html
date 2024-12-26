@@ -5507,14 +5507,6 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
 
 
 @media (max-width: 768px) {
-    #mint-my-coin {
-        position: relative; /* Obavezno za korištenje left i top */
-        
-        left: 1px;
-    }
-}
-
-@media (max-width: 768px) {
     .container {
         display: flex;
         flex-direction: row; /* Elementi ostaju u istom redu */
@@ -5522,14 +5514,30 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
         align-items: center; /* Centriranje elemenata vertikalno */
         gap: 10px; /* Minimalan razmak između elemenata */
         position: relative; /* Omogućava pomjeranje */
-        top: -50px; /* Pomjera cijelu grupu elemenata prema gore za 10px */
+        top: -50px; /* Pomjera cijelu grupu elemenata prema gore za 50px */
+        left: -10px; /* Pomjera cijelu grupu elemenata ulijevo za 10px */
     }
 
     .icon, #mint-my-coin, #share-icon {
-        width: auto; /* Zadržava njihovu širinu */
+        width: auto; /* Zadržava širinu elemenata */
         text-align: center; /* Poravnanje teksta centrirano */
+        white-space: nowrap; /* Sprečava prelazak teksta u novi red */
+    }
+
+    #mint-my-coin {
+        position: relative; /* Omogućava pomjeranje */
+        left: 1px; /* Lagano pomjeranje dugmeta */
+        font-size: 14px; /* Smanjuje veličinu fonta za mobilne uređaje */
+        padding: 5px 10px; /* Povećava unutrašnje margine za bolji izgled */
+        overflow: hidden; /* Sprečava izlazak teksta van okvira */
+        text-overflow: ellipsis; /* Dodaje "..." ako tekst prelazi granice */
+    }
+
+    #share-icon {
+        font-size: 14px; /* Smanjuje veličinu fonta za mobilne uređaje */
     }
 }
+
 
 
 
