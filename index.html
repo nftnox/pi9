@@ -5514,27 +5514,36 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
         align-items: center; /* Centriranje elemenata vertikalno */
         gap: 10px; /* Minimalan razmak između elemenata */
         position: relative; /* Omogućava pomjeranje */
-        top: -50px; /* Pomjera cijelu grupu elemenata prema gore za 50px */
-        left: -10px; /* Pomjera cijelu grupu elemenata ulijevo za 10px */
+        top: -50px; /* Pomjera cijelu grupu elemenata prema gore */
+        left: -10px; /* Pomjera cijelu grupu elemenata ulijevo */
     }
 
     .icon, #mint-my-coin, #share-icon {
-        width: auto; /* Zadržava širinu elemenata */
-        text-align: center; /* Poravnanje teksta centrirano */
+        width: 130px; /* Povećana širina za prikaz cijelog teksta */
+        height: 55px; /* Povećana visina za prikaz ikone i teksta */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        background-color: #f0f0f0; /* Opcionalna boja pozadine za bolje isticanje */
+        border-radius: 5px; /* Lagano zaobljenje kutova za estetski izgled */
+        font-size: 14px; /* Standardna veličina fonta */
+        overflow: hidden; /* Sprečava prelivanje sadržaja */
         white-space: nowrap; /* Sprečava prelazak teksta u novi red */
     }
 
     #mint-my-coin {
-        position: relative; /* Omogućava pomjeranje */
-        left: 1px; /* Lagano pomjeranje dugmeta */
-        font-size: 14px; /* Smanjuje veličinu fonta za mobilne uređaje */
-        padding: 5px 10px; /* Povećava unutrašnje margine za bolji izgled */
-        overflow: hidden; /* Sprečava izlazak teksta van okvira */
-        text-overflow: ellipsis; /* Dodaje "..." ako tekst prelazi granice */
+        padding: 0 5px; /* Dodaje margine unutar dugmeta */
+        font-size: 13px; /* Smanjena veličina fonta za bolji prikaz */
     }
 
-    #share-icon {
-        font-size: 14px; /* Smanjuje veličinu fonta za mobilne uređaje */
+    #mint-my-coin span.material-icons {
+        font-size: 18px; /* Smanjuje veličinu ikone da stane u dugme */
+        margin-right: 5px; /* Razmak između ikone i teksta */
+    }
+
+    .material-icons {
+        vertical-align: middle; /* Osigurava centriranje ikone */
     }
 }
 
