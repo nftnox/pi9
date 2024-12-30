@@ -207,7 +207,7 @@
             <input type="text" id="prezime" placeholder="Prezime" required>
             <input type="email" id="email" placeholder="Email" required>
             <input type="text" id="username" placeholder="Username" required>
-            <input type="text" id="brojTelefona" placeholder="Broj telefona" required>
+            <input type="text" id="brojTelefona" placeholder="Broj telefona" required pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
             <input type="text" id="drzava" placeholder="Država" required>
             <input type="text" id="grad" placeholder="Grad" required>
             <input type="text" id="adresa" placeholder="Adresa" required>
@@ -215,7 +215,7 @@
                 <input type="password" id="sifra" placeholder="Šifra" required>
                 <span id="toggle-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span>
             </div>
-            <input type="text" id="chat-code" placeholder="4 digit code for chat" maxlength="4" required pattern="\d{4}">
+            <input type="text" id="chat-code" placeholder="4 digit code for chat" maxlength="4" required pattern="\d{4}" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
 
             <input type="text" id="referral-code" placeholder="Referal kod (opcionalno)">
             <input type="file" id="profile-picture" accept="image/*"> <!-- Input for profile picture -->
