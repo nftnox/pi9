@@ -2397,12 +2397,14 @@ document.getElementById('calculator-buttons').addEventListener('click', async (e
         if (userDocSnap.exists()) {
             const chatCode = parseInt(userDocSnap.data().chatCode, 10);
             if (parseFloat(currentInput) === chatCode) {
-                alert('Tačan rezultat! Otvaram chat...');
-                document.getElementById('calculator-modal').style.display = 'none';
-                document.getElementById('chat-modal').style.display = 'flex';
-            } else {
-                alert('Rezultat nije tačan. Pokušajte ponovo.');
-            }
+    alert('Tačan rezultat! Otvaram chat...');
+    document.getElementById('calculator-modal').style.display = 'none';
+    document.getElementById('chat-modal').style.display = 'flex';
+} else {
+    // Samo izračunaj i prikaži rezultat bez prikazivanja greške
+    updateDisplay(currentInput);
+}
+
         } else {
             console.error('Korisnik ne postoji u Firestore-u.');
         }
