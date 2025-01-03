@@ -247,49 +247,56 @@ productDiv.appendChild(productPrice);
                 setPriceButton.innerText = 'Postavi cijene';
                 setPriceButton.classList.add('set-price-button');
                 setPriceButton.addEventListener('click', async () => {
-    const novaCijena = parseFloat(priceInput.value);        // LUNA cijena (u "tokenima" ili nekoj decim. notaciji)
-    const novaCryptoCijena = parseFloat(cryptoPriceInput.value); // ETH cijena (ne koristiš je u listNFT jer Marketplace traži LUNA)
+    const novaCijena = parseFloat(priceInput.value);
+    const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
 
     if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
+        // -------------------------------------------
+        // 1) Ažuriranje Firestore-a (ako želiš i dalje voditi evidenciju)
+        // -------------------------------------------
+        const updateData = {};
+        if (!isNaN(novaCijena) && novaCijena > 0) {
+            updateData.price = novaCijena;
+        }
+        if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
+            updateData.cryptoPrice = novaCryptoCijena;
+        }
+        await updateDoc(doc(db, 'products', docSnap.id), updateData);
+
+        // -------------------------------------------
+        // 2) Poziv prema Marketplace ugovoru
+        // -------------------------------------------
         try {
-            // 1) Poveži se s MetaMaskom:
+            // Povezivanje na MetaMask račun
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const accounts = await web3.eth.getAccounts();
-            const currentAccount = accounts[0];
+            const ownerAccount = accounts[0]; // Trenutno ulogirani račun (vlasnik NFT-a)
 
-            // 2) Postavi "approval for all" (Marketplace) da smije transferirati tvoj NFT.
-            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
+            // Prvo odobri Marketplace-u (approve) da može upravljati NFT-om
+            // Moraš imati `productData.tokenId` i originalni `nftContract`.
+            await nftContract.methods
+                .approve(marketplaceAddress, productData.tokenId)
+                .send({ from: ownerAccount });
 
-            // 3) Dohvati tokenId iz productData
-            const tokenId = productData.tokenId; 
-            
-            // 4) Pretvori LUNA cijenu u smallest units (wei) ako je tvoj LUNA token standard ERC-20 s 18 decimala
-            //    Ako unosiš "1" i to znači 1 * 10^18, tad:
-            const lunaPriceWei = web3.utils.toWei(novaCijena.toString(), 'ether');
+            // Zatim pozovi listNFT(tokenId, price) na Marketplace ugovoru
+            // novaCijena je npr. "u Luna token" ili u nekom drugom tokenu
+            // Po potrebi konvertiraj u Wei ili ostavi kakav jest 
+            // (ovisno kako si definirao "price" u ugovoru)
+            await marketplaceContract.methods
+                .listNFT(productData.tokenId, web3.utils.toWei(novaCijena.toString(), 'ether'))
+                .send({ from: ownerAccount });
 
-            // 5) Pozovi listNFT(tokenId, price) na Marketplace-u
-            //    Tvoj marketplace traži `uint256 price` → to su "token decimals".
-            //    Dakle, prosljeđujemo 'lunaPriceWei'.
-            await marketplaceContract.methods.listNFT(tokenId, lunaPriceWei).send({ from: currentAccount });
-
-            console.log(`NFT #${tokenId} listan na Marketplace za ${novaCijena} LUNA (pretvoreno u ${lunaPriceWei} wei).`);
-
-            // 6) Ažuriraj Firestore (price, cryptoPrice, itd.)
-            const updateData = {};
-            if (!isNaN(novaCijena) && novaCijena > 0) {
-                updateData.price = novaCijena;
-            }
-            if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
-                updateData.cryptoPrice = novaCryptoCijena;
-            }
-            await updateDoc(doc(db, 'products', docSnap.id), updateData);
-
-            alert('NFT je uspješno listan na Marketplace i nove cijene su postavljene!');
-            loadProfileProducts(); 
+            alert('NFT je uspješno listan na Marketplace-u!');
         } catch (error) {
             console.error('Greška prilikom listanja NFT-a na Marketplace:', error);
-            alert('Došlo je do greške. Pogledaj konzolu za više detalja.');
+            alert('Došlo je do greške pri postavljanju cijene na Marketplace!');
         }
+
+        // -------------------------------------------
+        // 3) (Po želji) Osvježi UI
+        // -------------------------------------------
+        alert('Nove cijene postavljene!');
+        loadProfileProducts(); // Osvježi prikaz proizvoda
     } else {
         alert('Unesite ispravne cijene!');
     }
