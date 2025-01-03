@@ -247,8 +247,8 @@ productDiv.appendChild(productPrice);
                 setPriceButton.innerText = 'Postavi cijene';
                 setPriceButton.classList.add('set-price-button');
                 setPriceButton.addEventListener('click', async () => {
-    const novaCijena = parseFloat(priceInput.value);
-    const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+    const novaCijena = parseFloat(priceInput.value);        // LUNA cijena (u "tokenima" ili nekoj decim. notaciji)
+    const novaCryptoCijena = parseFloat(cryptoPriceInput.value); // ETH cijena (ne koristiš je u listNFT jer Marketplace traži LUNA)
 
     if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
         try {
@@ -257,25 +257,24 @@ productDiv.appendChild(productPrice);
             const accounts = await web3.eth.getAccounts();
             const currentAccount = accounts[0];
 
-            // 2) Omogući Marketplace ugovoru da barata (transferira) svim NFT-ovima ovog korisnika
-            //    (Ako si to već ranije radio, ponavljanje nije problem. Najčešće je dovoljno jednom.)
+            // 2) Postavi "approval for all" (Marketplace) da smije transferirati tvoj NFT.
             await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
 
-            // 3) Uzmi tokenId od productData
-            const tokenId = productData.tokenId;
+            // 3) Dohvati tokenId iz productData
+            const tokenId = productData.tokenId; 
+            
+            // 4) Pretvori LUNA cijenu u smallest units (wei) ako je tvoj LUNA token standard ERC-20 s 18 decimala
+            //    Ako unosiš "1" i to znači 1 * 10^18, tad:
+            const lunaPriceWei = web3.utils.toWei(novaCijena.toString(), 'ether');
 
-            // 4) Ako želimo listati NFT za prodaju po ETH cijeni (novaCryptoCijena):
-            //    pretvori ETH u wei i pozovi listNFT
-            if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
-                const priceInWei = web3.utils.toWei(novaCryptoCijena.toString(), 'ether');
-                await marketplaceContract.methods
-                      .listNFT(tokenId, priceInWei)
-                      .send({ from: currentAccount });
+            // 5) Pozovi listNFT(tokenId, price) na Marketplace-u
+            //    Tvoj marketplace traži `uint256 price` → to su "token decimals".
+            //    Dakle, prosljeđujemo 'lunaPriceWei'.
+            await marketplaceContract.methods.listNFT(tokenId, lunaPriceWei).send({ from: currentAccount });
 
-                console.log(`NFT #${tokenId} je listan na marketplace za ${novaCryptoCijena} ETH.`);
-            }
+            console.log(`NFT #${tokenId} listan na Marketplace za ${novaCijena} LUNA (pretvoreno u ${lunaPriceWei} wei).`);
 
-            // 5) Ažuriraj podatke u Firestore-u (cijene u DB)
+            // 6) Ažuriraj Firestore (price, cryptoPrice, itd.)
             const updateData = {};
             if (!isNaN(novaCijena) && novaCijena > 0) {
                 updateData.price = novaCijena;
@@ -285,17 +284,16 @@ productDiv.appendChild(productPrice);
             }
             await updateDoc(doc(db, 'products', docSnap.id), updateData);
 
-            alert('Nove cijene postavljene i NFT je uspješno listan na Marketplace!');
-            loadProfileProducts(); // Osvježi prikaz nakon ažuriranja
+            alert('NFT je uspješno listan na Marketplace i nove cijene su postavljene!');
+            loadProfileProducts(); 
         } catch (error) {
-            console.error('Greška prilikom listanja NFT-a:', error);
-            alert('Došlo je do greške prilikom listanja na marketplace. Provjerite konzolu.');
+            console.error('Greška prilikom listanja NFT-a na Marketplace:', error);
+            alert('Došlo je do greške. Pogledaj konzolu za više detalja.');
         }
     } else {
         alert('Unesite ispravne cijene!');
     }
 });
-
 
 
                 productDiv.appendChild(priceInput);
@@ -690,6 +688,7 @@ async function handleLunaPurchase(productId, productData) {
 
 
 
+
 //////////////////////MARKETPLACE//////////////
 
 const marketplaceAddress = "0xe25922FB4CC65433826D9b46339c6e780cdC775E"; // Adresa vašeg Marketplace ugovora
@@ -943,11 +942,6 @@ const marketplaceABI = [
 
 const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
-
-
-// Nakon što instanciraš web3 (i nftContract) u profile.html,
-// instanciraj i marketplaceContract ovako:
-marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
 
 
