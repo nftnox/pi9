@@ -1993,7 +1993,7 @@ mintButton.addEventListener('click', async () => {
         // Poveži se sa ugovorom
         const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-        // Dohvati iznos iz Your wallet
+        // Dohvati iznos iz Your Wallet
         const amountElement = document.getElementById('amount');
         const amountToMint = parseFloat(amountElement.innerText);
 
@@ -2005,7 +2005,7 @@ mintButton.addEventListener('click', async () => {
         // Konvertuj iznos u najmanju jedinicu (wei)
         const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
 
-        // Kombinovano ažuriraj saldo i mintuj tokene
+        // Mintuj tokene, ali ne utječi na Delta Coins Majning
         console.log(`Ažuriranje i mintovanje sa ${amountToMint} za ${currentAccount}`);
         await contract.methods
             .updateAndMint(currentAccount, amountInWei)
@@ -2013,17 +2013,14 @@ mintButton.addEventListener('click', async () => {
 
         alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
 
-        // Resetujte currentPrice varijablu na 0.00
+        // Resetuj iznos u "Your Wallet"
         currentPrice = 0.00;
-
-        // Resetuj iznos u virtuelnom novčaniku na 0
         amountElement.innerText = '0.00';
 
-        // Ažuriraj Firestore bazu podataka
-        await updateFirestore(currentPrice, lastClickTime);
-
-        // **Ovdje NE mijenjajte vrijednost "Delta Coins Majning".**
-        // Vrijednost "Delta Coins Majning" ostaje konstantna jer predstavlja ukupno majnovane coine.
+        // Ažuriraj Firestore samo za trenutnog korisnika, bez utjecaja na Delta Coins Majning
+        await updateDoc(doc(db, 'network', userId), {
+            currentPrice: 0.00
+        });
 
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
@@ -3800,17 +3797,19 @@ document.addEventListener('DOMContentLoaded', () => {
 async function updateTotalCoinsSpent() {
     const userCollection = collection(db, 'network');
     const querySnapshot = await getDocs(userCollection);
+
     let totalCoinsSpent = 0;
 
     querySnapshot.forEach(doc => {
         const userData = doc.data();
         const userCurrentPrice = userData.currentPrice || 0;
-        totalCoinsSpent += userCurrentPrice;
+        totalCoinsSpent += userCurrentPrice; // Zbrajajte samo pozitivne vrijednosti
     });
 
     // Ažurirajte prikaz na stranici
     document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////AUDIO POZIV/////////////////////////////////////////////////////////////////////////
 
