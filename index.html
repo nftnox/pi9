@@ -368,173 +368,178 @@ desktopToggleButton.addEventListener('click', () => {
         }
     </script>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+    import { 
+        getFirestore, 
+        collection, 
+        getDocs, 
+        query, 
+        where, 
+        doc, 
+        getDoc, 
+        updateDoc, 
+        addDoc, 
+        onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+    import { 
+        getStorage, 
+        ref, 
+        uploadBytes, 
+        getDownloadURL 
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
-            authDomain: "piii-7844e.firebaseapp.com",
-            projectId: "piii-7844e",
-            storageBucket: "piii-7844e.appspot.com",
-            messagingSenderId: "315770496799",
-            appId: "1:315770496799:web:0197d4baf2c8731d88722a",
-            measurementId: "G-JH9SDWTS9V"
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+        authDomain: "piii-7844e.firebaseapp.com",
+        projectId: "piii-7844e",
+        storageBucket: "piii-7844e.appspot.com",
+        messagingSenderId: "315770496799",
+        appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+        measurementId: "G-JH9SDWTS9V"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
 
+    let userId = ""; 
+    let username = "";
+    let currentPrice = 0.00; 
+    let totalPrice = 0.00; // DODANO: nova promenljiva za praćenje ukupne količine (wholePrice)
+    let lastClickTime = null; 
+    let referralBonus = 0.01; 
+    const MAX_REFERRALS = 10; 
 
+    // Učitaj ID korisnika
+    async function loadUserId() {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", userParam));
+        const querySnapshot = await getDocs(q);
 
-        let userId = ""; 
-let username = ""; 
-let currentPrice = 0.00;
-let totalPrice = 0.00; // NOVO: Ukupno sakupljeno (ne resetuje se)
-let lastClickTime = null; 
-let referralBonus = 0.01; 
-
-        const MAX_REFERRALS = 10; // Maksimalan broj korisnika koji mogu koristiti isti referralCode
-
-        async function loadUserId() {
-    const userCollection = collection(db, 'network');
-    const q = query(userCollection, where("username", "==", userParam));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-        querySnapshot.forEach(doc => {
-            userId = doc.id; // Dobijanje ID-a korisnika
-            const userData = doc.data();
-            username = `${userData.ime} ${userData.prezime}`; // Ime + prezime
-            document.getElementById('ime').innerText = username; // Prikazivanje imena korisnika
-        });
-    } else {
-        console.error("Korisnik ne postoji u Firestore-u.");
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(doc => {
+                userId = doc.id; 
+                const userData = doc.data();
+                username = `${userData.ime} ${userData.prezime}`;
+                document.getElementById('ime').innerText = username;
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
     }
-}
 
+    // Provera referral koda (ostaje isto, nije obavezno za tvoju trenutnu logiku)
+    async function checkReferral(referralCode) {
+        const userCollection = collection(db, 'network');
+        const q = query(userCollection, where("username", "==", referralCode));
+        const querySnapshot = await getDocs(q);
 
-        async function checkReferral(referralCode) {
-            const userCollection = collection(db, 'network');
-            const q = query(userCollection, where("username", "==", referralCode));
-            const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(async doc => {
+                const referralOwnerData = doc.data();
+                const referralCount = referralOwnerData.referralCount || 0;
+                const usedByUser = referralOwnerData.usedBy || [];
 
-            if (!querySnapshot.empty) {
-                querySnapshot.forEach(async doc => {
-                    const referralOwnerId = doc.id;
-                    const referralOwnerData = doc.data();
-                    const referralCount = referralOwnerData.referralCount || 0;
-                    const usedByUser = referralOwnerData.usedBy || [];
+                if (usedByUser.includes(userId)) {
+                    console.log(`Korisnik ${userId} je već iskoristio referral kod.`);
+                } else if (referralCount >= MAX_REFERRALS) {
+                    console.log(`Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.`);
+                } else {
+                    const newReferralBonus = 0.01 * (referralCount + 1);
+                    console.log(`Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus}`);
 
-                    if (usedByUser.includes(userId)) {
-                        console.log(`Korisnik ${userId} je već iskoristio referral kod.`);
-                    } else if (referralCount >= MAX_REFERRALS) {
-                        console.log(`Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.`);
-                    } else {
-                        const newReferralBonus = 0.01 * (referralCount + 1);
+                    await updateDoc(doc.ref, {
+                        referralBonus: 0.01 + newReferralBonus,
+                        referralCount: referralCount + 1,
+                        usedBy: [...usedByUser, userId]
+                    });
 
-                        console.log(`Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus}`);
-
-                        await updateDoc(doc.ref, {
-                            referralBonus: 0.01 + newReferralBonus,
-                            referralCount: referralCount + 1,
-                            usedBy: [...usedByUser, userId]
-                        });
-
-                        document.getElementById('referral-count').innerText = `${referralCount + 1}/${MAX_REFERRALS}`;
-                    }
-                });
-            }
+                    document.getElementById('referral-count').innerText = `${referralCount + 1}/${MAX_REFERRALS}`;
+                }
+            });
         }
+    }
 
-        async function loadUserData() {
-    const docRef = doc(db, 'network', userId);
-    const docSnap = await getDoc(docRef);
+    // Učitavanje podataka o korisniku iz Firestore i ažuriranje stanja
+    async function loadUserData() {
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-        currentPrice = docSnap.data().currentPrice || 0.00;
+        if (docSnap.exists()) {
+            currentPrice = docSnap.data().currentPrice || 0.00;
 
-        // NOVO: Učitaj totalPrice; ako ne postoji u bazi, koristi 0
-        totalPrice = docSnap.data().totalPrice || 0.00;
+            // DODANO: Učitavanje totalPrice iz Firestore
+            totalPrice = docSnap.data().totalPrice || 0.00;
 
-        lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
-        const userReferralBonus = docSnap.data().referralBonus || 0.01;
+            lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
+            const userReferralBonus = docSnap.data().referralBonus || 0.01;
 
-        document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
-        document.querySelector('.amount').innerText = (currentPrice > 0) 
-            ? userReferralBonus.toFixed(2) + "/h" 
-            : "0.00/h";
+            document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+            document.querySelector('.amount').innerText = (currentPrice > 0) 
+                ? userReferralBonus.toFixed(2) + "/h" 
+                : "0.00/h";
 
-        const now = new Date();
-        const twentyFourHours = 24 * 60 * 60 * 1000;
-
-        // Proveri proteklo vreme od poslednjeg klika (ili starta)
-        if (lastClickTime) {
-            const elapsed = now - lastClickTime;
-            // npr. povećava se na svakih 5 sekundi:
-            const increments = Math.floor(elapsed / 5000);
-
-            if (increments > 0) {
-                // Uvećaj currentPrice
-                currentPrice += increments * userReferralBonus;
-                
-                // NOVO: Uvećaj i totalPrice za isti iznos
-                totalPrice += increments * userReferralBonus;
-
-                // Ažuriraj prikaz
-                document.getElementById('amount').innerText = currentPrice.toFixed(2);
-
-                // Update lastClickTime da odražava “potrošeno” vreme
-                lastClickTime.setSeconds(
-                  lastClickTime.getSeconds() + increments * 5
-                );
-
-                await updateFirestore(currentPrice, totalPrice, lastClickTime);
-            }
-        }
-
-        // Klik na “dolar-icon” (1/dan)
-        document.getElementById('dolar-icon').addEventListener('click', async () => {
             const now = new Date();
+            const twentyFourHours = 24 * 60 * 60 * 1000;
 
-            if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
-                lastClickTime = now;
-                // Uvećaj currentPrice
-                currentPrice += userReferralBonus;
-                
-                // NOVO: Uvećaj i totalPrice
-                totalPrice += userReferralBonus;
+            // Logika akumulacije po proteku vremena (kao ranije)
+            if (lastClickTime) {
+                const elapsed = now - lastClickTime;
+                const increments = Math.floor(elapsed / 5000);
+                if (increments > 0) {
+                    currentPrice += increments * userReferralBonus;
+                    
+                    // DODANO: Dodaj iste te inkremente u totalPrice (wholePrice uvek raste)
+                    totalPrice += increments * userReferralBonus;
 
-                document.querySelector('.amount').innerText = userReferralBonus + "/h";
+                    document.getElementById('amount').innerText = currentPrice.toFixed(2);
 
-                await updateFirestore(currentPrice, totalPrice, lastClickTime);
-            } else {
-                alert("Možete kliknuti samo jednom svakih 24 sata.");
+                    lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+
+                    // Ažuriramo Firestore
+                    await updateFirestore(currentPrice, lastClickTime, totalPrice);
+                }
             }
-        });
-    } else {
-        console.error("Korisnik ne postoji u Firestore-u.");
+
+            // Klik na ikonu "dolar-icon" -> povećanje currentPrice
+            document.getElementById('dolar-icon').addEventListener('click', async () => {
+                const now = new Date();
+                
+                // Ovde je primer ograničenja na 24h, ako hoćeš, ostavi ili ukloni
+                if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                    lastClickTime = now;
+                    currentPrice += userReferralBonus;
+                    
+                    // DODANO: Povećaj i totalPrice
+                    totalPrice += userReferralBonus;
+
+                    document.querySelector('.amount').innerText = userReferralBonus + "/h";
+
+                    await updateFirestore(currentPrice, lastClickTime, totalPrice);
+                } else {
+                    alert("Možete kliknuti samo jednom svakih 24 sata.");
+                }
+            });
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
     }
-}
 
-
-async function updateFirestore(currentPrice, totalPrice, lastClickTime) {
-    const docRef = doc(db, 'network', userId);
-    try {
-        await updateDoc(docRef, {
-            currentPrice: currentPrice,
-            // NOVO: Snimamo i totalPrice
-            totalPrice: totalPrice,
-            lastClickTime: lastClickTime ? lastClickTime : null
-        });
-        console.log("Podaci uspješno ažurirani.");
-    } catch (error) {
-        console.error("Greška prilikom ažuriranja podataka: ", error);
+    // DODANO: updateFirestore sada prima i totalPrice
+    async function updateFirestore(currentPrice, lastClickTime, totalPrice) {
+        const docRef = doc(db, 'network', userId);
+        try {
+            await updateDoc(docRef, {
+                currentPrice: currentPrice,
+                totalPrice: totalPrice, // DODANO: snimamo i totalPrice
+                lastClickTime: lastClickTime ? lastClickTime : null
+            });
+            console.log("Podaci uspješno ažurirani u Firestore-u.");
+        } catch (error) {
+            console.error("Greška prilikom ažuriranja podataka: ", error);
+        }
     }
-}
-
 
         
 
@@ -2007,60 +2012,61 @@ const contractABI = [
 
 
 const mintButton = document.getElementById('mint-my-coin');
+    mintButton.addEventListener('click', async () => {
+        try {
+            if (typeof window.ethereum === 'undefined') {
+                alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
+                return;
+            }
 
-mintButton.addEventListener('click', async () => {
-    try {
-        if (typeof window.ethereum === 'undefined') {
-            alert('MetaMask nije instaliran! Molimo vas da ga instalirate.');
-            return;
+            // Povezivanje sa MetaMask-om
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+
+            // Dohvati račun iz MetaMask-a
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0];
+
+            // Poveži se sa ugovorom
+            const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+            // Dohvati iznos iz Your wallet
+            const amountElement = document.getElementById('amount');
+            const amountToMint = parseFloat(amountElement.innerText);
+
+            if (amountToMint <= 0) {
+                alert('Nemate dovoljno sredstava za mintovanje.');
+                return;
+            }
+
+            // Konvertuj iznos u wei
+            const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
+
+            // Poziv metode na pametnom ugovoru
+            console.log(`Ažuriranje i mintovanje sa ${amountToMint} za ${currentAccount}`);
+            await contract.methods
+                .updateAndMint(currentAccount, amountInWei)
+                .send({ from: currentAccount });
+
+            alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
+
+            // Reset currentPrice na 0.00
+            currentPrice = 0.00;
+
+            // Važno: totalPrice ne diramo – on nastavlja da čuva istorijski ukupni iznos
+            // totalPrice ostaje kakav je bio
+
+            // Resetuj iznos u virtuelnom novčaniku na 0
+            amountElement.innerText = '0.00';
+
+            // Ažuriraj Firestore, ali totalPrice ostaje isti
+            await updateFirestore(currentPrice, lastClickTime, totalPrice);
+
+        } catch (error) {
+            console.error('Greška prilikom mintovanja:', error);
+            alert('Došlo je do greške. Molimo pokušajte ponovo.');
         }
-
-        // Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // Dohvati trenutni račun iz MetaMask-a
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-
-        // Poveži se sa ugovorom
-        const contract = new web3.eth.Contract(contractABI, contractAddress);
-
-        // Dohvati iznos iz Your wallet
-        const amountElement = document.getElementById('amount');
-        const amountToMint = parseFloat(amountElement.innerText);
-
-        if (amountToMint <= 0) {
-            alert('Nemate dovoljno sredstava za mintovanje.');
-            return;
-        }
-
-        // Konvertuj iznos u najmanju jedinicu (wei)
-        const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
-
-        // Kombinovano ažuriraj saldo i mintuj tokene
-        console.log(`Ažuriranje i mintovanje sa ${amountToMint} za ${currentAccount}`);
-        await contract.methods
-            .updateAndMint(currentAccount, amountInWei)
-            .send({ from: currentAccount });
-
-        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
-
-        // Resetujte `currentPrice` varijablu na 0.00
-        currentPrice = 0.00;
-
-        // Resetuj iznos u virtuelnom novčaniku na 0
-        amountElement.innerText = '0.00';
-        amountElement.innerText = '0.00';
-
-        // Ažuriraj Firestore bazu podataka
-        await updateFirestore(currentPrice, lastClickTime);
-
-    } catch (error) {
-        console.error('Greška prilikom mintovanja:', error);
-        alert('Došlo je do greške. Molimo pokušajte ponovo.');
-    }
-});
+    });
 
 
 
@@ -3828,19 +3834,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 async function updateTotalCoinsSpent() {
-    const userCollection = collection(db, 'network');
-    const querySnapshot = await getDocs(userCollection);
-    let totalCoinsSpent = 0;
+        const userCollection = collection(db, 'network');
+        const querySnapshot = await getDocs(userCollection);
+        let totalCoinsSpent = 0;
 
-    querySnapshot.forEach(doc => {
-        const userData = doc.data();
-        const userCurrentPrice = userData.currentPrice || 0;
-        totalCoinsSpent += userCurrentPrice;
-    });
+        querySnapshot.forEach(doc => {
+            const userData = doc.data();
+            const userCurrentPrice = userData.currentPrice || 0;
+            totalCoinsSpent += userCurrentPrice;
+        });
 
-    // Ažurirajte prikaz na stranici
-    document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
-}
+        document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
+    }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////AUDIO POZIV/////////////////////////////////////////////////////////////////////////
 
