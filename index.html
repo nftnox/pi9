@@ -2013,7 +2013,7 @@ mintButton.addEventListener('click', async () => {
 
         alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
 
-        // Resetujte `currentPrice` varijablu na 0.00
+        // Resetujte currentPrice varijablu na 0.00
         currentPrice = 0.00;
 
         // Resetuj iznos u virtuelnom novčaniku na 0
@@ -2022,11 +2022,15 @@ mintButton.addEventListener('click', async () => {
         // Ažuriraj Firestore bazu podataka
         await updateFirestore(currentPrice, lastClickTime);
 
+        // **Ovdje NE mijenjajte vrijednost "Delta Coins Majning".**
+        // Vrijednost "Delta Coins Majning" ostaje konstantna jer predstavlja ukupno majnovane coine.
+
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
+
 
 
 
