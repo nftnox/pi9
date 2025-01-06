@@ -457,50 +457,62 @@ desktopToggleButton.addEventListener('click', () => {
         currentPrice = docSnap.data().currentPrice || 0.00;
         lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
         const userReferralBonus = docSnap.data().referralBonus || 0.01;
-        let totalMintedCoins = docSnap.data().totalMintedCoins || 0.00; // Dohvati totalMintedCoins
+
+        // Ako `totalPrice` ne postoji, inicijalizuj ga
+        let totalPrice = docSnap.data().totalPrice || 0.00;
 
         document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+        document.querySelector('.amount').innerText = (currentPrice > 0) ? userReferralBonus.toFixed(2) + "/h" : "0.00/h";
 
         const now = new Date();
-        const fiveSeconds = 5000;
+        const twentyFourHours = 24 * 60 * 60 * 1000;
 
         if (lastClickTime) {
             const elapsed = now - lastClickTime;
-            const increments = Math.floor(elapsed / fiveSeconds); // Broj povećanja u intervalu od 5 sekundi
-
-            if (increments > 0) {
-                const amountToAdd = increments * userReferralBonus;
-                currentPrice += amountToAdd; // Povećaj currentPrice
-                totalMintedCoins += amountToAdd; // Dodaj isti iznos u totalMintedCoins
-
-                // Ažuriraj Firestore
-                await updateDoc(docRef, {
-                    currentPrice: currentPrice,
-                    lastClickTime: now,
-                    totalMintedCoins: totalMintedCoins // Ovdje ažuriramo totalMintedCoins
-                });
-
-                console.log(`Ažurirano: currentPrice = ${currentPrice}, totalMintedCoins = ${totalMintedCoins}`);
-            }
+            const increments = Math.floor(elapsed / 5000);
+            currentPrice += increments * userReferralBonus;
+            totalPrice += increments * userReferralBonus; // Ažuriraj totalPrice
+            document.getElementById('amount').innerText = currentPrice.toFixed(2);
+            lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+            await updateFirestore(currentPrice, totalPrice, lastClickTime);
         }
+
+        document.getElementById('dolar-icon').addEventListener('click', async () => {
+            const now = new Date();
+
+            if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
+                lastClickTime = now;
+                currentPrice += userReferralBonus;
+                totalPrice += userReferralBonus; // Dodaj u totalPrice
+                document.querySelector('.amount').innerText = userReferralBonus + "/h";
+                await updateFirestore(currentPrice, totalPrice, lastClickTime);
+            } else {
+                alert("Možete kliknuti samo jednom svakih 24 sata.");
+            }
+        });
+
+        // Prikaz totalPrice na stranici
+        document.getElementById('total-coins-spent').innerText = `Total Coins: ${totalPrice.toFixed(2)}`;
     } else {
         console.error("Korisnik ne postoji u Firestore-u.");
     }
 }
 
 
-        async function updateFirestore(currentPrice, lastClickTime) {
-            const docRef = doc(db, 'network', userId);
-            try {
-                await updateDoc(docRef, {
-                    currentPrice: currentPrice,
-                    lastClickTime: lastClickTime ? lastClickTime : null
-                });
-                console.log("Podaci uspješno ažurirani.");
-            } catch (error) {
-                console.error("Greška prilikom ažuriranja podataka: ", error);
-            }
-        }
+async function updateFirestore(currentPrice, totalPrice, lastClickTime) {
+    const docRef = doc(db, 'network', userId);
+    try {
+        await updateDoc(docRef, {
+            currentPrice: currentPrice,
+            totalPrice: totalPrice, // Ažuriraj totalPrice
+            lastClickTime: lastClickTime ? lastClickTime : null
+        });
+        console.log("Podaci uspješno ažurirani.");
+    } catch (error) {
+        console.error("Greška prilikom ažuriranja podataka: ", error);
+    }
+}
+
 
         
 
@@ -2000,27 +2012,19 @@ mintButton.addEventListener('click', async () => {
         const amountInWei = web3.utils.toWei(amountToMint.toString(), 'ether');
 
         console.log(`Ažuriranje i mintovanje sa ${amountToMint} za ${currentAccount}`);
-        await contract.methods
-            .updateAndMint(currentAccount, amountInWei)
-            .send({ from: currentAccount });
+        await contract.methods.updateAndMint(currentAccount, amountInWei).send({ from: currentAccount });
 
-        alert(`Uspješno ste mintovali ${amountToMint} LUNA tokena!`);
+        alert(`Uspješno ste mintovali ${amountToMint} Delta Coins!`);
 
-        currentPrice = 0.00; // Reset currentPrice
+        currentPrice = 0.00; // Resetuj currentPrice
         amountElement.innerText = '0.00';
 
-        const docRef = doc(db, 'network', userId);
-        await updateDoc(docRef, {
-            currentPrice: currentPrice,
-            lastClickTime: new Date(),
-        });
-
+        await updateFirestore(currentPrice, totalPrice, lastClickTime); // totalPrice ostaje nepromenjen
     } catch (error) {
         console.error('Greška prilikom mintovanja:', error);
         alert('Došlo je do greške. Molimo pokušajte ponovo.');
     }
 });
-
 
 
 
