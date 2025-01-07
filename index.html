@@ -3834,18 +3834,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 async function updateTotalCoinsSpent() {
-        const userCollection = collection(db, 'network');
-        const querySnapshot = await getDocs(userCollection);
-        let totalCoinsSpent = 0;
+    const userCollection = collection(db, 'network');
+    const querySnapshot = await getDocs(userCollection);
+    let totalCoinsSpent = 0;
 
-        querySnapshot.forEach(doc => {
-            const userData = doc.data();
-            const userCurrentPrice = userData.currentPrice || 0;
-            totalCoinsSpent += userCurrentPrice;
-        });
+    // Umjesto sabiranja currentPrice:
+    // totalCoinsSpent += userCurrentPrice;
+    //
+    // želimo sabirati totalPrice svakog usera:
+    querySnapshot.forEach(doc => {
+        const userData = doc.data();
+        const userTotalPrice = userData.totalPrice || 0;  // DODANO
+        totalCoinsSpent += userTotalPrice;                // DODANO
+    });
 
-        document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
-    }
+    // Prikaz u elementu na stranici:
+    document.getElementById('coins-spent').innerText = totalCoinsSpent.toFixed(2);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////AUDIO POZIV/////////////////////////////////////////////////////////////////////////
 
