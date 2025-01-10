@@ -294,8 +294,15 @@ desktopToggleButton.addEventListener('click', () => {
         
         <!-- Ikona za dijeljenje -->
         <button id="share-icon">
-            <span class="material-icons">share</span> Invite friends
+            <span>
+                <span class="material-icons">share</span> Invite
+            </span>
+            <span id="referral-count-display" style="font-size: 0.9em; color: gray; display: block; margin-top: 5px;">
+                0/10
+            </span>
         </button>
+        
+        
     </div>
 
     <div class="image-container">
@@ -310,6 +317,7 @@ desktopToggleButton.addEventListener('click', () => {
     <div class="gif-container">
         <img src="images/Pink & Blue.gif" alt="Animirani GIF" style="max-width: 100%; height: auto;">
     </div>
+    
     
     
 
@@ -684,7 +692,34 @@ buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
 
 
 
+        async function loadReferralCount() {
+    try {
+        const docRef = doc(db, 'network', userId); // Preuzima korisnički dokument
+        const docSnap = await getDoc(docRef);
 
+        if (docSnap.exists()) {
+            const referralCount = docSnap.data().referralCount || 0; // Ako nema podataka, postavi na 0
+            const maxReferrals = 10; // Maksimalan broj preporuka
+
+            // Ažuriramo prikaz referal count-a
+            document.getElementById('referral-count-display').innerText = `${referralCount}/${maxReferrals}`;
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    } catch (error) {
+        console.error("Greška prilikom učitavanja referral count-a:", error);
+    }
+}
+
+// Pozivanje funkcije nakon učitavanja korisničkog ID-ja
+async function initializeUserData() {
+    await loadUserId(); // Učitava `userId` iz Firestore-a
+    await loadUserData(); // Učitava `currentPrice`
+    await loadReferralCount(); // Učitava `referralCount`
+}
+
+// Pokreće učitavanje podataka za korisnika
+initializeUserData();
 
 
 
@@ -5711,6 +5746,22 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
 }
 
 
+#share-icon {
+    display: flex;
+    flex-direction: column; /* Vertikalni raspored elemenata unutar dugmeta */
+    align-items: center; /* Cjelokupan sadržaj centriran */
+    text-align: center;
+}
+
+#share-icon span:first-child {
+    display: flex;
+    align-items: center; /* Ikona i tekst u istom redu */
+    gap: 5px; /* Razmak između ikone i teksta Invite */
+}
+
+#referral-count-display {
+    margin-top: 5px; /* Razmak između glavnog sadržaja i referal broja */
+}
 
 
 </style>
@@ -5957,4 +6008,3 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
         padding: 10px;
     }
 </style>
-
