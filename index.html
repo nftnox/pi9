@@ -420,7 +420,7 @@ desktopToggleButton.addEventListener('click', () => {
     let currentPrice = 0.00; 
     let totalPrice = 0.00; // DODANO: nova promenljiva za praćenje ukupne količine (wholePrice)
     let lastClickTime = null; 
-    let referralBonus = 0.01; 
+    
     const MAX_REFERRALS = 10; 
 
     // Učitaj ID korisnika
@@ -488,9 +488,12 @@ desktopToggleButton.addEventListener('click', () => {
             const userReferralBonus = docSnap.data().referralBonus || 0.01;
 
             document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
-            document.querySelector('.amount').innerText = (currentPrice > 0) 
-                ? userReferralBonus.toFixed(2) + "/h" 
-                : "0.00/h";
+            const baseMiningRate = 0.01; // Vaša fiksna baza
+const actualRate = baseMiningRate + userReferralBonus;
+
+document.querySelector('.amount').innerText = (currentPrice > 0) 
+    ? actualRate.toFixed(2) + "/h"
+    : "0.00/h";
 
             const now = new Date();
             const twentyFourHours = 24 * 60 * 60 * 1000;
@@ -500,39 +503,138 @@ desktopToggleButton.addEventListener('click', () => {
                 const elapsed = now - lastClickTime;
                 const increments = Math.floor(elapsed / 5000);
                 if (increments > 0) {
-                    currentPrice += increments * userReferralBonus;
-                    
-                    // DODANO: Dodaj iste te inkremente u totalPrice (wholePrice uvek raste)
-                    totalPrice += increments * userReferralBonus;
+    const baseMiningRate = 0.01; 
+    const actualRate = baseMiningRate + userReferralBonus;
 
-                    document.getElementById('amount').innerText = currentPrice.toFixed(2);
+    currentPrice += increments * actualRate;
+    totalPrice += increments * actualRate;
 
-                    lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+    document.getElementById('amount').innerText = currentPrice.toFixed(2);
 
-                    // Ažuriramo Firestore
-                    await updateFirestore(currentPrice, lastClickTime, totalPrice);
-                }
+    lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
+
+    await updateFirestore(currentPrice, lastClickTime, totalPrice);
+}
+
             }
 
             // Klik na ikonu "dolar-icon" -> povećanje currentPrice
-            document.getElementById('dolar-icon').addEventListener('click', async () => {
-                const now = new Date();
-                
-                // Ovde je primer ograničenja na 24h, ako hoćeš, ostavi ili ukloni
-                if (!lastClickTime || (now - lastClickTime) >= twentyFourHours) {
-                    lastClickTime = now;
-                    currentPrice += userReferralBonus;
-                    
-                    // DODANO: Povećaj i totalPrice
-                    totalPrice += userReferralBonus;
+           // Funkcija za resetovanje cijene nakon 24h
+async function handleMainClick() {
+    const now = new Date();
+    const twentyFourHours = 24 * 60 * 60 * 1000; // 24 sata u milisekundama
 
-                    document.querySelector('.amount').innerText = userReferralBonus + "/h";
+    const docRef = doc(db, 'network', userId);
+    const docSnap = await getDoc(docRef);
 
-                    await updateFirestore(currentPrice, lastClickTime, totalPrice);
-                } else {
-                    alert("Možete kliknuti samo jednom svakih 24 sata.");
-                }
+    if (docSnap.exists()) {
+        const userData = docSnap.data();
+        const mainClickTime = userData.mainClickTime ? userData.mainClickTime.toDate() : null;
+
+        // Ako je prošlo više od 24h, resetuj currentPrice na 0.00
+        if (mainClickTime && now - mainClickTime >= twentyFourHours) {
+            await updateDoc(docRef, {
+                currentPrice: 0.00,
+                mainClickTime: now, // Ažuriraj mainClickTime na trenutno vreme
             });
+            currentPrice = 0.00; // Lokalno ažuriranje
+            document.getElementById('amount').innerText = currentPrice.toFixed(2);
+            console.log("Cijena resetovana na 0.00 nakon 24h.");
+        } else if (!mainClickTime) {
+            // Ako je ovo prvi glavni klik, postavi mainClickTime
+            await updateDoc(docRef, {
+                mainClickTime: now,
+            });
+            console.log("Glavni klik registrovan.");
+        }
+    }
+}
+
+// Postojeća funkcija za click na "dolar-icon"
+document.getElementById('dolar-icon').addEventListener('click', async () => {
+    const now = new Date();
+    const oneMinute = 60 * 1000;
+    const fiveSeconds = 5 * 1000;
+
+    const docRef = doc(db, 'network', userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const userData = docSnap.data();
+        const referralIds = userData.usedBy || []; // Preuzmi sve referale
+        let activeReferralCount = 0;
+
+        // Provjera svakog referala
+        for (const referralId of referralIds) {
+            try {
+                const referralDocRef = doc(db, 'network', referralId);
+                const referralDocSnap = await getDoc(referralDocRef);
+
+                if (referralDocSnap.exists()) {
+                    const referralData = referralDocSnap.data();
+
+                    // Ako referal ima lastClickTime, smatra se aktivnim
+                    if (referralData.lastClickTime) {
+                        activeReferralCount++;
+                    }
+                }
+            } catch (error) {
+                console.error(`Greška prilikom provjere referala (${referralId}):`, error);
+            }
+        }
+
+        // Izračunaj bonus na osnovu aktivnih referala
+        const userReferralBonus = activeReferralCount * 0.01;
+
+        // Osnovna stopa zarade
+        const baseMiningRate = 0.01;
+
+        // Ukupna zarada
+        const actualRate = baseMiningRate + userReferralBonus;
+
+        // Provjera vremena klika
+        const mainClickTime = userData.mainClickTime ? userData.mainClickTime.toDate() : null;
+        const lastClickTimeFromDB = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
+
+        if (!mainClickTime || now - mainClickTime >= oneMinute) {
+            if (lastClickTimeFromDB) {
+                const elapsed = now - lastClickTimeFromDB;
+                const increments = Math.floor(elapsed / fiveSeconds);
+
+                if (increments > 0) {
+                    currentPrice += increments * actualRate;
+                    totalPrice += increments * actualRate;
+                }
+            }
+
+            lastClickTime = now;
+
+            await updateDoc(docRef, {
+                currentPrice,
+                totalPrice,
+                lastClickTime: now,
+                mainClickTime: now,
+                referralBonus: userReferralBonus // Ažuriraj bonus u Firestore
+            });
+
+            // Ažuriraj prikaz
+            document.getElementById('amount').innerText = currentPrice.toFixed(2);
+            document.querySelector('.amount').innerText = `${actualRate.toFixed(2)}/h`;
+
+            console.log(`Aktivni referali: ${activeReferralCount}`);
+        } else {
+            alert("Sačekaj još malo - nije prošlo 1 minut od zadnjeg klika!");
+        }
+    } else {
+        console.error("Korisnik ne postoji u Firestore-u.");
+    }
+});
+
+
+
+
+
+
         } else {
             console.error("Korisnik ne postoji u Firestore-u.");
         }
@@ -554,6 +656,33 @@ desktopToggleButton.addEventListener('click', () => {
     }
 
         
+    async function checkMainClickTime() {
+    const now = new Date();
+    const oneMinute = 60 * 1000;
+
+    const docRef = doc(db, 'network', userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const userData = docSnap.data();
+        const mainClickTime = userData.mainClickTime ? userData.mainClickTime.toDate() : null;
+
+        if (mainClickTime && now - mainClickTime >= oneMinute) {
+            // Zaustavi rudarenje
+            lastClickTime = null; 
+            await updateDoc(docRef, { lastClickTime: null });
+
+            // Resetuj "dolar-icon" da prikazuje 0.00/h
+            document.querySelector('.amount').innerText = "0.00/h";
+
+            console.log("Istekao je 1 minut. Rudarenje se gasi, ali currentPrice NE resetujemo.");
+        }
+    }
+}
+
+
+
+    
 
 //////////////////////////////// TRZNICA/////////////////////////////////
 // Ažuriraj funkciju za učitavanje proizvoda
@@ -716,7 +845,11 @@ async function initializeUserData() {
     await loadUserId(); // Učitava `userId` iz Firestore-a
     await loadUserData(); // Učitava `currentPrice`
     await loadReferralCount(); // Učitava `referralCount`
+    
 }
+
+
+
 
 // Pokreće učitavanje podataka za korisnika
 initializeUserData();
@@ -3038,7 +3171,7 @@ function openChatWithUser(userId) {
 
 
 
-////////////////////GRUPNI CHAT//////////////////////
+/////////////////////////////////////////////////////////////////GRUPNI CHAT///////////////////////////////////////////////////////////////////////////////////
 
 // Otvaranje modalnog prozora za kreiranje grupe GRUPA
 document.getElementById('create-group-button').addEventListener('click', () => {
@@ -4315,7 +4448,7 @@ function showConfetti() {
 
 
 
-//////////////////////////////////////IGREEEEEEEEEEEEEEEEEEEE///////////////////////////
+////////////////////////////////////////////////////////////////////////////////IGREEEEEEEEEEEEEEEEEEEE////////////////////////////////////////////////////////////////////////
 
 document.addEventListener('DOMContentLoaded', () => {
     // Pronađi sve elemente sa ID-jem "games-link"
@@ -4619,7 +4752,7 @@ async function updateCurrentPriceForHighscore(userId, amount) {
     }
 }
 
-/////////////////////////////FLAPPY BIRD////////////////////////////////
+//////////////////////////////////////////////////////FLAPPY BIRD//////////////////////////////////////////////////////////////
 
 
 
@@ -4806,14 +4939,17 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
 
     // Učitaj proizvode nakon učitavanja stranice
     window.onload = () => {
-        loadUserId();
-        loadUserData();
-        loadProducts();
-        setInterval(() => {
-            loadUserData();
-            updateTotalCoinsSpent(); // Ažuriranje svakih 5 sekundi
-        }, 5000);
-    };
+    loadUserId();
+    loadUserData();
+    loadProducts();
+
+    // Automatski provjeravaj svakih 5 sekundi
+    setInterval(async () => {
+        await loadUserData();
+        await checkMainClickTime(); // Provjera isteka mainClickTime
+        updateTotalCoinsSpent();
+    }, 5000);
+};  
     </script>
 
 </body>
