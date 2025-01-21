@@ -29,37 +29,44 @@
         <button id="desktop-toggle-button" class="toggle-button">
             <span class="material-icons">menu</span> 
         </button>
-        <nav id="desktop-menu" class="hidden">
+        <nav id="desktop-menu" class="hidden">         
             <!-- Desktop meni -->
             <a href="#"><span class="material-icons">home</span> Home</a>
             <a href="#"><span class="material-icons">group</span> Team</a>
             <a href="whitepaper.html"><span class="material-icons">description</span> Whitepaper</a>
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
-            <a href="#" id="games-link">
-                <span class="material-icons">sports_esports</span> Games
-            </a>
-            
+            <a href="#" id="games-link"><span class="material-icons">sports_esports</span> Games</a>
+            <a href="#"><span class="material-icons">campaign</span> Announcements</a>
             <a href="#"><span class="material-icons">person</span> Profile</a>
             <a href="#" id="exchange-link"><span class="material-icons">swap_horiz</span> Exchange</a>
             <a href="#" id="buy-delta-link"><span class="material-icons">attach_money</span> Buy Delta Coin</a>
         </nav>
         
-    
         <!-- Mobilni meni -->
         <nav id="toggle-menu">
-            <a href="#"><span class="material-icons">home</span> Home</a>
-            <a href="#"><span class="material-icons">group</span> Team</a>
-            <a href="whitepaper.html"><span class="material-icons">description</span> Whitepaper</a>
-            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
+            <a href="#"><span class="material-icons">home</span> Home <span class="hidden-text"> sssssisss</span></a>
+            <a href="#"><span class="material-icons">group</span> Team<span class="hidden-text"> sssssssss</span></a>
+            <a href="whitepaper.html"><span class="material-icons">description</span> Whitepaper<span class="hidden-text"> ssss</span></a>
+            <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat<span class="hidden-text"> sssis iissss</span></a>
             <a href="#" id="games-link">
-                <span class="material-icons">sports_esports</span> Games
+                <span class="material-icons">sports_esports</span> Games<span class="hidden-text"> ssssisss</span>
             </a>
-            
-            <a href="#"><span class="material-icons">person</span> Profile</a>
-            <a href="#" id="exchange-link-mobile"><span class="material-icons">swap_horiz</span> Exchange</a>
-            <a href="#" id="buy-delta-link-mobile"><span class="material-icons">attach_money</span> Buy Delta Coin</a>
-
+                        <a href="#"><span class="material-icons">campaign</span> Announcements</a>
+            <a href="#"><span class="material-icons">person</span> Profile<span class="hidden-text"> ssssssss</span></a>
+            <a href="#" id="exchange-link-mobile"><span class="material-icons">swap_horiz</span> Exchange<span class="hidden-text"> sssiss</span></a>
+            <a href="#" id="buy-delta-link-mobile"><span class="material-icons">attach_money</span> Buy Delta Coin<span class="hidden-text"> s</span></a>
+            <div class="follow-us">
+                <p>Follow us on:</p>
+                <div class="social-icons">
+                    <a href="https://www.facebook.com" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.twitter.com" target="_blank"><i class="fab fa-twitter"></i></a>
+                    <a href="https://www.telegram.org" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+                    <a href="https://www.youtube.com" target="_blank"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
         </nav>
+        
     </header>
 
     <div id="overlay"></div>
@@ -4971,6 +4978,9 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
 
 <style>
 
+.hidden-text {
+    visibility: hidden;
+}
 
 
 
@@ -6018,7 +6028,7 @@ nav .material-icons {
   padding: 10px 20px;
   display: block;
   text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 /* Zamagljenje ostatka stranice prilikom otvaranja menija */
@@ -6036,6 +6046,57 @@ nav .material-icons {
 
 
 
+.follow-us {
+    padding-top: 200px; /* Pomiče sekciju prema dole bez margina */
+    text-align: center;
+}
+
+
+.follow-us p {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 10px;
+    border-bottom: none; /* Uklanja border ispod teksta */
+}
+
+.social-icons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px; /* Mali razmak između ikonica */
+}
+
+.social-icons a {
+    font-size: 24px; /* Manje ikonice */
+    color: white;
+    text-decoration: none;
+    margin: 0 !important;  /* Uklanja sve margine */
+    padding: 0 !important; /* Uklanja sve paddinge */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;  /* Fiksna širina ikona */
+    height: 30px; /* Fiksna visina ikona */
+}
+
+.social-icons a i {
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+.social-icons a:hover {
+    color: #007bff;
+    transform: scale(1.1);
+}
+
+
+
+/* Uklanjanje border-bottom samo za Follow us sekciju */
+#toggle-menu .follow-us a {
+    border-bottom: none;
+}
 
 
 /* Stil za desktop meni */
@@ -6191,4 +6252,3 @@ nav .material-icons {
         padding: 10px;
     }
 </style>
-
