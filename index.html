@@ -37,7 +37,7 @@
             <a href="#" id="chat-link"><span class="material-icons">chat</span> Chat</a>
             <a href="#" id="games-link"><span class="material-icons">sports_esports</span> Games</a>
             <a href="#"><span class="material-icons">campaign</span> Announcements</a>
-            <a href="#"><span class="material-icons">person</span> Profile</a>
+            <a href="#" id="profile-link"><span class="material-icons">person</span> Profile</a>
             <a href="#" id="exchange-link"><span class="material-icons">swap_horiz</span> Exchange</a>
             <a href="#" id="buy-delta-link"><span class="material-icons">attach_money</span> Buy Delta Coin</a>
         </nav>
@@ -52,7 +52,7 @@
                 <span class="material-icons">sports_esports</span> Games<span class="hidden-text"> ssssisss</span>
             </a>
                         <a href="#"><span class="material-icons">campaign</span> Announcements</a>
-            <a href="#"><span class="material-icons">person</span> Profile<span class="hidden-text"> ssssssss</span></a>
+                        <a href="#" id="profile-link-toggle"><span class="material-icons">person</span> Profile <span class="hidden-text"> sssiissss</span></a>
             <a href="#" id="exchange-link-mobile"><span class="material-icons">swap_horiz</span> Exchange<span class="hidden-text"> sssiss</span></a>
             <a href="#" id="buy-delta-link-mobile"><span class="material-icons">attach_money</span> Buy Delta Coin<span class="hidden-text"> s</span></a>
             <div class="follow-us">
@@ -332,9 +332,10 @@ desktopToggleButton.addEventListener('click', () => {
         Luna Coins Majning: <span id="coins-spent">0</span>/27,000,000
     </div>
     
-    <div class="gif-container">
+    <div class="gif-container" style="display: flex; justify-content: center; align-items: center;">
         <img src="images/Pink & Blue.gif" alt="Animirani GIF" style="max-width: 100%; height: auto;">
     </div>
+    
     
     
     
@@ -703,6 +704,11 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
     
 
 //////////////////////////////// TRZNICA/////////////////////////////////
+
+
+
+
+
 // Ažuriraj funkciju za učitavanje proizvoda
 async function loadProducts() {
     const productCollection = collection(db, 'products');
@@ -4952,8 +4958,27 @@ if (window.innerWidth <= 768) { // Provjera za mobilne uređaje
 }
 
 
+document.addEventListener('DOMContentLoaded', () => {
+        // Dohvatanje URL parametara iz trenutnog prozora
+        const params = new URLSearchParams(window.location.search);
+        const ime = params.get('ime');  // Npr: BB
+        const prezime = params.get('prezime');  // Npr: NN
+        const username = params.get('username');  // Npr: Bambi
+        const trenutnaCijena = document.getElementById('current-price').innerText || '0.00';
 
+        if (ime && prezime && username) {
+            // Generisanje URL-a za profilnu stranicu
+            const profileUrl = `profile.html?ime=${ime}%20${prezime}&loggedInUser=${username}&trenutnaCijena=${trenutnaCijena}`;
 
+            // Dodjeljivanje URL-a profil linkovima
+            document.getElementById('profile-link').setAttribute('href', profileUrl);
+            document.getElementById('profile-link-toggle').setAttribute('href', profileUrl);
+        } else {
+            // Ako korisnik nije prijavljen, preusmjeri ga na početnu stranicu
+            document.getElementById('profile-link').setAttribute('href', 'index.html');
+            document.getElementById('profile-link-toggle').setAttribute('href', 'index.html');
+        }
+    });
 
     // Učitaj proizvode nakon učitavanja stranice
     window.onload = () => {
@@ -6252,5 +6277,3 @@ nav .material-icons {
         padding: 10px;
     }
 </style>
-
- 
