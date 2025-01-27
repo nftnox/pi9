@@ -1413,7 +1413,6 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 
 
 
-
 // Pozovi funkciju za učitavanje podataka vlasnika profila
 loadProfileOwnerData();
 
@@ -1427,6 +1426,59 @@ loadProfileProducts();
 
 
 
+// Funkcija za dohvat korisničkih podataka kada je korisnik na svom profilu
+async function loadUserProfile() {
+    if (loggedInUserIme === profileName) {
+        const userDocRef = doc(db, 'network', loggedInUserId);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+
+            // Prikaz korisničkih informacija
+            const profileTitle = document.getElementById('profile-title');
+
+            const userInfoDiv = document.createElement('div');
+            userInfoDiv.classList.add('user-info');
+
+            userInfoDiv.innerHTML = `
+                <p><strong>Username:</strong> ${userData.username}</p>
+                <p><strong>Total Price:</strong> ${userData.totalPrice.toFixed(2)}</p>
+                <p><strong>Email:</strong> ${userData.email}</p>
+                <p><strong>Used By:</strong></p>
+                <ul id="used-by-list"></ul>
+            `;
+
+            profileTitle.appendChild(userInfoDiv);
+
+            // Obrada liste korisnika iz `usedBy` polja
+            if (userData.usedBy && userData.usedBy.length > 0) {
+                const usedByList = document.getElementById('used-by-list');
+
+                for (const userId of userData.usedBy) {
+                    const userRef = doc(db, 'network', userId);
+                    const userSnap = await getDoc(userRef);
+
+                    if (userSnap.exists()) {
+                        const userInfo = userSnap.data();
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${userInfo.ime} ${userInfo.prezime}`;
+                        usedByList.appendChild(listItem);
+                    } else {
+                        console.error(`Korisnik s ID-jem ${userId} nije pronađen.`);
+                    }
+                }
+            } else {
+                document.getElementById('used-by-list').innerHTML = '<li>Nema referisanih korisnika.</li>';
+            }
+        } else {
+            console.error("Podaci korisnika nisu pronađeni.");
+        }
+    }
+}
+
+// Pozovi funkciju za učitavanje korisničkog profila
+await loadUserProfile();
 
 
     </script>
