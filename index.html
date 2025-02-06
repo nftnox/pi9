@@ -941,6 +941,9 @@ buyButton.addEventListener('click', async () => {
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
+        // **Dodaj SetApprovalForAll prije kupovine**
+        await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: buyerAccount });
+
         // Pretpostavka: productData.price je cijena u LUNA tokenima koju ste upisali prilikom mintanja
         const priceInLuna = productData.price;
         const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
@@ -956,7 +959,7 @@ buyButton.addEventListener('click', async () => {
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: userId,
+            owner: buyerAccount, // Dodaj adresu novog vlasnika
             ownerName: username
         });
 
@@ -976,6 +979,7 @@ buyButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
@@ -2379,6 +2383,10 @@ usdAmountBuyInput.addEventListener('input', () => {
 
 /////////////////CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAT///////////////////////////////////////////////////////////////////////////////////////////////////////
 
+let isCalculatorValidated = false; // Praćenje validacije kalkulatora
+
+
+
         let isChatOpen = false; // Pratimo da li je chat otvoren
 let selectedUserName = ''; // Čuvamo ime trenutno odabranog korisnika
 let selectedUserId = ''; // Čuvamo ID trenutno odabranog korisnika
@@ -2579,9 +2587,100 @@ async function fetchUsers() {
 
 
 // Funkcija za inicijalno učitavanje kada se otvori chat modal
-document.getElementById('chat-link').addEventListener('click', async () => {
-    await fetchUsers(); // Učitaj sve korisnike, ali prikaži samo one s kojima je započet razgovor
+document.getElementById('chat-link').addEventListener('click', (event) => {
+    event.preventDefault(); // Sprečava podrazumevano ponašanje
+    isCalculatorValidated = false; // Resetujemo validaciju prilikom svakog klika na "Chat"
+    document.getElementById('calculator-modal').style.display = 'block'; // Otvara kalkulator modal
+    document.getElementById('chat-modal').style.display = 'none'; // Osigurava da chat ostane zatvoren
 });
+
+
+
+let currentInput = '';
+let previousInput = '';
+let operation = '';
+
+function updateDisplay(value) {
+    const display = document.getElementById('calculator-display');
+    display.textContent = value || '0';
+}
+
+document.getElementById('calculator-buttons').addEventListener('click', async (event) => {
+    const button = event.target;
+    const value = button.getAttribute('data-value');
+    if (!value) return;
+
+    if (value === 'AC') {
+        currentInput = '';
+        previousInput = '';
+        operation = '';
+    } else if (value === '+/-') {
+        currentInput = currentInput ? (-parseFloat(currentInput)).toString() : '';
+    } else if (value === '%') {
+        currentInput = currentInput ? (parseFloat(currentInput) / 100).toString() : '';
+    } else if (['+', '-', '*', '/'].includes(value)) {
+        if (currentInput) {
+            previousInput = currentInput;
+            currentInput = '';
+            operation = value;
+        }
+    } else if (value === '=') {
+        if (currentInput && previousInput) {
+            currentInput = eval(`${previousInput} ${operation} ${currentInput}`).toString();
+            previousInput = '';
+            operation = '';
+        }
+
+        // Provera rezultata sa `chatCode`
+        const userDocRef = doc(db, 'network', userId);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+            const chatCode = parseInt(userDocSnap.data().chatCode, 10);
+            if (parseFloat(currentInput) === chatCode) {
+    alert('Tačan rezultat! Otvaram chat...');
+    document.getElementById('calculator-modal').style.display = 'none';
+    document.getElementById('chat-modal').style.display = 'flex';
+} else {
+    // Samo izračunaj i prikaži rezultat bez prikazivanja greške
+    updateDisplay(currentInput);
+}
+
+        } else {
+            console.error('Korisnik ne postoji u Firestore-u.');
+        }
+    } else {
+        currentInput += value;
+    }
+
+    updateDisplay(currentInput || previousInput || '0');
+});
+
+
+document.addEventListener('keydown', (event) => {
+    const key = event.key;
+    const validKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '+', '-', '*', '/', '=', 'Enter', 'Backspace', 'Delete'];
+    
+    if (validKeys.includes(key)) {
+        if (key === 'Enter' || key === '=') {
+            const equalsButton = document.querySelector('button[data-value="="]');
+            equalsButton.click();
+        } else if (key === 'Backspace') {
+            currentInput = currentInput.slice(0, -1);
+            updateDisplay(currentInput || '0');
+        } else if (key === 'Delete') {
+            currentInput = '';
+            updateDisplay('0');
+        } else if (['+', '-', '*', '/'].includes(key)) {
+            const operationButton = document.querySelector(`button[data-value="${key}"]`);
+            operationButton.click();
+        } else {
+            const button = document.querySelector(`button[data-value="${key}"]`);
+            if (button) button.click();
+        }
+    }
+});
+
+
 
 
 
@@ -2742,9 +2841,11 @@ async function acceptChatRequest(requestId) {
 
 // Event listener za desktop meni
 // Event listener za otvaranje chat modal prozora
-document.getElementById('chat-link').addEventListener('click', async () => {
-    const chatModal = document.getElementById('chat-modal');
-    chatModal.style.display = 'flex'; // Prikaz modalnog prozora
+document.getElementById('chat-link').addEventListener('click', async (event) => { // Dodato `async`
+    event.preventDefault(); // Sprečava podrazumevano ponašanje
+    isCalculatorValidated = false; // Resetujemo validaciju prilikom svakog klika na "Chat"
+    document.getElementById('calculator-modal').style.display = 'block'; // Otvara kalkulator modal
+    document.getElementById('chat-modal').style.display = 'none'; // Osigurava da chat ostane zatvoren
 
     if (!isChatOpen) {
         await fetchUsers();       // Dohvati 1-na-1 kontakte
@@ -2756,13 +2857,16 @@ document.getElementById('chat-link').addEventListener('click', async () => {
 });
 
 
+
 // Dodaj event listener za chat link u mobilnom meniju
 // Event listener for mobile toggle menu to open chat modal with contacts and groups
 document.getElementById('toggle-menu').addEventListener('click', async (event) => {
     if (event.target.id === 'chat-link') {
-        document.getElementById('toggle-menu').style.display = 'none'; // Hide mobile menu
-        const chatModal = document.getElementById('chat-modal');
-        chatModal.style.display = 'flex'; // Display chat modal
+        event.preventDefault(); // Sprečava direktno otvaranje chata
+        document.getElementById('calculator-modal').style.display = 'block'; // Prikazuje kalkulator
+        document.getElementById('chat-modal').style.display = 'none'; // Sakriva chat
+    
+
 
         if (!isChatOpen) {
             await fetchUsers();       // Fetch individual user contacts
