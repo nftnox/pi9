@@ -941,9 +941,6 @@ buyButton.addEventListener('click', async () => {
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
-        // **Dodaj SetApprovalForAll prije kupovine**
-        await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: buyerAccount });
-
         // Pretpostavka: productData.price je cijena u LUNA tokenima koju ste upisali prilikom mintanja
         const priceInLuna = productData.price;
         const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
@@ -959,7 +956,7 @@ buyButton.addEventListener('click', async () => {
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: buyerAccount, // Dodaj adresu novog vlasnika
+            owner: userId,
             ownerName: username
         });
 
@@ -979,7 +976,6 @@ buyButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
-
 
 
 
