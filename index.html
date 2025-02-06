@@ -706,14 +706,6 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
 //////////////////////////////// TRZNICA/////////////////////////////////
 
 
-// Funkcija za postavljanje odobrenja za Marketplace prije kupovine
-async function approveMarketplace() {
-    const accounts = await web3.eth.getAccounts();
-    const currentAccount = accounts[0];
-
-    await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
-    console.log("Marketplace approval granted.");
-}
 
 
 
@@ -887,27 +879,6 @@ async function initializeUserData() {
 initializeUserData();
 
 
-async function buyNFT(tokenId) {
-    try {
-        const accounts = await web3.eth.getAccounts();
-        const currentAccount = accounts[0];
-
-        // Prvo daj dozvolu Marketplace-u da može prebaciti NFT
-        await approveMarketplace();
-
-        // Zatim izvrši kupovinu NFT-a
-        await marketplaceContract.methods.buyNFT(tokenId).send({ from: currentAccount });
-
-        console.log(`NFT ${tokenId} uspješno kupljen.`);
-        alert(`NFT ${tokenId} je sada vaš!`);
-
-        // Osvježi stranicu da prikaže novog vlasnika
-        window.location.reload();
-    } catch (error) {
-        console.error("Greška pri kupovini NFT-a:", error);
-        alert("Kupovina nije uspjela. Pokušajte ponovo.");
-    }
-}
 
 
 const buyButton = document.createElement('button');
