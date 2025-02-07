@@ -373,14 +373,19 @@ async function handleCryptoPurchase(productId, productData) {
     if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
         try {
             await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const web3 = new Web3(window.ethereum);
+
+            // ✅ PROVJERI DA LI JE WEB3 INICIJALIZIRAN
+            if (typeof web3 === 'undefined') {
+                var web3 = new Web3(window.ethereum);
+            }
+
             const accounts = await web3.eth.getAccounts();
             const buyerAccount = accounts[0];
 
             const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
             const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
-            // ✅ 1. Provjeri da li je NFT zaista listan na marketplace-u
+            // ✅ 1. Provjeri da li je NFT listan na marketplace-u
             const listingData = await marketplaceContract.methods.listings(productData.tokenId).call();
             
             if (!listingData.active) {
@@ -415,6 +420,7 @@ async function handleCryptoPurchase(productId, productData) {
         alert('❌ Molimo instalirajte MetaMask ili omogućite MetaMask ako je već instaliran.');
     }
 }
+
 
 
 
