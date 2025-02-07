@@ -244,27 +244,51 @@ productDiv.appendChild(productPrice);
                 cryptoPriceInput.classList.add('input-price');
 
                 const setPriceButton = document.createElement('button');
-                setPriceButton.innerText = 'Postavi cijene';
-                setPriceButton.classList.add('set-price-button');
-                setPriceButton.addEventListener('click', async () => {
-                    const novaCijena = parseFloat(priceInput.value);
-                    const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+setPriceButton.innerText = 'Postavi cijene';
+setPriceButton.classList.add('set-price-button');
+setPriceButton.addEventListener('click', async () => {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            // Povezivanje sa MetaMask-om
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
 
-                    if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
-                        const updateData = {};
-                        if (!isNaN(novaCijena) && novaCijena > 0) {
-                            updateData.price = novaCijena;
-                        }
-                        if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
-                            updateData.cryptoPrice = novaCryptoCijena;
-                        }
-                        await updateDoc(doc(db, 'products', docSnap.id), updateData);
-                        alert('Nove cijene postavljene!');
-                        loadProfileProducts(); // Osvježi prikaz
-                    } else {
-                        alert('Unesite ispravne cijene!');
-                    }
-                });
+            // Kreiranje ugovora za NFT
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0]; // Adresa korisnika
+
+            // ✅ **Prvo mora odobriti marketplace!**
+            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
+
+            // ✅ **Ako je potvrđeno, nastavi sa postavljanjem cijene!**
+            const novaCijena = parseFloat(priceInput.value);
+            const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+
+            if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
+                const updateData = {};
+                if (!isNaN(novaCijena) && novaCijena > 0) {
+                    updateData.price = novaCijena;
+                }
+                if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
+                    updateData.cryptoPrice = novaCryptoCijena;
+                }
+                await updateDoc(doc(db, 'products', docSnap.id), updateData);
+
+                alert('Nove cijene postavljene i odobrena prodaja!');
+                loadProfileProducts(); // Osvježi prikaz
+            } else {
+                alert('Unesite ispravne cijene!');
+            }
+        } catch (error) {
+            console.error('Greška prilikom odobravanja prodaje i postavljanja cijene:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju ili omogućite MetaMask ako je već instaliran.');
+    }
+});
+
 
                 productDiv.appendChild(priceInput);
                 productDiv.appendChild(cryptoPriceInput);
