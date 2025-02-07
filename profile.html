@@ -281,6 +281,53 @@ buyButton.addEventListener('click', async () => {
 productDiv.appendChild(buyButton);
 
 
+
+// Dodaj dugme za odobrenje prodaje prije prikazivanja NFT-a
+const approveButton = document.createElement('button');
+approveButton.innerText = 'Odobri prodaju';
+approveButton.classList.add('approve-button');
+
+approveButton.addEventListener('click', async () => {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            // Povezivanje sa MetaMask-om
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+
+            // Kreiranje pametnog ugovora
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0]; // Adresa trenutnog korisnika
+
+            // Poziv funkcije setApprovalForAll za marketplace
+            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
+
+            alert('Uspješno ste odobrili prodaju ovog NFT-a!');
+            approveButton.style.display = 'none'; // Sakrij dugme nakon potvrde
+            setPriceButton.style.display = 'block'; // Prikaži dugme za postavljanje cijene
+
+        } catch (error) {
+            console.error('Greška prilikom odobravanja prodaje:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju ili omogućite MetaMask ako je već instaliran.');
+    }
+});
+
+// Dodaj dugme za odobrenje ispod svakog NFT-a vlasnika
+productDiv.appendChild(approveButton);
+
+// Početno sakrij dugme za postavljanje cijene dok ne dobije odobrenje
+setPriceButton.style.display = 'none';
+
+// DODAJ OVO PRIJE OVE LINIJE:
+profileProducts.appendChild(productDiv);
+
+
+
+
                 // Dodaj dugme za kupovinu putem kriptovalute
                 const buyWithCryptoButton = document.createElement('button');
                 buyWithCryptoButton.innerText = 'Kupi (ETH)';
