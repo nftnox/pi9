@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+
+
+   
 </head>
 <body>
 
@@ -28,6 +31,7 @@
             <a href="#"><span class="material-icons">person</span> Profile</a>
         </nav>
 
+
         <nav id="toggle-menu">
             <a href="#"><span class="material-icons">home</span> Home</a>
             <a href="#"><span class="material-icons">group</span> Team</a>
@@ -35,7 +39,12 @@
             <a href="#"><span class="material-icons">person</span> Profile</a>
         </nav>
     </header>
+  
 
+</script>
+
+
+    
     <script>
         const toggleMenuButton = document.getElementById('toggle-menu-button');
         const toggleMenu = document.getElementById('toggle-menu');
@@ -50,9 +59,23 @@
         });
     </script>
 
+   
+
+
+    
     <div class="image-container">
         <img src="images/delta.png" alt="Delta Image" style="max-width: 100%; height: auto;">
     </div>
+
+    
+
+
+
+
+
+
+
+
 
     <div class="partnership-box">
         <p>
@@ -62,8 +85,14 @@
         </p>
     </div>
 
+   
+
     <div class="background blue"></div>
     <div class="background purple"></div>
+
+
+
+
 
     <div class="profile-outline">
         <div class="profile-header">
@@ -84,524 +113,709 @@
     <div id="transaction-history" class="product-list-container">
         <div id="transaction-title" class="profile-title">Historija transakcija</div>
     </div>
+    
+
+
+
 
     <script type="module">
        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-       import { 
-         getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc, addDoc
-       } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-       import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+        import { getFirestore, collection, getDocs, query, where, doc, getDoc, updateDoc, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
-       const firebaseConfig = {
-           apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
-           authDomain: "piii-7844e.firebaseapp.com",
-           projectId: "piii-7844e",
-           storageBucket: "piii-7844e.appspot.com",
-           messagingSenderId: "315770496799",
-           appId: "1:315770496799:web:0197d4baf2c8731d88722a",
-           measurementId: "G-JH9SDWTS9V"
-       };
+        const firebaseConfig = {
+            apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
+            authDomain: "piii-7844e.firebaseapp.com",
+            projectId: "piii-7844e",
+            storageBucket: "piii-7844e.appspot.com",
+            messagingSenderId: "315770496799",
+            appId: "1:315770496799:web:0197d4baf2c8731d88722a",
+            measurementId: "G-JH9SDWTS9V"
+        };
 
-       const app = initializeApp(firebaseConfig);
-       const db = getFirestore(app);
-       const storage = getStorage(app);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
 
-       // Dohvati parametre iz URL-a
-       const params = new URLSearchParams(window.location.search);
-       const profileName = params.get('ime');
-       const loggedInUser = params.get('loggedInUser');
-       let currentPrice = parseFloat(params.get('trenutnaCijena'));
 
-       let loggedInUserIme = '';
-       let loggedInUserId = '';
 
-       // Funkcija za dobijanje 'ime' korisnika na osnovu 'username'
-       async function getLoggedInUserIme() {
-           const userCollection = collection(db, 'network');
-           const q = query(userCollection, where('username', '==', loggedInUser));
-           const querySnapshot = await getDocs(q);
+        
 
-           if (!querySnapshot.empty) {
-               querySnapshot.forEach(docSnap => {
-                   const userData = docSnap.data();
-                   loggedInUserIme = `${userData.ime} ${userData.prezime}`;
-                   loggedInUserId = docSnap.id;
-               });
-           } else {
-               console.error("Prijavljeni korisnik nije pronađen u Firestore-u.");
-           }
-       }
+        
 
-       await getLoggedInUserIme();
-       await loadProfileOwnerData();
-       loadProfileProducts();
-       loadTransactionHistory();
+        // Dohvati parametre iz URL-a
+        const params = new URLSearchParams(window.location.search);
+        const profileName = params.get('ime');
+        const loggedInUser = params.get('loggedInUser');
+        let currentPrice = parseFloat(params.get('trenutnaCijena'));
 
-       // Prikaži ime prijavljenog korisnika i trenutnu cijenu
-       document.getElementById('logged-in-user').innerText = loggedInUserIme;
-       document.getElementById('current-price').innerText = currentPrice.toFixed(2);
+        let loggedInUserIme = ''; // Varijabla za pravo ime prijavljenog korisnika
+        let loggedInUserId = ''; // Varijabla za ID prijavljenog korisnika u Firestore-u
 
-       // Prikaži naslov profila
-       const profileTitle = document.getElementById('profile-title');
-       profileTitle.innerText = (loggedInUserIme === profileName)
-           ? 'Vaš profil'
-           : `Profil korisnika: ${profileName}`;
+        // Funkcija za dobijanje 'ime' korisnika na osnovu 'username'
+        async function getLoggedInUserIme() {
+    const userCollection = collection(db, 'network');
+    const q = query(userCollection, where('username', '==', loggedInUser));
+    const querySnapshot = await getDocs(q);
 
-       // Ako je korisnik na svom profilu, prikaži polje za unos Ethereum adrese
-       if (loggedInUserIme === profileName) {
-           document.getElementById('eth-account-section').style.display = 'block';
-       }
+    if (!querySnapshot.empty) {
+        querySnapshot.forEach(docSnap => {
+            const userData = docSnap.data();
+            loggedInUserIme = `${userData.ime} ${userData.prezime}`;
+            loggedInUserId = docSnap.id;
+        });
+    } else {
+        console.error("Prijavljeni korisnik nije pronađen u Firestore-u.");
+    }
+}
 
+
+        // Pozovi funkciju za dobijanje 'ime' korisnika
+        await getLoggedInUserIme(); // Dohvati ime prijavljenog korisnika
+await loadProfileOwnerData(); // Prikaži podatke vlasnika profila
+loadProfileProducts(); // Učitaj proizvode
+loadTransactionHistory(); // Učitaj transakcije
+
+
+        // Prikaži ime prijavljenog korisnika i trenutnu cijenu
+        document.getElementById('logged-in-user').innerText = loggedInUserIme;
+        document.getElementById('current-price').innerText = currentPrice.toFixed(2);
+
+        // Prikaži naslov profila
+        const profileTitle = document.getElementById('profile-title');
+        profileTitle.innerText = loggedInUserIme === profileName ? 'Vaš profil' : `Profil korisnika: ${profileName}`;
+
+// Prikaži polje za unos Ethereum adrese ako je korisnik na svom profilu
+// Prikaži polje za unos Ethereum adrese ako je korisnik na svom profilu
+if (loggedInUserIme === profileName) {
+    document.getElementById('eth-account-section').style.display = 'block';
+}
+
+        
+
+        // Učitaj proizvode korisnika
        // Funkcija za učitavanje proizvoda na profilu
-       async function loadProfileProducts() {
-           const productCollection = collection(db, 'products');
-           const querySnapshot = await getDocs(productCollection);
-           const profileProducts = document.getElementById('profile-products');
-           profileProducts.innerHTML = '';
-
-           querySnapshot.forEach(docSnap => {
-               const productData = docSnap.data();
-
-               if (productData.ownerName === profileName) {
-                   const productDiv = document.createElement('div');
-                   productDiv.classList.add('product');
-
-                   const productImg = document.createElement('img');
-                   productImg.src = productData.imageUrl;
-                   productDiv.appendChild(productImg);
-
-                   const productName = document.createElement('div');
-                   productName.classList.add('product-name');
-                   productName.innerText = productData.name;
-                   productDiv.appendChild(productName);
-
-                   const productPrice = document.createElement('div');
-                   productPrice.classList.add('product-price');
-                   productPrice.innerText = `Cijena: ${productData.price} Luna Coin`;
-                   productDiv.appendChild(productPrice);
-
-                   // Ako postoji cijena u ETH
-                   if (productData.cryptoPrice) {
-                       const productCryptoPrice = document.createElement('div');
-                       productCryptoPrice.classList.add('product-price');
-                       productCryptoPrice.innerText = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
-                       productDiv.appendChild(productCryptoPrice);
-                   }
-
-                   if (profileName === loggedInUserIme) {
-                       // Ako smo vlasnik, možemo postaviti nove cijene
-                       const priceInput = document.createElement('input');
-                       priceInput.type = 'number';
-                       priceInput.placeholder = 'Nova cijena (Delta coin)';
-                       priceInput.classList.add('input-price');
-
-                       const cryptoPriceInput = document.createElement('input');
-                       cryptoPriceInput.type = 'number';
-                       cryptoPriceInput.placeholder = 'Nova cijena (ETH)';
-                       cryptoPriceInput.classList.add('input-price');
-
-                       const setPriceButton = document.createElement('button');
-                       setPriceButton.innerText = 'Postavi cijene';
-                       setPriceButton.classList.add('set-price-button');
-
-                       // Kad vlasnik postavi cijenu:
-                       setPriceButton.addEventListener('click', async () => {
-                           if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
-                               try {
-                                   await window.ethereum.request({ method: 'eth_requestAccounts' });
-                                   const web3 = new Web3(window.ethereum);
-                                   const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-                                   const accounts = await web3.eth.getAccounts();
-                                   const currentAccount = accounts[0];
-
-                                   // 1) setApprovalForAll za marketplace
-                                   await nftContract.methods
-                                       .setApprovalForAll(marketplaceAddress, true)
-                                       .send({ from: currentAccount });
-
-                                   const novaCijena = parseFloat(priceInput.value);
-                                   const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
-
-                                   if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
-                                       // Ažuriramo Firestore
-                                       const updateData = {};
-                                       if (!isNaN(novaCijena) && novaCijena > 0) {
-                                           updateData.price = novaCijena;
-                                       }
-                                       if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
-                                           updateData.cryptoPrice = novaCryptoCijena;
-                                       }
-                                       await updateDoc(doc(db, 'products', docSnap.id), updateData);
-
-                                       // DODANO: ListNFT na Marketplace (za ETH)
-                                       const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
-                                       const tokenId = productData.tokenId; 
-                                       
-                                       // Ako želimo samo listati ETH cijenu
-                                       const priceString = (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)
-                                           ? novaCryptoCijena.toString()
-                                           : "0.01"; // fallback
-                                       
-                                       const priceInWei = web3.utils.toWei(priceString, 'ether');
-
-                                       await marketplaceContract.methods
-                                           .listNFT(tokenId, priceInWei)
-                                           .send({ from: currentAccount });
-
-                                       alert('✅ Nove cijene postavljene i NFT listan na Marketplace!');
-                                       loadProfileProducts(); 
-                                   } else {
-                                       alert('❌ Unesite ispravne cijene!');
-                                   }
-                               } catch (error) {
-                                   console.error('❌ Greška prilikom odobravanja prodaje i postavljanja cijene:', error);
-                                   alert('Došlo je do greške. Pokušajte ponovo.');
-                               }
-                           } else {
-                               alert('❌ Molimo instalirajte MetaMask ili omogućite ga.');
-                           }
-                       });
-
-                       productDiv.appendChild(priceInput);
-                       productDiv.appendChild(cryptoPriceInput);
-                       productDiv.appendChild(setPriceButton);
-                   } else {
-                       // Ako smo netko drugi, prikaži dugmad za kupovinu
-                       const buyButton = document.createElement('button');
-                       buyButton.innerText = 'Kupi (Luna Coin)';
-                       buyButton.classList.add('buy-button');
-                       buyButton.addEventListener('click', async () => {
-                           await handleLunaPurchase(docSnap.id, productData);
-                       });
-                       productDiv.appendChild(buyButton);
-
-                       const buyWithCryptoButton = document.createElement('button');
-                       buyWithCryptoButton.innerText = 'Kupi (ETH)';
-                       buyWithCryptoButton.classList.add('buy-button');
-                       buyWithCryptoButton.style.backgroundColor = 'purple';
-                       buyWithCryptoButton.addEventListener('click', async () => {
-                           await handleCryptoPurchase(docSnap.id, productData);
-                       });
-                       productDiv.appendChild(buyWithCryptoButton);
-                   }
-
-                   profileProducts.appendChild(productDiv);
-               }
-           });
-       }
-
-       // Ažuriranje vlasništva proizvoda kada se kupuje Delta coinom
-       async function updateProductOwnership(productId, productData) {
-           try {
-               const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
-               await addDoc(userPurchasesRef, {
-                   name: productData.name,
-                   imageUrl: productData.imageUrl,
-                   price: productData.price,
-                   purchaseTime: new Date()
-               });
-
-               // Oduzimanje cijene proizvoda od trenutne cijene novog vlasnika
-               const userDocRef = doc(db, 'network', loggedInUserId);
-               currentPrice -= productData.price;
-               await updateDoc(userDocRef, { currentPrice: currentPrice });
-               document.getElementById('current-price').innerText = currentPrice.toFixed(2);
-
-               // Dodavanje cijene proizvoda na trenutnu cijenu prodavca
-               const sellerId = productData.owner;
-               const sellerDocRef = doc(db, 'network', sellerId);
-               const sellerDocSnap = await getDoc(sellerDocRef);
-
-               if (sellerDocSnap.exists()) {
-                   const sellerData = sellerDocSnap.data();
-                   let sellerCurrentPrice = sellerData.currentPrice || 0;
-                   sellerCurrentPrice += productData.price;
-                   await updateDoc(sellerDocRef, { currentPrice: sellerCurrentPrice });
-               } else {
-                   console.error("Prodavac nije pronađen u Firestore-u.");
-               }
-
-               await updateDoc(doc(db, 'products', productId), {
-                   owner: loggedInUserId,
-                   ownerName: loggedInUserIme,
-                   sold: true
-               });
-
-               alert(`Kupili ste ${productData.name} za ${productData.price} Delta coin!`);
-               loadProfileProducts();
-           } catch (error) {
-               console.error('Greška prilikom kupovine:', error);
-               alert('Došlo je do greške. Pokušajte ponovo.');
-           }
-       }
-
-       // Funkcija za rukovanje kripto kupovinom putem MetaMask-a
-       // UKLONJENO: stari code koji je radio "sendTransaction"
-       async function handleCryptoPurchase(productId, productData) {
-           if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
-               try {
-                   await window.ethereum.request({ method: 'eth_requestAccounts' });
-                   const web3 = new Web3(window.ethereum);
-                   const accounts = await web3.eth.getAccounts();
-                   const buyerAccount = accounts[0];
-
-                   // DODANO: Kupujemo NFT preko Marketplace ugovora (buyNFT)
-                   const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
-
-                   let weiValue = '0';
-                   if (productData.cryptoPrice) {
-                       const ethPrice = productData.cryptoPrice; 
-                       weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
-                   }
-
-                   // Poziv buyNFT => prenosi NFT u ime vlasnika
-                   await marketplaceContract.methods
-                       .buyNFT(productData.tokenId)
-                       .send({
-                           from: buyerAccount,
-                           value: weiValue // Ako ugovor traži slanje ETH
-                       });
-
-                   alert('Uspješna uplata i prijenos NFT-a preko Marketplacea!');
-
-                   // Nakon toga, localno u Firestore ažuriramo “owner”
-                   await updateDoc(doc(db, 'products', productId), {
-                       owner: loggedInUserId,
-                       ownerName: loggedInUserIme,
-                       sold: true
-                   });
-
-                   // Osvježi prikaz
-                   loadProfileProducts();
-               } catch (error) {
-                   console.error('Greška prilikom MetaMask transakcije:', error);
-                   alert('Došlo je do greške. Pokušajte ponovo.');
-               }
-           } else {
-               alert('Molimo vas da instalirate MetaMask ekstenziju ili omogućite MetaMask ako je već instaliran.');
-           }
-       }
-
-       // Polje za unos Ethereum adrese ako je vlasnik profila
-       if (profileName === loggedInUserIme) {
-           const userDocRef = doc(db, 'network', loggedInUserId);
-           const userDocSnap = await getDoc(userDocRef);
-
-           const ethAddressInput = document.getElementById('eth-address-input');
-           const saveEthAddressButton = document.getElementById('save-eth-address');
-           const editEthAddressButton = document.getElementById('edit-eth-address');
-
-           if (userDocSnap.exists()) {
-               const userData = userDocSnap.data();
-
-               if (userData.ethAddress) {
-                   ethAddressInput.value = userData.ethAddress;
-                   ethAddressInput.disabled = true;
-                   saveEthAddressButton.style.display = 'none';
-                   editEthAddressButton.style.display = 'inline-block';
-               } else {
-                   ethAddressInput.disabled = false;
-                   saveEthAddressButton.style.display = 'inline-block';
-                   editEthAddressButton.style.display = 'none';
-               }
-           }
-
-           editEthAddressButton.addEventListener('click', () => {
-               ethAddressInput.disabled = false;
-               ethAddressInput.value = '';
-               saveEthAddressButton.style.display = 'inline-block';
-               editEthAddressButton.style.display = 'none';
-           });
-
-           saveEthAddressButton.addEventListener('click', async () => {
-               const newEthAddress = ethAddressInput.value.trim();
-               if (typeof window.Web3 !== 'undefined') {
-                   const web3 = new Web3(window.ethereum);
-                   if (web3.utils.isAddress(newEthAddress)) {
-                       try {
-                           await updateDoc(userDocRef, { ethAddress: newEthAddress });
-                           alert('Ethereum adresa uspješno spremljena!');
-                           ethAddressInput.value = newEthAddress;
-                           ethAddressInput.disabled = true;
-                           saveEthAddressButton.style.display = 'none';
-                           editEthAddressButton.style.display = 'inline-block';
-                       } catch (error) {
-                           console.error('Greška prilikom spremanja Ethereum adrese:', error);
-                           alert('Došlo je do greške. Pokušajte ponovo.');
-                       }
-                   } else {
-                       alert('Unesite ispravnu Ethereum adresu.');
-                   }
-               } else {
-                   alert('Web3 nije dostupan. Provjerite da li je MetaMask instaliran.');
-               }
-           });
-       }
-
-       // Funkcija za učitavanje historije transakcija određenog korisnika
-       async function loadTransactionHistory() {
-           const userCollection = collection(db, 'network');
-           const [ime, prezime] = profileName.split(' ');
-           console.log("Tražim transakcije za:", ime, prezime);
-
-           const q = query(userCollection, where('ime', '==', ime), where('prezime', '==', prezime));
-           const userSnapshot = await getDocs(q);
-
-           if (!userSnapshot.empty) {
-               let profileUserId = '';
-               userSnapshot.forEach(docSnap => {
-                   profileUserId = docSnap.id;
-               });
-
-               const purchasesRef = collection(db, `network/${profileUserId}/purchases`);
-               const purchasesSnapshot = await getDocs(purchasesRef);
-               const transactionHistoryDiv = document.getElementById('transaction-history');
-               transactionHistoryDiv.innerHTML = '';
-
-               if (!purchasesSnapshot.empty) {
-                   purchasesSnapshot.forEach(docSnap => {
-                       const purchaseData = docSnap.data();
-
-                       const transactionDiv = document.createElement('div');
-                       transactionDiv.classList.add('transaction-item');
-
-                       const productImg = document.createElement('img');
-                       productImg.src = purchaseData.imageUrl;
-                       transactionDiv.appendChild(productImg);
-
-                       const transactionDetails = document.createElement('div');
-                       transactionDetails.classList.add('transaction-details');
-
-                       const productName = document.createElement('span');
-                       productName.classList.add('transaction-name');
-                       productName.innerText = purchaseData.name;
-
-                       const purchasePrice = document.createElement('span');
-                       purchasePrice.classList.add('transaction-price');
-                       purchasePrice.innerText = `Cijena: ${purchaseData.price} Delta coin`;
-
-                       const purchaseTime = document.createElement('span');
-                       purchaseTime.classList.add('transaction-time');
-                       purchaseTime.innerText = `Vrijeme kupovine: ${purchaseData.purchaseTime.toDate().toLocaleString()}`;
-
-                       transactionDetails.appendChild(productName);
-                       transactionDetails.appendChild(purchasePrice);
-                       transactionDetails.appendChild(purchaseTime);
-                       transactionDiv.appendChild(transactionDetails);
-
-                       transactionHistoryDiv.appendChild(transactionDiv);
-                   });
-               } else {
-                   const noTransactionsMessage = document.createElement('div');
-                   noTransactionsMessage.innerText = 'Nema transakcija.';
-                   noTransactionsMessage.style.textAlign = 'center';
-                   transactionHistoryDiv.appendChild(noTransactionsMessage);
-               }
-           } else {
-               console.error("Korisnik nije pronađen u Firestore-u za transakcije:", ime, prezime);
-           }
-       }
-
-       // Funkcija za učitavanje podataka korisnika čiji profil gledamo
-       async function loadProfileOwnerData() {
-           const userCollection = collection(db, 'network');
-           const [ime, prezime] = profileName.split(' ');
-
-           const q = query(userCollection, where('ime', '==', ime), where('prezime', '==', prezime));
-           const querySnapshot = await getDocs(q);
-
-           if (!querySnapshot.empty) {
-               querySnapshot.forEach(docSnap => {
-                   const userData = docSnap.data();
-                   const profileTitle = document.getElementById('profile-title');
-                   if (loggedInUserIme === profileName) {
-                       profileTitle.innerText = 'Vaš profil';
-                   } else {
-                       profileTitle.innerText = `Profil korisnika: ${profileName}`;
-                   }
-               });
-           } else {
-               console.error("Korisnik nije pronađen u Firestore-u:", ime, prezime);
-           }
-       }
-
-       // Funkcija za kupovinu Luna Coin
-       async function handleLunaPurchase(productId, productData) {
-           if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
-               try {
-                   await window.ethereum.request({ method: 'eth_requestAccounts' });
-                   const web3 = new Web3(window.ethereum);
-                   const accounts = await web3.eth.getAccounts();
-                   const buyerAccount = accounts[0];
-
-                   const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-                   const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
-                   const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
-
-                   if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
-                       alert('Nemate dovoljno Luna tokena za ovu transakciju.');
-                       return;
-                   }
-
-                   const sellerDocRef = doc(db, 'network', productData.owner);
-                   const sellerDocSnap = await getDoc(sellerDocRef);
-                   const sellerEthAddress = sellerDocSnap.data().ethAddress;
-
-                   if (!sellerEthAddress) {
-                       alert('Prodavac nema postavljenu Ethereum adresu.');
-                       return;
-                   }
-
-                   await lunaTokenContract.methods
-                       .transfer(sellerEthAddress, requiredAmount)
-                       .send({ from: buyerAccount });
-
-                   alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
-
-                   // Provjera i prijenos NFT-a “direktnim” safeTransferFrom -> no, treba potpis seller-a
-                   // Ostavit ćemo tvoj postojeći kod, ali to vjerojatno neće proći bez seller.
-                   const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-                   const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
-
-                   if (currentOwner.toLowerCase() !== sellerEthAddress.toLowerCase()) {
-                       alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
-                       return;
-                   }
-
-                   await nftContract.methods
-                       .safeTransferFrom(sellerEthAddress, buyerAccount, productData.tokenId)
-                       .send({ from: sellerEthAddress });
-
-                   alert('NFT je uspješno prenesen kupcu!');
-
-                   await updateDoc(doc(db, 'products', productId), {
-                       owner: loggedInUserId,
-                       ownerName: loggedInUserIme,
-                       sold: true
-                   });
-
-                   // Dodavanje proizvoda u kupovine novog vlasnika
-                   const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
-                   await addDoc(userPurchasesRef, {
-                       name: productData.name,
-                       imageUrl: productData.imageUrl,
-                       price: productData.price,
-                       purchaseTime: new Date()
-                   });
-
-                   loadProfileProducts();
-               } catch (error) {
-                   console.error('Greška prilikom obrade transakcije:', error);
-                   alert('Došlo je do greške. Pokušajte ponovo.');
-               }
-           } else {
-               alert('Molimo vas da instalirate MetaMask ekstenziju ili je omogućite.');
-           }
-       }
-
-       // NFT KONTRAKT
-       const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063";
-       const nftContractABI = [
+async function loadProfileProducts() {
+    const productCollection = collection(db, 'products');
+    const querySnapshot = await getDocs(productCollection);
+    const profileProducts = document.getElementById('profile-products');
+    profileProducts.innerHTML = '';
+
+    querySnapshot.forEach(docSnap => {
+        const productData = docSnap.data();
+
+        if (productData.ownerName === profileName) {
+            const productDiv = document.createElement('div');
+            productDiv.classList.add('product');
+
+            const productImg = document.createElement('img');
+            productImg.src = productData.imageUrl;
+            productDiv.appendChild(productImg);
+
+            const productName = document.createElement('div');
+            productName.classList.add('product-name');
+            productName.innerText = productData.name;
+            productDiv.appendChild(productName);
+
+            const productPrice = document.createElement('div');
+productPrice.classList.add('product-price');
+productPrice.innerText = `Cijena: ${productData.price} Luna Coin`;
+productDiv.appendChild(productPrice);
+
+
+            // Dodavanje cijene u ETH ako postoji
+            if (productData.cryptoPrice) {
+                const productCryptoPrice = document.createElement('div');
+                productCryptoPrice.classList.add('product-price');
+                productCryptoPrice.innerText = `Cijena u ETH: ${productData.cryptoPrice} ETH`;
+                productDiv.appendChild(productCryptoPrice);
+            }
+
+            if (profileName === loggedInUserIme) {
+                // Dodaj opcije za postavljanje cijene
+                const priceInput = document.createElement('input');
+                priceInput.type = 'number';
+                priceInput.placeholder = 'Nova cijena (Delta coin)';
+                priceInput.classList.add('input-price');
+
+                const cryptoPriceInput = document.createElement('input');
+                cryptoPriceInput.type = 'number';
+                cryptoPriceInput.placeholder = 'Nova cijena (ETH)';
+                cryptoPriceInput.classList.add('input-price');
+
+                const setPriceButton = document.createElement('button');
+                setPriceButton.innerText = 'Postavi cijene';
+                setPriceButton.classList.add('set-price-button');
+                setPriceButton.addEventListener('click', async () => {
+                    const novaCijena = parseFloat(priceInput.value);
+                    const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+
+                    if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
+                        const updateData = {};
+                        if (!isNaN(novaCijena) && novaCijena > 0) {
+                            updateData.price = novaCijena;
+                        }
+                        if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
+                            updateData.cryptoPrice = novaCryptoCijena;
+                        }
+                        await updateDoc(doc(db, 'products', docSnap.id), updateData);
+                        alert('Nove cijene postavljene!');
+                        loadProfileProducts(); // Osvježi prikaz
+                    } else {
+                        alert('Unesite ispravne cijene!');
+                    }
+                });
+
+                productDiv.appendChild(priceInput);
+                productDiv.appendChild(cryptoPriceInput);
+                productDiv.appendChild(setPriceButton);
+            } else {
+                // Dodaj dugme za kupovinu Delta coinom
+                // Dodaj dugme za kupovinu Luna tokenima
+const buyButton = document.createElement('button');
+buyButton.innerText = 'Kupi (Luna Coin)';
+buyButton.classList.add('buy-button');
+buyButton.addEventListener('click', async () => {
+    await handleLunaPurchase(docSnap.id, productData);
+});
+productDiv.appendChild(buyButton);
+
+
+                // Dodaj dugme za kupovinu putem kriptovalute
+                const buyWithCryptoButton = document.createElement('button');
+                buyWithCryptoButton.innerText = 'Kupi (ETH)';
+                buyWithCryptoButton.classList.add('buy-button');
+                buyWithCryptoButton.style.backgroundColor = 'purple';
+                buyWithCryptoButton.addEventListener('click', async () => {
+                    await handleCryptoPurchase(docSnap.id, productData);
+                });
+                productDiv.appendChild(buyWithCryptoButton);
+            }
+
+            profileProducts.appendChild(productDiv);
+        }
+    });
+}
+
+// Ažuriranje vlasništva proizvoda kada se kupuje Delta coinom
+async function updateProductOwnership(productId, productData) {
+    try {
+        // Dodavanje proizvoda u kupovine novog vlasnika
+        const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
+        await addDoc(userPurchasesRef, {
+            name: productData.name,
+            imageUrl: productData.imageUrl,
+            price: productData.price,
+            purchaseTime: new Date()
+        });
+
+        // Oduzimanje cijene proizvoda od trenutne cijene novog vlasnika
+        const userDocRef = doc(db, 'network', loggedInUserId);
+        currentPrice -= productData.price;
+        await updateDoc(userDocRef, { currentPrice: currentPrice });
+        document.getElementById('current-price').innerText = currentPrice.toFixed(2);
+
+        // Dodavanje cijene proizvoda na trenutnu cijenu prodavca
+        const sellerId = productData.owner;
+        const sellerDocRef = doc(db, 'network', sellerId);
+        const sellerDocSnap = await getDoc(sellerDocRef);
+
+        if (sellerDocSnap.exists()) {
+            const sellerData = sellerDocSnap.data();
+            let sellerCurrentPrice = sellerData.currentPrice || 0;
+            sellerCurrentPrice += productData.price;
+            await updateDoc(sellerDocRef, { currentPrice: sellerCurrentPrice });
+        } else {
+            console.error("Prodavac nije pronađen u Firestore-u.");
+        }
+
+        // Ažuriranje vlasništva u Firestore-u
+        await updateDoc(doc(db, 'products', productId), {
+            owner: loggedInUserId,
+            ownerName: loggedInUserIme,
+            sold: true
+        });
+
+        alert(`Kupili ste ${productData.name} za ${productData.price} Delta coin!`);
+        loadProfileProducts(); // Osvježi prikaz
+    } catch (error) {
+        console.error('Greška prilikom kupovine:', error);
+        alert('Došlo je do greške. Pokušajte ponovo.');
+    }
+}
+
+// Funkcija za rukovanje kripto kupovinom putem MetaMask-a
+async function handleCryptoPurchase(productId, productData) {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            // Zatražite autorizaciju za MetaMask
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+            const web3 = new Web3(window.ethereum);
+            const accounts = await web3.eth.getAccounts();
+            const account = accounts[0];
+            
+            const ethPrice = productData.cryptoPrice;
+            const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
+
+            // Dohvati Ethereum adresu vlasnika proizvoda
+            const productOwnerRef = doc(db, 'network', productData.owner);
+            const productOwnerSnap = await getDoc(productOwnerRef);
+            const recipientAddress = productOwnerSnap.data().ethAddress;
+
+            if (!recipientAddress) {
+                alert('Vlasnik proizvoda nema postavljenu Ethereum adresu.');
+                return;
+            }
+
+            const txParams = {
+                from: account,
+                to: recipientAddress, // Dinamički primatelj
+                value: weiValue,
+                gas: 21000
+            };
+
+            const transactionHash = await web3.eth.sendTransaction(txParams);
+            alert(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
+
+            // Ažuriranje vlasništva u Firestore-u nakon uspješne transakcije
+            await updateDoc(doc(db, 'products', productId), {
+                owner: loggedInUserId,
+                ownerName: loggedInUserIme,
+                sold: true
+            });
+
+            loadProfileProducts(); // Osvježi prikaz
+        } catch (error) {
+            console.error('Greška prilikom MetaMask transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
+    }
+}
+
+
+
+
+
+// Prikaži polje za unos Ethereum adrese ako je vlasnik profila
+// Prikaži polje za unos Ethereum adrese ako je vlasnik profila
+if (profileName === loggedInUserIme) {
+    document.getElementById('eth-account-section').style.display = 'block';
+
+    // Dohvati trenutnu Ethereum adresu iz Firestore-a
+    const userDocRef = doc(db, 'network', loggedInUserId);
+    const userDocSnap = await getDoc(userDocRef);
+
+    const ethAddressInput = document.getElementById('eth-address-input');
+    const saveEthAddressButton = document.getElementById('save-eth-address');
+    const editEthAddressButton = document.getElementById('edit-eth-address');
+
+    if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+
+        if (userData.ethAddress) {
+            // Ako adresa postoji, prikaži je i sakrij dugme za spremanje
+            ethAddressInput.value = userData.ethAddress;
+            ethAddressInput.disabled = true;
+            saveEthAddressButton.style.display = 'none';
+            editEthAddressButton.style.display = 'inline-block';
+        } else {
+            // Ako adresa ne postoji, omogući unos i prikaži dugme za spremanje
+            ethAddressInput.disabled = false;
+            saveEthAddressButton.style.display = 'inline-block';
+            editEthAddressButton.style.display = 'none';
+        }
+    }
+
+    editEthAddressButton.addEventListener('click', () => {
+        ethAddressInput.disabled = false;
+        ethAddressInput.value = ''; // Očisti polje za unos
+        saveEthAddressButton.style.display = 'inline-block';
+        editEthAddressButton.style.display = 'none';
+    });
+
+    saveEthAddressButton.addEventListener('click', async () => {
+    const newEthAddress = ethAddressInput.value.trim();
+
+    // Provjera i inicijalizacija Web3 samo ako je dostupan
+    if (typeof window.Web3 !== 'undefined') {
+        const web3 = new Web3(window.ethereum);
+
+        if (web3.utils.isAddress(newEthAddress)) {
+            try {
+                // Ažuriraj korisnikov dokument u Firestore-u
+                await updateDoc(userDocRef, { ethAddress: newEthAddress });
+
+                alert('Ethereum adresa uspješno spremljena!');
+                ethAddressInput.value = newEthAddress;
+                ethAddressInput.disabled = true; // Ponovo onemogući unos
+                saveEthAddressButton.style.display = 'none'; // Sakrij dugme za spremanje
+                editEthAddressButton.style.display = 'inline-block'; // Prikaži dugme za promenu
+            } catch (error) {
+                console.error('Greška prilikom spremanja Ethereum adrese:', error);
+                alert('Došlo je do greške. Pokušajte ponovo.');
+            }
+        } else {
+            alert('Unesite ispravnu Ethereum adresu.');
+        }
+    } else {
+        alert('Web3 nije dostupan. Provjerite da li je MetaMask instaliran.');
+    }
+});
+
+}
+
+
+
+// Funkcija za učitavanje historije transakcija određenog korisnika
+// Updated loadTransactionHistory function for list-style layout
+async function loadTransactionHistory() {
+    const userCollection = collection(db, 'network');
+    const [ime, prezime] = profileName.split(' '); // Razdvajanje imena i prezimena
+    console.log("Tražim transakcije za:", ime, prezime);
+
+    const q = query(
+        userCollection,
+        where('ime', '==', ime),
+        where('prezime', '==', prezime)
+    );
+
+    const userSnapshot = await getDocs(q);
+
+    if (!userSnapshot.empty) {
+        let profileUserId = '';
+        userSnapshot.forEach(docSnap => {
+            profileUserId = docSnap.id;
+        });
+
+        const purchasesRef = collection(db, `network/${profileUserId}/purchases`);
+        const purchasesSnapshot = await getDocs(purchasesRef);
+        const transactionHistoryDiv = document.getElementById('transaction-history');
+        transactionHistoryDiv.innerHTML = '';
+
+        if (!purchasesSnapshot.empty) {
+            purchasesSnapshot.forEach(docSnap => {
+                const purchaseData = docSnap.data();
+
+                const transactionDiv = document.createElement('div');
+                transactionDiv.classList.add('transaction-item');
+
+                const productImg = document.createElement('img');
+                productImg.src = purchaseData.imageUrl;
+                transactionDiv.appendChild(productImg);
+
+                const transactionDetails = document.createElement('div');
+                transactionDetails.classList.add('transaction-details');
+
+                const productName = document.createElement('span');
+                productName.classList.add('transaction-name');
+                productName.innerText = purchaseData.name;
+
+                const purchasePrice = document.createElement('span');
+                purchasePrice.classList.add('transaction-price');
+                purchasePrice.innerText = `Cijena: ${purchaseData.price} Delta coin`;
+
+                const purchaseTime = document.createElement('span');
+                purchaseTime.classList.add('transaction-time');
+                purchaseTime.innerText = `Vrijeme kupovine: ${purchaseData.purchaseTime.toDate().toLocaleString()}`;
+
+                transactionDetails.appendChild(productName);
+                transactionDetails.appendChild(purchasePrice);
+                transactionDetails.appendChild(purchaseTime);
+                transactionDiv.appendChild(transactionDetails);
+
+                transactionHistoryDiv.appendChild(transactionDiv);
+            });
+        } else {
+            const noTransactionsMessage = document.createElement('div');
+            noTransactionsMessage.innerText = 'Nema transakcija.';
+            noTransactionsMessage.style.textAlign = 'center';
+            transactionHistoryDiv.appendChild(noTransactionsMessage);
+        }
+    } else {
+        console.error("Korisnik nije pronađen u Firestore-u za transakcije:", ime, prezime);
+    }
+}
+
+
+// Funkcija za učitavanje podataka korisnika čiji profil gledamo
+async function loadProfileOwnerData() {
+    const userCollection = collection(db, 'network');
+    const [ime, prezime] = profileName.split(' '); // Razdvoj ime i prezime
+
+    const q = query(
+        userCollection,
+        where('ime', '==', ime),
+        where('prezime', '==', prezime)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        querySnapshot.forEach(docSnap => {
+            const userData = docSnap.data();
+            
+            const profileTitle = document.getElementById('profile-title');
+            if (loggedInUserIme === profileName) {
+                profileTitle.innerText = 'Vaš profil';
+            } else {
+                profileTitle.innerText = `Profil korisnika: ${profileName}`;
+            }
+        });
+    } else {
+        console.error("Korisnik nije pronađen u Firestore-u:", ime, prezime);
+    }
+}
+
+
+
+
+
+
+
+
+async function handleLunaPurchase(productId, productData) {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            // Povezivanje sa MetaMask-om
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+
+            // Trenutni račun korisnika
+            const accounts = await web3.eth.getAccounts();
+            const buyerAccount = accounts[0]; // Adresa kupca
+
+            // Povezivanje sa Luna token ugovorom
+            const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+
+            // Provjera balansa korisnika
+            const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
+            const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether'); // Pretvaranje cijene u Wei
+
+            if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
+                alert('Nemate dovoljno Luna tokena za ovu transakciju.');
+                return;
+            }
+
+            // Prijenos tokena prodavcu
+            const sellerDocRef = doc(db, 'network', productData.owner);
+            const sellerDocSnap = await getDoc(sellerDocRef);
+            const sellerEthAddress = sellerDocSnap.data().ethAddress;
+
+            if (!sellerEthAddress) {
+                alert('Prodavac nema postavljenu Ethereum adresu.');
+                return;
+            }
+
+            await lunaTokenContract.methods
+                .transfer(sellerEthAddress, requiredAmount)
+                .send({ from: buyerAccount });
+
+            alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
+
+            // Provjera i prijenos NFT-a
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
+
+            if (currentOwner.toLowerCase() !== sellerEthAddress.toLowerCase()) {
+                alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
+                return;
+            }
+
+            await nftContract.methods
+                .safeTransferFrom(sellerEthAddress, buyerAccount, productData.tokenId)
+                .send({ from: sellerEthAddress });
+
+            alert('NFT je uspješno prenesen kupcu!');
+
+            // Ažuriranje vlasništva proizvoda u Firestore-u
+            await updateDoc(doc(db, 'products', productId), {
+                owner: loggedInUserId,
+                ownerName: loggedInUserIme,
+                sold: true
+            });
+
+            // Dodavanje proizvoda u kupovine novog vlasnika
+            const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
+            await addDoc(userPurchasesRef, {
+                name: productData.name,
+                imageUrl: productData.imageUrl,
+                price: productData.price,
+                purchaseTime: new Date()
+            });
+
+            loadProfileProducts(); // Osvježi prikaz
+        } catch (error) {
+            console.error('Greška prilikom obrade transakcije:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
+    }
+}
+
+
+
+
+
+
+
+const contractAddress = "0x19C16A8eb27Bfd879e3BEB044A2f094568F9F672"; // Nova adresa ugovora
+const contractABI = [
+    {
+        "inputs": [],
+        "name": "mintMyTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "user",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "updateBalance",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "earnedBalance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    // Dodajemo standardne ERC-20 funkcije:
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "name",
+        "outputs": [
+            {
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [
+            {
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+
+
+
+
+
+// Povezivanje s NFT ugovorom
+const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zamijeni s adresom svog ugovora
+        const nftContractABI = [
         
 	{
 		"inputs": [
@@ -1155,647 +1369,119 @@
 
         ];
 
-       // LUNA KONTRAKT
-       const contractAddress = "0x19C16A8eb27Bfd879e3BEB044A2f094568F9F672";
-       const contractABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "allowance",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "needed",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC20InsufficientAllowance",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "balance",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "needed",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC20InsufficientBalance",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "approver",
-				"type": "address"
-			}
-		],
-		"name": "ERC20InvalidApprover",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "receiver",
-				"type": "address"
-			}
-		],
-		"name": "ERC20InvalidReceiver",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			}
-		],
-		"name": "ERC20InvalidSender",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			}
-		],
-		"name": "ERC20InvalidSpender",
-		"type": "error"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "Approval",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "mintMyTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "transfer",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "Transfer",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "transferFrom",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "updateAndMint",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			}
-		],
-		"name": "allowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "decimals",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "earnedBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "MAX_SUPPLY",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "name",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "symbol",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "totalMinted",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "totalSupply",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
+        const web3 = new Web3(window.ethereum);
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
-       // MARKETPLACE KONTRAKT
-       const marketplaceAddress = "0xe25922FB4CC65433826D9b46339c6e780cdC775E";
-       const marketplaceABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "buyNFT",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "cancelListing",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "price",
-				"type": "uint256"
-			}
-		],
-		"name": "listNFT",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_nftAddress",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "_lunaTokenAddress",
-				"type": "address"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "price",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "seller",
-				"type": "address"
-			}
-		],
-		"name": "NFTListed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "price",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "seller",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "buyer",
-				"type": "address"
-			}
-		],
-		"name": "NFTSold",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "previousOwner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "OwnershipTransferred",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "listings",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "price",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "seller",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "active",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "lunaToken",
-		"outputs": [
-			{
-				"internalType": "contract IERC20",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "nftContract",
-		"outputs": [
-			{
-				"internalType": "contract IERC721",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
+
+        async function transferNFT(productId, productData) {
+    try {
+        if (typeof window.ethereum === 'undefined' || !window.ethereum.isMetaMask) {
+            alert('MetaMask nije instaliran ili nije omogućeno!');
+            return;
+        }
+
+        // Povezivanje sa MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
+
+        const accounts = await web3.eth.getAccounts();
+        const buyerAccount = accounts[0]; // Adresa kupca
+
+        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+        // Dohvati trenutnog vlasnika NFT-a
+        const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
+
+        if (currentOwner.toLowerCase() !== productData.owner.toLowerCase()) {
+            alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
+            return;
+        }
+
+        // Prijenos NFT-a kupcu
+        await nftContract.methods
+            .safeTransferFrom(productData.owner, buyerAccount, productData.tokenId)
+            .send({ from: productData.owner });
+
+        alert('NFT je uspješno prenesen kupcu!');
+    } catch (error) {
+        console.error('Greška prilikom prijenosa NFT-a:', error);
+        alert('Došlo je do greške prilikom prijenosa NFT-a.');
+    }
+}
+
+
+
+
+
+// Pozovi funkciju za učitavanje podataka vlasnika profila
+loadProfileOwnerData();
+
+
+// Pozovi funkciju za učitavanje historije transakcija
+loadTransactionHistory();
+
+// Pozovi funkciju za učitavanje proizvoda
+loadProfileProducts();
+
+
+
+
+// Funkcija za dohvat korisničkih podataka kada je korisnik na svom profilu
+async function loadUserProfile() {
+    if (loggedInUserIme === profileName) {
+        const userDocRef = doc(db, 'network', loggedInUserId);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+
+            // Prikaz korisničkih informacija
+            const profileTitle = document.getElementById('profile-title');
+
+            const userInfoDiv = document.createElement('div');
+            userInfoDiv.classList.add('user-info');
+
+            userInfoDiv.innerHTML = `
+                <p><strong>Username:</strong> ${userData.username}</p>
+                <p><strong>Total Price:</strong> ${userData.totalPrice.toFixed(2)}</p>
+                <p><strong>Email:</strong> ${userData.email}</p>
+                <p><strong>Used By:</strong></p>
+                <ul id="used-by-list"></ul>
+            `;
+
+            profileTitle.appendChild(userInfoDiv);
+
+            // Obrada liste korisnika iz `usedBy` polja
+            if (userData.usedBy && userData.usedBy.length > 0) {
+                const usedByList = document.getElementById('used-by-list');
+
+                for (const userId of userData.usedBy) {
+                    const userRef = doc(db, 'network', userId);
+                    const userSnap = await getDoc(userRef);
+
+                    if (userSnap.exists()) {
+                        const userInfo = userSnap.data();
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `${userInfo.ime} ${userInfo.prezime}`;
+                        usedByList.appendChild(listItem);
+                    } else {
+                        console.error(`Korisnik s ID-jem ${userId} nije pronađen.`);
+                    }
+                }
+            } else {
+                document.getElementById('used-by-list').innerHTML = '<li>Nema referisanih korisnika.</li>';
+            }
+        } else {
+            console.error("Podaci korisnika nisu pronađeni.");
+        }
+    }
+}
+
+// Pozovi funkciju za učitavanje korisničkog profila
+await loadUserProfile();
+
+
     </script>
-</body>
-</html>
-
 
 
 
