@@ -1665,26 +1665,51 @@ const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAdd
         const buyerAccount = accounts[0]; // Adresa kupca
 
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+        const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
-        // Dohvati trenutnog vlasnika NFT-a
-        const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
+        // ✅ Dohvati TAČNOG vlasnika NFT-a direktno iz pametnog ugovora
+        const nftOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
 
-        if (currentOwner.toLowerCase() !== productData.owner.toLowerCase()) {
-            alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
+        if (nftOwner.toLowerCase() !== productData.owner.toLowerCase()) {
+            alert('Greška: Trenutni vlasnik NFT-a u blockchainu se ne poklapa s Firestore bazom! Ažuriram podatke...');
+            
+            // ✅ Ažuriraj Firestore s tačnim vlasnikom
+            await updateDoc(doc(db, 'products', productId), { owner: nftOwner });
             return;
         }
 
-        // Prijenos NFT-a kupcu
-        await nftContract.methods
-            .safeTransferFrom(productData.owner, buyerAccount, productData.tokenId)
-            .send({ from: productData.owner });
+        // ✅ Provjeri da li je vlasnik NFT-a dao dozvolu marketplace ugovoru
+        const isApproved = await nftContract.methods.isApprovedForAll(nftOwner, marketplaceAddress).call();
 
-        alert('NFT je uspješno prenesen kupcu!');
+        if (!isApproved) {
+            alert("Prodavac nije dao odobrenje za marketplace. Pokušavam postaviti...");
+            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: nftOwner });
+        }
+
+        // ✅ Preuzmi ispravnu cijenu u Wei
+        const priceInWei = web3.utils.toWei(productData.cryptoPrice.toString(), 'ether');
+
+        // ✅ Pokreni transakciju kupovine na marketplace ugovoru
+        await marketplaceContract.methods.buyNFT(productData.tokenId)
+            .send({ from: buyerAccount, value: priceInWei });
+
+        alert('NFT je uspješno kupljen i prenesen kupcu!');
+
+        // ✅ Ažuriranje vlasništva proizvoda u Firestore-u
+        await updateDoc(doc(db, 'products', productId), {
+            owner: buyerAccount,
+            ownerName: loggedInUserIme,
+            sold: true
+        });
+
+        loadProfileProducts(); // Osvježi prikaz
+
     } catch (error) {
-        console.error('Greška prilikom prijenosa NFT-a:', error);
+        console.error('❌ Greška prilikom prijenosa NFT-a:', error);
         alert('Došlo je do greške prilikom prijenosa NFT-a.');
     }
 }
+
 
 
 
