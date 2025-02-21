@@ -370,30 +370,30 @@ async function updateProductOwnership(productId, productData) {
 async function handleCryptoPurchase(productId, productData) {
     if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
         try {
-            // ✅ 1️⃣ Prva potvrda u MetaMask-u - ETH transakcija
+            // ✅ 1️⃣ Zatraži autorizaciju za MetaMask
             await window.ethereum.request({ method: 'eth_requestAccounts' });
 
             const web3 = new Web3(window.ethereum);
             const accounts = await web3.eth.getAccounts();
-            const account = accounts[0]; // Kupac
+            const buyerAccount = accounts[0]; // Kupac (novi vlasnik)
 
             const ethPrice = productData.cryptoPrice;
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
 
-            // ✅ Dohvati Ethereum adresu vlasnika proizvoda
+            // ✅ 2️⃣ Dohvati Ethereum adresu prodavca
             const productOwnerRef = doc(db, 'network', productData.owner);
             const productOwnerSnap = await getDoc(productOwnerRef);
-            const recipientAddress = productOwnerSnap.data().ethAddress;
+            const sellerAddress = productOwnerSnap.data().ethAddress;
 
-            if (!recipientAddress) {
+            if (!sellerAddress) {
                 alert('❌ Vlasnik proizvoda nema postavljenu Ethereum adresu.');
                 return;
             }
 
-            // ✅ Prva MetaMask potvrda - Plaćanje ETH vlasniku
+            // ✅ 3️⃣ Prva MetaMask potvrda - Plaćanje ETH vlasniku
             const txParams = {
-                from: account,
-                to: recipientAddress, 
+                from: buyerAccount,
+                to: sellerAddress,
                 value: weiValue,
                 gas: 21000
             };
@@ -401,15 +401,29 @@ async function handleCryptoPurchase(productId, productData) {
             const transactionHash = await web3.eth.sendTransaction(txParams);
             alert(`✅ Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
 
-            // ✅ 2️⃣ Druga potvrda u MetaMask-u - Prenos NFT-a kupcu
+            // ✅ 4️⃣ Provjeri da li prodavac stvarno ima NFT
             const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
 
-            await nftContract.methods.safeTransferFrom(productData.owner, account, productData.tokenId)
-                .send({ from: productData.owner });
+            if (currentOwner.toLowerCase() !== sellerAddress.toLowerCase()) {
+                alert('❌ Greška: Prodavac nije vlasnik ovog NFT-a!');
+                return;
+            }
+
+            // ✅ 5️⃣ Omogući marketplace-u prenos NFT-a (Ako prodavac nije dao dozvolu)
+            const isApproved = await nftContract.methods.isApprovedForAll(sellerAddress, marketplaceAddress).call();
+            if (!isApproved) {
+                alert('🟡 Potrebno je da prodavac prvo omogući marketplace-u upravljanje NFT-om.');
+                return;
+            }
+
+            // ✅ 6️⃣ Druga MetaMask potvrda - Prenos NFT-a kupcu
+            await nftContract.methods.safeTransferFrom(sellerAddress, buyerAccount, productData.tokenId)
+                .send({ from: sellerAddress });
 
             alert('✅ NFT je uspješno prenesen kupcu!');
 
-            // ✅ 3️⃣ Ažuriranje Firestore-a sa novim vlasnikom
+            // ✅ 7️⃣ Ažuriranje Firestore-a sa novim vlasnikom
             await updateDoc(doc(db, 'products', productId), {
                 owner: loggedInUserId,
                 ownerName: loggedInUserIme,
