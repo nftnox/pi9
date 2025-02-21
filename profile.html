@@ -244,27 +244,49 @@ productDiv.appendChild(productPrice);
                 cryptoPriceInput.classList.add('input-price');
 
                 const setPriceButton = document.createElement('button');
-                setPriceButton.innerText = 'Postavi cijene';
-                setPriceButton.classList.add('set-price-button');
-                setPriceButton.addEventListener('click', async () => {
-                    const novaCijena = parseFloat(priceInput.value);
-                    const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+setPriceButton.innerText = 'Postavi cijene';
+setPriceButton.classList.add('set-price-button');
+setPriceButton.addEventListener('click', async () => {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0]; 
 
-                    if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
-                        const updateData = {};
-                        if (!isNaN(novaCijena) && novaCijena > 0) {
-                            updateData.price = novaCijena;
-                        }
-                        if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
-                            updateData.cryptoPrice = novaCryptoCijena;
-                        }
-                        await updateDoc(doc(db, 'products', docSnap.id), updateData);
-                        alert('Nove cijene postavljene!');
-                        loadProfileProducts(); // Osvježi prikaz
-                    } else {
-                        alert('Unesite ispravne cijene!');
-                    }
-                });
+            // ✅ PRVO OMOGUĆI SETAPPROVALFORMARKETPLACE
+            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
+
+            // ✅ SAD TEK NASTAVI SA POSTAVLJANJEM CIJENE
+            const novaCijena = parseFloat(priceInput.value);
+            const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+
+            if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
+                const updateData = {};
+                if (!isNaN(novaCijena) && novaCijena > 0) {
+                    updateData.price = novaCijena;
+                }
+                if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
+                    updateData.cryptoPrice = novaCryptoCijena;
+                }
+                await updateDoc(doc(db, 'products', docSnap.id), updateData);
+
+                alert('✅ Nove cijene postavljene i omogućena prodaja!');
+                loadProfileProducts(); 
+            } else {
+                alert('❌ Unesite ispravne cijene!');
+            }
+        } catch (error) {
+            console.error('❌ Greška prilikom odobravanja prodaje i postavljanja cijene:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('❌ Molimo instalirajte MetaMask ili omogućite MetaMask ako je već instaliran.');
+    }
+});
+
+
 
                 productDiv.appendChild(priceInput);
                 productDiv.appendChild(cryptoPriceInput);
@@ -348,52 +370,64 @@ async function updateProductOwnership(productId, productData) {
 async function handleCryptoPurchase(productId, productData) {
     if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
         try {
-            // Zatražite autorizaciju za MetaMask
+            // ✅ 1️⃣ Prva potvrda u MetaMask-u - ETH transakcija
             await window.ethereum.request({ method: 'eth_requestAccounts' });
 
             const web3 = new Web3(window.ethereum);
             const accounts = await web3.eth.getAccounts();
-            const account = accounts[0];
-            
+            const account = accounts[0]; // Kupac
+
             const ethPrice = productData.cryptoPrice;
             const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
 
-            // Dohvati Ethereum adresu vlasnika proizvoda
+            // ✅ Dohvati Ethereum adresu vlasnika proizvoda
             const productOwnerRef = doc(db, 'network', productData.owner);
             const productOwnerSnap = await getDoc(productOwnerRef);
             const recipientAddress = productOwnerSnap.data().ethAddress;
 
             if (!recipientAddress) {
-                alert('Vlasnik proizvoda nema postavljenu Ethereum adresu.');
+                alert('❌ Vlasnik proizvoda nema postavljenu Ethereum adresu.');
                 return;
             }
 
+            // ✅ Prva MetaMask potvrda - Plaćanje ETH vlasniku
             const txParams = {
                 from: account,
-                to: recipientAddress, // Dinamički primatelj
+                to: recipientAddress, 
                 value: weiValue,
                 gas: 21000
             };
 
             const transactionHash = await web3.eth.sendTransaction(txParams);
-            alert(`Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
+            alert(`✅ Uspješna uplata! Transakcija: ${transactionHash.transactionHash}`);
 
-            // Ažuriranje vlasništva u Firestore-u nakon uspješne transakcije
+            // ✅ 2️⃣ Druga potvrda u MetaMask-u - Prenos NFT-a kupcu
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+
+            await nftContract.methods.safeTransferFrom(productData.owner, account, productData.tokenId)
+                .send({ from: productData.owner });
+
+            alert('✅ NFT je uspješno prenesen kupcu!');
+
+            // ✅ 3️⃣ Ažuriranje Firestore-a sa novim vlasnikom
             await updateDoc(doc(db, 'products', productId), {
                 owner: loggedInUserId,
                 ownerName: loggedInUserIme,
                 sold: true
             });
 
-            loadProfileProducts(); // Osvježi prikaz
+            alert(`🏆 Sada ste vlasnik NFT-a: ${productData.name}`);
+            loadProfileProducts(); // Osvježi prikaz proizvoda
+
         } catch (error) {
-            console.error('Greška prilikom MetaMask transakcije:', error);
+            console.error('❌ Greška prilikom kupovine NFT-a:', error);
             alert('Došlo je do greške. Pokušajte ponovo.');
         }
     } else {
-        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
+        alert('❌ Molimo instalirajte MetaMask ili omogućite MetaMask ako je već instaliran.');
     }
 }
+
 
 
 
@@ -1368,6 +1402,261 @@ const nftContractAddress = "0x96c475e10479018cc028D39c71973470fD19f063"; // Zami
 	}
 
         ];
+
+
+//////////////////////MARKETPLACE//////////////
+
+const marketplaceAddress = "0xe25922FB4CC65433826D9b46339c6e780cdC775E"; // Adresa vašeg Marketplace ugovora
+const marketplaceABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "buyNFT",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "cancelListing",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"name": "listNFT",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_nftAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_lunaTokenAddress",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "seller",
+				"type": "address"
+			}
+		],
+		"name": "NFTListed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "seller",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "buyer",
+				"type": "address"
+			}
+		],
+		"name": "NFTSold",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "listings",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "seller",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "active",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "lunaToken",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nftContract",
+		"outputs": [
+			{
+				"internalType": "contract IERC721",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
+
 
         const web3 = new Web3(window.ethereum);
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
