@@ -256,20 +256,7 @@ setPriceButton.addEventListener('click', async () => {
             const currentAccount = accounts[0]; 
 
             // ✅ PRVO OMOGUĆI SETAPPROVALFORMARKETPLACE
-           // 1) setApprovalForAll za marketplace
-await nftContract.methods
-  .setApprovalForAll(marketplaceAddress, true)
-  .send({ from: currentAccount });
-
-// 2) Konverzija nove cijene u Wei
-const priceInWei = web3.utils.toWei(priceInput.value, "ether");
-
-// 3) listNFT(tokenId, priceInWei)
-await marketplaceContract.methods
-  .listNFT(tokenId, priceInWei)
-  .send({ from: currentAccount });
-
-// 4) Ažurirati Firestore s novom cijenom i sl.
+            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
 
             // ✅ SAD TEK NASTAVI SA POSTAVLJANJEM CIJENE
             const novaCijena = parseFloat(priceInput.value);
