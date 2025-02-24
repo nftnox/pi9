@@ -418,52 +418,6 @@ async function handleCryptoPurchase(productId, productData) {
 }
 
 
-setPriceButton.addEventListener('click', async () => {
-    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
-        try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const web3 = new Web3(window.ethereum);
-            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-            const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
-            const accounts = await web3.eth.getAccounts();
-            const currentAccount = accounts[0]; 
-
-            // ✅ PRVO: Postavi dozvolu za marketplace
-            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
-
-            // ✅ KONVERZIJA CIJENE U WEI (za blockchain)
-            const novaCijena = parseFloat(priceInput.value);
-            const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
-
-            if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
-                const updateData = {};
-                if (!isNaN(novaCijena) && novaCijena > 0) {
-                    updateData.price = novaCijena;
-                }
-                if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
-                    updateData.cryptoPrice = novaCryptoCijena;
-                }
-
-                await updateDoc(doc(db, 'products', docSnap.id), updateData);
-
-                // ✅ SAD LISTAJ NFT NA PRODAJU
-                const priceInWei = web3.utils.toWei(novaCijena.toString(), 'ether');
-                await marketplaceContract.methods.listNFT(productData.tokenId, priceInWei)
-                    .send({ from: currentAccount });
-
-                alert('✅ NFT je listan na prodaju s novom cijenom!');
-                loadProfileProducts(); 
-            } else {
-                alert('❌ Unesite ispravne cijene!');
-            }
-        } catch (error) {
-            console.error('❌ Greška prilikom listanja NFT-a na prodaju:', error);
-            alert('Došlo je do greške. Pokušajte ponovo.');
-        }
-    } else {
-        alert('❌ Molimo instalirajte MetaMask ili omogućite MetaMask ako je već instaliran.');
-    }
-});
 
 
 
@@ -1733,6 +1687,52 @@ const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAdd
 }
 
 
+setPriceButton.addEventListener('click', async () => {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0]; 
+
+            // ✅ PRVO: Postavi dozvolu za marketplace
+            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
+
+            // ✅ KONVERZIJA CIJENE U WEI (za blockchain)
+            const novaCijena = parseFloat(priceInput.value);
+            const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
+
+            if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
+                const updateData = {};
+                if (!isNaN(novaCijena) && novaCijena > 0) {
+                    updateData.price = novaCijena;
+                }
+                if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
+                    updateData.cryptoPrice = novaCryptoCijena;
+                }
+
+                await updateDoc(doc(db, 'products', docSnap.id), updateData);
+
+                // ✅ SAD LISTAJ NFT NA PRODAJU
+                const priceInWei = web3.utils.toWei(novaCijena.toString(), 'ether');
+                await marketplaceContract.methods.listNFT(productData.tokenId, priceInWei)
+                    .send({ from: currentAccount });
+
+                alert('✅ NFT je listan na prodaju s novom cijenom!');
+                loadProfileProducts(); 
+            } else {
+                alert('❌ Unesite ispravne cijene!');
+            }
+        } catch (error) {
+            console.error('❌ Greška prilikom listanja NFT-a na prodaju:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('❌ Molimo instalirajte MetaMask ili omogućite MetaMask ako je već instaliran.');
+    }
+});
 
 
 
