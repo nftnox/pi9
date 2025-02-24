@@ -1627,11 +1627,9 @@ const marketplaceABI = [
 	}
 ];
 
+const web3 = new Web3(window.ethereum);
+const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
-
-
-        const web3 = new Web3(window.ethereum);
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 
 
         async function transferNFT(productId, productData) {
