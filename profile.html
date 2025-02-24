@@ -251,21 +251,20 @@ setPriceButton.addEventListener('click', async () => {
         try {
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum);
+            const accounts = await web3.eth.getAccounts();
+            const currentAccount = accounts[0]; // Adresa vlasnika NFT-a
+
             const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
             const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
-            const accounts = await web3.eth.getAccounts();
-            const currentAccount = accounts[0];
 
-            // ✅ PRVO OMOGUĆAVAMO MARKETPLACE DA MOŽE RADITI TRANSFERE
+            // ✅ 1. Omogući marketplace ugovoru da trguje NFT-om
             await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
 
-            // ✅ ZATIM POSTAVLJAMO NOVU CIJENU
+            // ✅ 2. Postavi novu cijenu
             const novaCijena = parseFloat(priceInput.value);
             const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
 
             if ((!isNaN(novaCijena) && novaCijena > 0) || (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0)) {
-                
-                // ✅ POSTAVI NOVU CIJENU U FIRESTORE
                 const updateData = {};
                 if (!isNaN(novaCijena) && novaCijena > 0) {
                     updateData.price = novaCijena;
@@ -275,11 +274,7 @@ setPriceButton.addEventListener('click', async () => {
                 }
                 await updateDoc(doc(db, 'products', docSnap.id), updateData);
 
-                // ✅ KONVERTUJEMO CIJENU U WEI I LISTAMO NFT NA PRODAJU
-                const priceInWei = web3.utils.toWei(novaCryptoCijena.toString(), 'ether');
-                await marketplaceContract.methods.listNFT(productData.tokenId, priceInWei).send({ from: currentAccount });
-
-                alert('✅ Nove cijene postavljene i NFT je na prodaji!');
+                alert('✅ Nove cijene postavljene i omogućena prodaja!');
                 loadProfileProducts(); 
             } else {
                 alert('❌ Unesite ispravne cijene!');
@@ -293,6 +288,44 @@ setPriceButton.addEventListener('click', async () => {
     }
 });
 
+async function handleNFTPurchase(productId, productData) {
+    if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
+        try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const web3 = new Web3(window.ethereum);
+            const accounts = await web3.eth.getAccounts();
+            const buyerAccount = accounts[0]; // Adresa kupca
+
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
+
+            // ✅ 1. Provjeri da li je NFT već odobren za prodaju
+            const isApproved = await nftContract.methods.isApprovedForAll(productData.owner, marketplaceAddress).call();
+            if (!isApproved) {
+                alert("❌ Vlasnik još nije odobrio NFT za prodaju. Pokušaj ponovo kasnije.");
+                return;
+            }
+
+            // ✅ 2. Kupovina NFT-a putem marketplace ugovora
+            await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
+
+            // ✅ 3. Ažuriranje vlasništva u Firestore
+            await updateDoc(doc(db, 'products', productId), {
+                owner: buyerAccount,
+                ownerName: loggedInUserIme,
+                sold: true
+            });
+
+            alert("✅ NFT je uspješno kupljen i prebačen na vaš wallet!");
+            loadProfileProducts(); // Osvježi prikaz
+        } catch (error) {
+            console.error('❌ Greška prilikom kupovine NFT-a:', error);
+            alert('Došlo je do greške. Pokušajte ponovo.');
+        }
+    } else {
+        alert('❌ Molimo vas da instalirate MetaMask ekstenziju ili omogućite MetaMask ako je već instaliran.');
+    }
+}
 
 
 
