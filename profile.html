@@ -614,7 +614,7 @@ async function handleLunaPurchase(productId, productData) {
             const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
 
             if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
-                alert('Nemate dovoljno Luna tokena za ovu transakciju.');
+                alert('❌ Nemate dovoljno Luna tokena za ovu transakciju.');
                 return;
             }
 
@@ -623,74 +623,60 @@ async function handleLunaPurchase(productId, productData) {
             const sellerEthAddress = sellerDocSnap.data().ethAddress;
 
             if (!sellerEthAddress) {
-                alert('Prodavac nema postavljenu Ethereum adresu.');
+                alert('❌ Prodavac nema postavljenu Ethereum adresu.');
                 return;
             }
 
-            // Provjeri vlasništvo NFT-a prije kupovine
+            // ✅ Provjeri vlasništvo NFT-a prije kupovine
             const nftOwnerBefore = await nftContract.methods.ownerOf(productData.tokenId).call();
             console.log("🔍 Prije kupovine, vlasnik NFT-a:", nftOwnerBefore);
 
-            // Prijenos Luna tokena prodavcu
+            // ✅ PROVJERA DA LI JE NFT ZAKLJUČAN NA MARKETPLACE-U
+            const approvedAccount = await nftContract.methods.getApproved(productData.tokenId).call();
+            if (approvedAccount === marketplaceAddress) {
+                console.log("🔓 NFT je zaključan na marketplace-u, otključavam...");
+                await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: sellerEthAddress });
+            }
+
+            // ✅ Prijenos Luna tokena prodavcu
             await lunaTokenContract.methods
                 .transfer(sellerEthAddress, requiredAmount)
                 .send({ from: buyerAccount });
 
-            alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
+            alert(`✅ Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
 
-            // Provjera vlasništva NFT-a na blockchainu
-            const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
-            if (currentOwner.toLowerCase() !== sellerEthAddress.toLowerCase()) {
-                alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
-                return;
-            }
+            // ✅ Kupi NFT sa marketplace-a
+            const transaction = await marketplaceContract.methods.buyNFT(productData.tokenId)
+                .send({ from: buyerAccount });
 
-            // Provjeri da li je NFT ostao zaključan na marketplace ugovoru
-            const approvedAccount = await nftContract.methods.getApproved(productData.tokenId).call();
-            if (approvedAccount === marketplaceAddress) {
-                await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: sellerEthAddress });
-            }
+            console.log("📜 Transakcija potvrđena! Detalji:", transaction);
 
-            // Kupi NFT sa marketplacea
-            await marketplaceContract.methods.buyNFT(productData.tokenId)
-                .send({ from: buyerAccount })
-                .on('transactionHash', function(hash) {
-                    console.log("📜 Transakcija poslana! Hash:", hash);
-                })
-                .on('receipt', async function(receipt) {
-                    console.log("✅ Transakcija potvrđena! Detalji:", receipt);
+            // ✅ Provjeri vlasništvo NFT-a nakon kupovine
+            setTimeout(async () => {
+                const nftOwnerAfter = await nftContract.methods.ownerOf(productData.tokenId).call();
+                console.log("✅ Nakon kupovine, vlasnik NFT-a:", nftOwnerAfter);
 
-                    // Provjera vlasništva NFT-a nakon kupovine
-                    setTimeout(async () => {
-                        const nftOwnerAfter = await nftContract.methods.ownerOf(productData.tokenId).call();
-                        console.log("✅ Nakon kupovine, vlasnik NFT-a:", nftOwnerAfter);
+                if (nftOwnerAfter.toLowerCase() === buyerAccount.toLowerCase()) {
+                    // ✅ Ažuriraj Firestore podatke
+                    await updateDoc(doc(db, 'products', productId), {
+                        owner: loggedInUserId,
+                        ownerName: loggedInUserIme,
+                        sold: true
+                    });
 
-                        if (nftOwnerAfter.toLowerCase() === buyerAccount.toLowerCase()) {
-                            // Ažuriraj Firestore podatke
-                            await updateDoc(doc(db, 'products', productId), {
-                                owner: loggedInUserId,
-                                ownerName: loggedInUserIme,
-                                sold: true
-                            });
-
-                            alert(`NFT ${productData.name} je sada u vašem vlasništvu!`);
-                            loadProfileProducts();
-                        } else {
-                            alert("❌ Greška: NFT nije prebačen u vaš Metamask wallet. Provjerite Metamask transakcije!");
-                        }
-                    }, 5000);
-                })
-                .on('error', function(error) {
-                    console.error("❌ Greška prilikom slanja transakcije:", error);
-                    alert('Došlo je do greške. Pokušajte ponovo.');
-                });
+                    alert(`✅ NFT ${productData.name} je sada u vašem vlasništvu i nalazi se u vašem Metamask walletu!`);
+                    loadProfileProducts();
+                } else {
+                    alert("❌ Greška: NFT nije prebačen u vaš Metamask wallet. Provjerite Metamask transakcije!");
+                }
+            }, 5000);
 
         } catch (error) {
-            console.error('Greška prilikom obrade transakcije:', error);
-            alert('Došlo je do greške. Pokušajte ponovo.');
+            console.error('❌ Greška prilikom obrade transakcije:', error);
+            alert('⚠ Došlo je do greške. Pokušajte ponovo.');
         }
     } else {
-        alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
+        alert('❌ Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
     }
 }
 
