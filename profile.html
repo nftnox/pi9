@@ -628,29 +628,17 @@ async function handleLunaPurchase(productId, productData) {
                 return;
             }
 
-            console.log("✅ Prije kupovine: provjera trenutnog vlasnika na blockchainu...");
-            const currentOwnerBefore = await nftContract.methods.ownerOf(productData.tokenId).call();
-            console.log("Pre kupovine, vlasnik NFT-a:", currentOwnerBefore);
-
             await lunaTokenContract.methods
                 .transfer(sellerEthAddress, requiredAmount)
                 .send({ from: buyerAccount });
 
             alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
 
-            // 📌 LISTAJ NFT NA MARKETPLACEU PRIJE KUPOVINE DA BI SE MOGAO PRENIJETI
-            console.log("🔄 Listanje NFT-a na tržištu...");
-            await marketplaceContract.methods.listNFT(productData.tokenId, requiredAmount).send({ from: sellerEthAddress });
+            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
 
-            console.log("🛒 Kupovina NFT-a...");
-            await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
-
-            console.log("✅ Poslije kupovine: provjera trenutnog vlasnika...");
-            const currentOwnerAfter = await nftContract.methods.ownerOf(productData.tokenId).call();
-            console.log("Poslije kupovine, vlasnik NFT-a:", currentOwnerAfter);
-
-            if (currentOwnerAfter.toLowerCase() !== buyerAccount.toLowerCase()) {
-                alert('❌ Greška: NFT nije prenesen na blockchainu! Provjerite vlasništvo.');
+            if (currentOwner.toLowerCase() !== sellerEthAddress.toLowerCase()) {
+                alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
                 return;
             }
 
@@ -659,6 +647,8 @@ async function handleLunaPurchase(productId, productData) {
                 ownerName: loggedInUserIme,
                 sold: true
             });
+
+            await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
 
             alert(`NFT ${productData.name} je sada u vašem vlasništvu!`);
             loadProfileProducts();
@@ -670,7 +660,6 @@ async function handleLunaPurchase(productId, productData) {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
     }
 }
-
 
 
 
