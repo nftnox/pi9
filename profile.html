@@ -606,7 +606,6 @@ async function handleLunaPurchase(productId, productData) {
         try {
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum);
-
             const accounts = await web3.eth.getAccounts();
             const buyerAccount = accounts[0];
 
@@ -628,30 +627,64 @@ async function handleLunaPurchase(productId, productData) {
                 return;
             }
 
+            // Provjeri vlasništvo NFT-a prije kupovine
+            const nftOwnerBefore = await nftContract.methods.ownerOf(productData.tokenId).call();
+            console.log("🔍 Prije kupovine, vlasnik NFT-a:", nftOwnerBefore);
+
+            // Prijenos Luna tokena prodavcu
             await lunaTokenContract.methods
                 .transfer(sellerEthAddress, requiredAmount)
                 .send({ from: buyerAccount });
 
             alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
 
-            const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            // Provjera vlasništva NFT-a na blockchainu
             const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
-
             if (currentOwner.toLowerCase() !== sellerEthAddress.toLowerCase()) {
                 alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
                 return;
             }
 
-            await updateDoc(doc(db, 'products', productId), {
-                owner: loggedInUserId,
-                ownerName: loggedInUserIme,
-                sold: true
-            });
+            // Provjeri da li je NFT ostao zaključan na marketplace ugovoru
+            const approvedAccount = await nftContract.methods.getApproved(productData.tokenId).call();
+            if (approvedAccount === marketplaceAddress) {
+                await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: sellerEthAddress });
+            }
 
-            await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
+            // Kupi NFT sa marketplacea
+            await marketplaceContract.methods.buyNFT(productData.tokenId)
+                .send({ from: buyerAccount })
+                .on('transactionHash', function(hash) {
+                    console.log("📜 Transakcija poslana! Hash:", hash);
+                })
+                .on('receipt', async function(receipt) {
+                    console.log("✅ Transakcija potvrđena! Detalji:", receipt);
 
-            alert(`NFT ${productData.name} je sada u vašem vlasništvu!`);
-            loadProfileProducts();
+                    // Provjera vlasništva NFT-a nakon kupovine
+                    setTimeout(async () => {
+                        const nftOwnerAfter = await nftContract.methods.ownerOf(productData.tokenId).call();
+                        console.log("✅ Nakon kupovine, vlasnik NFT-a:", nftOwnerAfter);
+
+                        if (nftOwnerAfter.toLowerCase() === buyerAccount.toLowerCase()) {
+                            // Ažuriraj Firestore podatke
+                            await updateDoc(doc(db, 'products', productId), {
+                                owner: loggedInUserId,
+                                ownerName: loggedInUserIme,
+                                sold: true
+                            });
+
+                            alert(`NFT ${productData.name} je sada u vašem vlasništvu!`);
+                            loadProfileProducts();
+                        } else {
+                            alert("❌ Greška: NFT nije prebačen u vaš Metamask wallet. Provjerite Metamask transakcije!");
+                        }
+                    }, 5000);
+                })
+                .on('error', function(error) {
+                    console.error("❌ Greška prilikom slanja transakcije:", error);
+                    alert('Došlo je do greške. Pokušajte ponovo.');
+                });
+
         } catch (error) {
             console.error('Greška prilikom obrade transakcije:', error);
             alert('Došlo je do greške. Pokušajte ponovo.');
@@ -660,6 +693,7 @@ async function handleLunaPurchase(productId, productData) {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
     }
 }
+
 
 
 
