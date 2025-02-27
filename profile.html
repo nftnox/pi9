@@ -252,13 +252,14 @@ setPriceButton.addEventListener('click', async () => {
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum);
             const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
             const accounts = await web3.eth.getAccounts();
             const currentAccount = accounts[0]; 
 
             // ✅ PRVO OMOGUĆI SETAPPROVALFORMARKETPLACE
             await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
 
-            // ✅ SAD TEK NASTAVI SA POSTAVLJANJEM CIJENE
+            // ✅ SADA NASTAVI SA POSTAVLJANJEM CIJENE
             const novaCijena = parseFloat(priceInput.value);
             const novaCryptoCijena = parseFloat(cryptoPriceInput.value);
 
@@ -270,21 +271,27 @@ setPriceButton.addEventListener('click', async () => {
                 if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
                     updateData.cryptoPrice = novaCryptoCijena;
                 }
+                
                 await updateDoc(doc(db, 'products', docSnap.id), updateData);
 
-                alert('✅ Nove cijene postavljene i omogućena prodaja!');
+                // ✅ AUTOMATSKI LISTAJ NFT NA MARKETPLACE-U SA NOVOM CIJENOM
+                const priceInWei = web3.utils.toWei(novaCijena.toString(), 'ether');
+                await marketplaceContract.methods.listNFT(productData.tokenId, priceInWei).send({ from: currentAccount });
+
+                alert('✅ Nove cijene postavljene i NFT listan na marketplace!');
                 loadProfileProducts(); 
             } else {
                 alert('❌ Unesite ispravne cijene!');
             }
         } catch (error) {
-            console.error('❌ Greška prilikom odobravanja prodaje i postavljanja cijene:', error);
+            console.error('❌ Greška prilikom odobravanja prodaje i listanja na marketplace:', error);
             alert('Došlo je do greške. Pokušajte ponovo.');
         }
     } else {
         alert('❌ Molimo instalirajte MetaMask ili omogućite MetaMask ako je već instaliran.');
     }
 });
+
 
 
 
