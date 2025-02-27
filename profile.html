@@ -614,20 +614,32 @@ async function handleLunaPurchase(productId, productData) {
             const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
             const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
 
+            // ✅ 1. Provjeri da li kupac ima dovoljno Luna tokena
             if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
                 alert('❌ Nemate dovoljno Luna tokena za ovu transakciju.');
                 return;
             }
 
-            // ✅ 1. Odobri marketplace-u da upravlja NFT-om
-            await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: buyerAccount });
+            // ✅ 2. Provjeri vlasnika NFT-a
+            const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
+            if (currentOwner.toLowerCase() !== productData.owner.toLowerCase()) {
+                alert('❌ Prodavac nije stvarni vlasnik NFT-a na blockchainu!');
+                return;
+            }
 
-            // ✅ 2. Kupi NFT putem marketplace ugovora
+            // ✅ 3. Provjeri da li je već odobren marketplace za prodaju NFT-a
+            const isApproved = await nftContract.methods.isApprovedForAll(currentOwner, marketplaceAddress).call();
+            if (!isApproved) {
+                await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentOwner });
+                alert('✅ Odobrena prodaja NFT-a!');
+            }
+
+            // ✅ 4. Izvrši kupovinu NFT-a putem marketplace ugovora
             await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
 
             alert(`✅ Kupili ste NFT ${productData.name} za ${productData.price} Luna Coin!`);
 
-            // ✅ 3. Sada ažuriraj Firestore
+            // ✅ 5. Ažuriraj Firestore TEK kada transakcija uspije
             await updateDoc(doc(db, 'products', productId), {
                 owner: loggedInUserId,
                 ownerName: loggedInUserIme,
