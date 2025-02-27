@@ -298,9 +298,8 @@ const buyButton = document.createElement('button');
 buyButton.innerText = 'Kupi (Luna Coin)';
 buyButton.classList.add('buy-button');
 buyButton.addEventListener('click', async () => {
-    await handleNFTTransfer(docSnap.id, productData);
+    await handleLunaPurchase(docSnap.id, productData);
 });
-
 productDiv.appendChild(buyButton);
 
 
@@ -319,63 +318,6 @@ productDiv.appendChild(buyButton);
         }
     });
 }
-
-
-
-
-async function handleNFTTransfer(productId, productData) {
-    try {
-        if (typeof window.ethereum === 'undefined' || !window.ethereum.isMetaMask) {
-            alert('❌ MetaMask nije instaliran ili nije omogućeno!');
-            return;
-        }
-
-        // Poveži se na MetaMask
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        const accounts = await web3.eth.getAccounts();
-        const buyerAccount = accounts[0]; // Kupac
-        const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
-
-        // ✅ Provjera trenutnog vlasnika NFT-a
-        const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
-
-        if (currentOwner.toLowerCase() !== productData.owner.toLowerCase()) {
-            alert('❌ Greška: Prodavac nije vlasnik ovog NFT-a!');
-            return;
-        }
-
-        // ✅ Postavljamo odobrenje da se NFT može prodati putem Marketplace-a
-        await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentOwner });
-
-        // ✅ Prenosimo NFT kupcu putem blockchain transakcije
-        await nftContract.methods
-            .safeTransferFrom(currentOwner, buyerAccount, productData.tokenId)
-            .send({ from: currentOwner });
-
-        // ✅ PROVJERA DA LI JE NFT STVARNO PREBAČEN
-        const newOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
-        if (newOwner.toLowerCase() !== buyerAccount.toLowerCase()) {
-            alert('❌ Greška: NFT nije prebačen u vaš wallet!');
-            return;
-        }
-
-        // ✅ Ažuriranje Firestore baze podataka
-        await updateDoc(doc(db, 'products', productId), {
-            owner: loggedInUserId,
-            ownerName: loggedInUserIme,
-            sold: true
-        });
-
-        alert(`✅ NFT "${productData.name}" je sada u vašem vlasništvu i prebačen u vaš MetaMask wallet!`);
-        loadProfileProducts(); 
-    } catch (error) {
-        console.error('❌ Greška prilikom prenosa NFT-a:', error);
-        alert('Došlo je do greške prilikom prijenosa NFT-a.');
-    }
-}
-
 
 // Ažuriranje vlasništva proizvoda kada se kupuje Delta coinom
 async function updateProductOwnership(productId, productData) {
@@ -1690,41 +1632,50 @@ const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
 const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
 
-        async function transferNFT(productId, productData) {
+        // Popravljena funkcionalnost prijenosa NFT-a na blockchain prilikom kupovine na profile.html
+
+async function transferNFT(productId, productData) {
     try {
         if (typeof window.ethereum === 'undefined' || !window.ethereum.isMetaMask) {
             alert('MetaMask nije instaliran ili nije omogućeno!');
             return;
         }
 
-        // Povezivanje sa MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
-
         const accounts = await web3.eth.getAccounts();
-        const buyerAccount = accounts[0]; // Adresa kupca
-
+        const buyerAccount = accounts[0]; 
+        
         const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+        const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
 
-        // Dohvati trenutnog vlasnika NFT-a
         const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
-
         if (currentOwner.toLowerCase() !== productData.owner.toLowerCase()) {
             alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
             return;
         }
 
-        // Prijenos NFT-a kupcu
-        await nftContract.methods
-            .safeTransferFrom(productData.owner, buyerAccount, productData.tokenId)
-            .send({ from: productData.owner });
+        // ✅ Odobri marketplace-u transfer prava na NFT
+        await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentOwner });
 
-        alert('NFT je uspješno prenesen kupcu!');
+        // ✅ Pokreni transakciju prijenosa NFT-a
+        await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
+
+        // ✅ Nakon potvrde transakcije, ažuriraj Firestore podatke
+        await updateDoc(doc(db, 'products', productId), {
+            owner: buyerAccount,
+            ownerName: loggedInUserIme,
+            sold: true
+        });
+
+        alert(`NFT ${productData.name} je sada u vašem walletu!`);
+        loadProfileProducts();
     } catch (error) {
         console.error('Greška prilikom prijenosa NFT-a:', error);
         alert('Došlo je do greške prilikom prijenosa NFT-a.');
     }
 }
+
 
 
 
