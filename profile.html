@@ -369,52 +369,52 @@ async function updateProductOwnership(productId, productData) {
 
 // Funkcija za rukovanje kripto kupovinom putem MetaMask-a
 async function handleCryptoPurchase(productId, productData) {
-    if (typeof window.ethereum === 'undefined' || !window.ethereum.isMetaMask) {
-        alert('Molimo instalirajte MetaMask ili ga omogućite ako je već instaliran.');
-        return;
-    }
-
     try {
-        // 1) Povezivanje sa MetaMask-om
+        if (typeof window.ethereum === 'undefined' || !window.ethereum.isMetaMask) {
+            alert('Molimo instalirajte MetaMask ili ga omogućite ako je već instaliran.');
+            return;
+        }
+
+        // 1) Povezivanje s MetaMask-om
         await window.ethereum.request({ method: 'eth_requestAccounts' });
         const web3 = new Web3(window.ethereum);
 
-        // 2) Dohvati kupca (trenutno ulogovan račun)
+        // 2) Dohvati kupčevu adresu (trenutni MetaMask račun)
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
-        // 3) Iznos ETH (cryptoPrice)
+        // 3) Koliko ETH treba poslati (productData.cryptoPrice)
         const ethPrice = productData.cryptoPrice;
         const weiValue = web3.utils.toWei(ethPrice.toString(), 'ether');
 
-        // 4) Podaci o prodavcu iz Firestore-a
-        const productOwnerRef = doc(db, 'network', productData.owner);
-        const productOwnerSnap = await getDoc(productOwnerRef);
-        if (!productOwnerSnap.exists()) {
+        // 4) Adresu prodavca uzimamo iz Firestore-a
+        const sellerDocRef = doc(db, 'network', productData.owner);
+        const sellerDocSnap = await getDoc(sellerDocRef);
+        if (!sellerDocSnap.exists()) {
             alert('Greška: Prodavac nije pronađen u bazi.');
             return;
         }
-        const recipientAddress = productOwnerSnap.data().ethAddress;
-        if (!recipientAddress) {
-            alert('Prodavac nema postavljenu Ethereum adresu.');
+        const sellerEthAddress = sellerDocSnap.data().ethAddress;
+        if (!sellerEthAddress) {
+            alert('Prodavac nije postavio svoju Ethereum adresu!');
             return;
         }
 
-        // 5) Iniciraj ETH transakciju (kupac → prodavac)
+        // 5) Kupac šalje ETH direktno prodavcu
         const txParams = {
             from: buyerAccount,
-            to: recipientAddress,
+            to: sellerEthAddress,
             value: weiValue,
             gas: 21000
         };
-        const transactionHash = await web3.eth.sendTransaction(txParams);
-        alert(`✔️ ETH uplata uspješna! TxHash: ${transactionHash.transactionHash}`);
+        const receipt = await web3.eth.sendTransaction(txParams);
+        alert(`ETH uplata uspješna! TxHash: ${receipt.transactionHash}`);
 
-        // 6) Pozovi marketplace da uradi on-chain transfer NFT-a
+        // 6) Zatim pozovemo Marketplace da on-chain transfera NFT kupcu
         await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
-        alert(`✔️ NFT "${productData.name}" je sada u vašem vlasništvu (on-chain)!`);
+        alert(`NFT "${productData.name}" je sada on-chain prebačen u vaš wallet!`);
 
-        // 7) Ažuriraj Firestore s novim vlasnikom
+        // 7) Ažuriraj Firestore (novi vlasnik)
         await updateDoc(doc(db, 'products', productId), {
             owner: loggedInUserId,
             ownerName: loggedInUserIme,
@@ -426,7 +426,7 @@ async function handleCryptoPurchase(productId, productData) {
 
     } catch (error) {
         console.error('Greška prilikom kripto kupovine:', error);
-        alert('❌ Došlo je do greške. Pokušajte ponovo.');
+        alert('Došlo je do greške. Pokušajte ponovo.');
     }
 }
 
@@ -614,32 +614,25 @@ async function loadProfileOwnerData() {
 
 
 async function handleLunaPurchase(productId, productData) {
-    if (typeof window.ethereum === 'undefined' || !window.ethereum.isMetaMask) {
-        alert('Molimo instalirajte MetaMask ili ga omogućite ako je već instaliran.');
-        return;
-    }
-
     try {
-        // 1) Povezivanje sa MetaMask-om
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-
-        // 2) Dohvati kupca (trenutno ulogovan račun iz MetaMask-a)
-        const accounts = await web3.eth.getAccounts();
-        const buyerAccount = accounts[0];
-
-        // 3) Koliko Luna tokena treba
-        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
-        const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
-        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
-
-        // 3a) Provjeri ima li kupac dovoljno Luna tokena
-        if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
-            alert('Nemate dovoljno Luna tokena za ovu transakciju.');
+        if (typeof window.ethereum === 'undefined' || !window.ethereum.isMetaMask) {
+            alert('Molimo instalirajte MetaMask ili ga omogućite ako je već instaliran.');
             return;
         }
 
-        // 4) Dohvati podatke o prodavcu (iz Firestore-a)
+        // 1) Povezivanje s MetaMask-om
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const web3 = new Web3(window.ethereum);
+
+        // 2) Dohvati kupčevu adresu (trenutni MetaMask račun)
+        const accounts = await web3.eth.getAccounts();
+        const buyerAccount = accounts[0];
+
+        // 3) Koliko Luna tokena treba prebaciti?
+        const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
+        const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
+
+        // 4) Adresu prodavca uzimamo iz Firestore-a
         const sellerDocRef = doc(db, 'network', productData.owner);
         const sellerDocSnap = await getDoc(sellerDocRef);
         if (!sellerDocSnap.exists()) {
@@ -648,33 +641,33 @@ async function handleLunaPurchase(productId, productData) {
         }
         const sellerEthAddress = sellerDocSnap.data().ethAddress;
         if (!sellerEthAddress) {
-            alert('Prodavac nema postavljenu Ethereum adresu.');
+            alert('Prodavac nije postavio svoju Ethereum adresu!');
             return;
         }
 
-        // 5) Kupac transferira Luna tokene direktno prodavcu
+        // 5) Kupac šalje Luna tokene direktno prodavcu
         await lunaTokenContract.methods
             .transfer(sellerEthAddress, requiredAmount)
             .send({ from: buyerAccount });
-        alert(`✔️ Uspješno ste kupili "${productData.name}" za ${productData.price} Luna Coin!`);
+        alert(`Kupili ste "${productData.name}" za ${productData.price} Luna Coin!`);
 
-        // 6) **Tek sad** pozovemo Marketplace da uradi on-chain transfer NFT-a
+        // 6) Sad pozovemo Marketplace da uradi on-chain transfer NFT-a (buyNFT)
         await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
-        alert(`✔️ NFT "${productData.name}" je sada u vašem vlasništvu (on-chain)!`);
+        alert(`NFT "${productData.name}" je sada on-chain prebačen u vaš wallet!`);
 
-        // 7) Ažuriraj Firestore podatke o vlasniku
+        // 7) Kad je sve uspješno, ažuriramo Firestore da novi vlasnik bude ovaj kupac
         await updateDoc(doc(db, 'products', productId), {
-            owner: loggedInUserId,     // tvoj Firestore ID
-            ownerName: loggedInUserIme, 
+            owner: loggedInUserId,       // tvoj Firestore ID
+            ownerName: loggedInUserIme,  // ime kupca (iz Firestore)
             sold: true
         });
 
-        // 8) Osvježi listu proizvoda na profilu
+        // 8) Osvježi prikaz proizvoda na profilu
         loadProfileProducts();
 
     } catch (error) {
         console.error('Greška prilikom kupovine Luna tokenima:', error);
-        alert('❌ Došlo je do greške. Pokušajte ponovo.');
+        alert('Došlo je do greške. Pokušajte ponovo.');
     }
 }
 
