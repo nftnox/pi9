@@ -941,9 +941,9 @@ buyButton.addEventListener('click', async () => {
         const accounts = await web3.eth.getAccounts();
         const buyerAccount = accounts[0];
 
-        // Pretpostavka: productData.price je cijena u LUNA tokenima koju ste upisali prilikom mintanja
+        // Pretpostavka: productData.price je cijena u LUNA tokenima
         const priceInLuna = productData.price;
-        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether'); 
+        const requiredAmount = web3.utils.toWei(priceInLuna.toString(), 'ether');
 
         // Approve LUNA tokena za marketplace (omogućiti marketplace-u da povuče tokene)
         const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
@@ -952,7 +952,7 @@ buyButton.addEventListener('click', async () => {
         // Poziv na marketplace kupovinu
         await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
 
-        // Nakon uspješne kupnje, ažuriraj Firestore i UI
+        // Nakon uspješne kupovine, ažuriraj Firestore i UI
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
@@ -960,6 +960,25 @@ buyButton.addEventListener('click', async () => {
             ownerName: username
         });
 
+        // ✅ 🔍 Provjera nove Ethereum adrese korisnika i ažuriranje ownerAddress polja
+        const newOwnerRef = doc(db, 'network', userId);
+        const newOwnerSnap = await getDoc(newOwnerRef);
+
+        if (newOwnerSnap.exists()) {
+            const newOwnerData = newOwnerSnap.data();
+            if (newOwnerData.ethAddress) {
+                await updateDoc(productDocRef, {
+                    ownerAddress: newOwnerData.ethAddress
+                });
+                console.log(`✅ Ethereum adresa ažurirana na: ${newOwnerData.ethAddress}`);
+            } else {
+                console.log("❌ Novi vlasnik nema Ethereum adresu postavljenu.");
+            }
+        } else {
+            console.error("❌ Novi vlasnik nije pronađen u Firestore-u.");
+        }
+
+        // Promjena UI prikaza
         buyButton.textContent = 'Sold';
         buyButton.style.backgroundColor = 'red';
         buyButton.disabled = true;
@@ -967,7 +986,6 @@ buyButton.addEventListener('click', async () => {
         ownerDiv.textContent = `Novi vlasnik: ${username}`;
         ownerDiv.style.color = 'white';
         ownerDiv.style.cursor = 'pointer';
-        productDiv.appendChild(ownerDiv);
 
         alert(`Kupili ste ${productData.name} za ${priceInLuna} LUNA tokena!`);
 
@@ -976,6 +994,7 @@ buyButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
