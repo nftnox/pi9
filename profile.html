@@ -246,14 +246,16 @@ productDiv.appendChild(productPrice);
                 const setPriceButton = document.createElement('button');
 setPriceButton.innerText = 'Postavi cijene';
 setPriceButton.classList.add('set-price-button');
+
 setPriceButton.addEventListener('click', async () => {
     if (typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask) {
         try {
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum);
             const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
+            const marketplaceContract = new web3.eth.Contract(marketplaceABI, marketplaceAddress);
             const accounts = await web3.eth.getAccounts();
-            const currentAccount = accounts[0]; 
+            const currentAccount = accounts[0];
 
             // ✅ PRVO OMOGUĆI SETAPPROVALFORMARKETPLACE
             await nftContract.methods.setApprovalForAll(marketplaceAddress, true).send({ from: currentAccount });
@@ -270,10 +272,16 @@ setPriceButton.addEventListener('click', async () => {
                 if (!isNaN(novaCryptoCijena) && novaCryptoCijena > 0) {
                     updateData.cryptoPrice = novaCryptoCijena;
                 }
+
+                // ✅ Ažuriranje cijene u Firestore-u
                 await updateDoc(doc(db, 'products', docSnap.id), updateData);
 
-                alert('✅ Nove cijene postavljene i omogućena prodaja!');
-                loadProfileProducts(); 
+                // ✅ LISTANJE NFT-A NA MARKETPLACE
+                await marketplaceContract.methods.listNFT(productData.tokenId, novaCijena)
+                    .send({ from: currentAccount });
+
+                alert('✅ NFT je ponovo listan na marketplace-u i nove cijene su postavljene!');
+                loadProfileProducts();
             } else {
                 alert('❌ Unesite ispravne cijene!');
             }
@@ -286,11 +294,10 @@ setPriceButton.addEventListener('click', async () => {
     }
 });
 
+productDiv.appendChild(priceInput);
+productDiv.appendChild(cryptoPriceInput);
+productDiv.appendChild(setPriceButton);
 
-
-                productDiv.appendChild(priceInput);
-                productDiv.appendChild(cryptoPriceInput);
-                productDiv.appendChild(setPriceButton);
             } else {
                 // Dodaj dugme za kupovinu Delta coinom
                 // Dodaj dugme za kupovinu Luna tokenima
