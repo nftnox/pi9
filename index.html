@@ -952,11 +952,12 @@ buyButton.addEventListener('click', async () => {
         // Poziv na marketplace kupovinu
         await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
 
-        // Nakon uspješne kupnje, ažuriraj Firestore i UI
+        // Nakon uspješne kupnje, ažuriraj Firestore i UI – koristimo buyerAccount (stvarnu Ethereum adresu)
         const productDocRef = doc(db, 'products', productId);
         await updateDoc(productDocRef, {
             sold: true,
-            owner: userId,
+            owner: buyerAccount,          // Ažuriraj vlasnika na stvarnu Ethereum adresu kupca
+            ownerAddress: buyerAccount,     // Osiguraj da se ownerAddress također ažurira
             ownerName: username
         });
 
@@ -976,6 +977,7 @@ buyButton.addEventListener('click', async () => {
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 });
+
 
 
 
