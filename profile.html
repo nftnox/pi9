@@ -606,49 +606,50 @@ async function handleLunaPurchase(productId, productData) {
         try {
             await window.ethereum.request({ method: 'eth_requestAccounts' });
             const web3 = new Web3(window.ethereum);
+
             const accounts = await web3.eth.getAccounts();
             const buyerAccount = accounts[0];
-            
+
             const lunaTokenContract = new web3.eth.Contract(contractABI, contractAddress);
             const userBalance = await lunaTokenContract.methods.balanceOf(buyerAccount).call();
             const requiredAmount = web3.utils.toWei(productData.price.toString(), 'ether');
-            
+
             if (parseFloat(userBalance) < parseFloat(requiredAmount)) {
                 alert('Nemate dovoljno Luna tokena za ovu transakciju.');
                 return;
             }
-            
-            // Umjesto da dohvaćamo dokument prodavača, koristimo ownerAddress spremljen u proizvodu:
-            const sellerEthAddress = productData.ownerAddress;
-            
+
+            const sellerDocRef = doc(db, 'network', productData.owner);
+            const sellerDocSnap = await getDoc(sellerDocRef);
+            const sellerEthAddress = sellerDocSnap.data().ethAddress;
+
             if (!sellerEthAddress) {
                 alert('Prodavac nema postavljenu Ethereum adresu.');
                 return;
             }
-            
+
             await lunaTokenContract.methods
                 .transfer(sellerEthAddress, requiredAmount)
                 .send({ from: buyerAccount });
-            
+
             alert(`Kupili ste ${productData.name} za ${productData.price} Luna Coin!`);
-            
+
             const nftContract = new web3.eth.Contract(nftContractABI, nftContractAddress);
             const currentOwner = await nftContract.methods.ownerOf(productData.tokenId).call();
-            
+
             if (currentOwner.toLowerCase() !== sellerEthAddress.toLowerCase()) {
                 alert('Greška: Prodavac nije vlasnik ovog NFT-a!');
                 return;
             }
-            
-            // Ažuriraj Firestore – ovdje se ažurira novi vlasnik (FireStore ID i ime)  
+
             await updateDoc(doc(db, 'products', productId), {
                 owner: loggedInUserId,
                 ownerName: loggedInUserIme,
                 sold: true
             });
-            
+
             await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAccount });
-            
+
             alert(`NFT ${productData.name} je sada u vašem vlasništvu!`);
             loadProfileProducts();
         } catch (error) {
@@ -659,7 +660,6 @@ async function handleLunaPurchase(productId, productData) {
         alert('Molimo vas da instalirate MetaMask ekstenziju za korištenje kripto plaćanja ili omogućite MetaMask ako je već instaliran.');
     }
 }
-
 
 
 
@@ -2446,6 +2446,3 @@ await loadUserProfile();
 </style>
 </body>
 </html>
-
-
-  
