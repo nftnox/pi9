@@ -322,13 +322,6 @@ productDiv.appendChild(buyButton);
 // Ažuriranje vlasništva proizvoda kada se kupuje Delta coinom
 async function updateProductOwnership(productId, productData) {
     try {
-        // Dohvati wallet adresu iz MetaMask-a
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const web3 = new Web3(window.ethereum);
-        const accounts = await web3.eth.getAccounts();
-        const buyerAddress = accounts[0];
-
-        // Ažuriraj Firestore – dodaj NFT u kupovine
         const userPurchasesRef = collection(db, `network/${loggedInUserId}/purchases`);
         await addDoc(userPurchasesRef, {
             name: productData.name,
@@ -337,16 +330,15 @@ async function updateProductOwnership(productId, productData) {
             purchaseTime: new Date()
         });
 
-        // Ažuriraj stanje kupca u Firestore
         const userDocRef = doc(db, 'network', loggedInUserId);
         currentPrice -= productData.price;
         await updateDoc(userDocRef, { currentPrice: currentPrice });
         document.getElementById('current-price').innerText = currentPrice.toFixed(2);
 
-        // Ažuriraj stanje prodavača u Firestore
         const sellerId = productData.owner;
         const sellerDocRef = doc(db, 'network', sellerId);
         const sellerDocSnap = await getDoc(sellerDocRef);
+
         if (sellerDocSnap.exists()) {
             const sellerData = sellerDocSnap.data();
             let sellerCurrentPrice = sellerData.currentPrice || 0;
@@ -356,24 +348,23 @@ async function updateProductOwnership(productId, productData) {
             console.error("Prodavac nije pronađen u Firestore-u.");
         }
 
-        // Ažuriraj podatke o vlasništvu u Firestore-u – ovdje koristimo stvarnu wallet adresu
+        // ✅ Ispravno mijenjamo vlasništvo u Firestore-u
         await updateDoc(doc(db, 'products', productId), {
-            owner: buyerAddress,
+            owner: loggedInUserId,
             ownerName: loggedInUserIme,
             sold: true
         });
 
-        // POTPUNI ON-CHAIN TRANSFER: pozovi marketplace metodu s ispravnom wallet adresom
-        await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: buyerAddress });
+        // 🔴 SADA DODAJ POZIV MARKETPLACE-A DA SE NFT PRENESE NA BLOCKCHAINU
+        await marketplaceContract.methods.buyNFT(productData.tokenId).send({ from: loggedInUserId });
 
         alert(`NFT ${productData.name} je sada u vašem vlasništvu!`);
-        loadProfileProducts();
+        loadProfileProducts(); 
     } catch (error) {
         console.error('Greška prilikom kupovine:', error);
         alert('Došlo je do greške. Pokušajte ponovo.');
     }
 }
-
 
 
 // Funkcija za rukovanje kripto kupovinom putem MetaMask-a
