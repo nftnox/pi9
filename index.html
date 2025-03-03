@@ -650,7 +650,7 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
         
     async function checkMainClickTime() {
     const now = new Date();
-    const oneMinute = 60 * 1000;
+    const thirtyMinutes = 30 * 60 * 1000; // 30 minuta u milisekundama
 
     const docRef = doc(db, 'network', userId);
     const docSnap = await getDoc(docRef);
@@ -659,7 +659,7 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
         const userData = docSnap.data();
         const mainClickTime = userData.mainClickTime ? userData.mainClickTime.toDate() : null;
 
-        if (mainClickTime && now - mainClickTime >= oneMinute) {
+        if (mainClickTime && now - mainClickTime >= thirtyMinutes) {
             // Zaustavi rudarenje
             lastClickTime = null; 
             await updateDoc(docRef, { lastClickTime: null });
@@ -667,10 +667,11 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
             // Resetuj "dolar-icon" da prikazuje 0.00/h
             document.querySelector('.amount').innerText = "0.00/h";
 
-            console.log("Istekao je 1 minut. Rudarenje se gasi, ali currentPrice NE resetujemo.");
+            console.log("Isteklo je 30 minuta. Rudarenje se gasi, ali currentPrice NE resetujemo.");
         }
     }
 }
+
 
 
 
@@ -2371,7 +2372,7 @@ usdAmountBuyInput.addEventListener('input', () => {
 
 /////////////////CHAAAAAAAAAAAAAAAAAAAAAAAAAAAAT///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-let isChatOpen = false; // Pratimo da li je chat otvoren
+        let isChatOpen = false; // Pratimo da li je chat otvoren
 let selectedUserName = ''; // Čuvamo ime trenutno odabranog korisnika
 let selectedUserId = ''; // Čuvamo ID trenutno odabranog korisnika
 
