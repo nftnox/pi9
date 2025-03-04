@@ -673,61 +673,57 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
 }
 
 
-startReferralListener();
-
-
-async function startReferralListener() {
+async function provjeriAktivneReferale() {
     const docRef = doc(db, 'network', userId);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
         const userData = docSnap.data();
         const referralIds = userData.usedBy || []; // Preuzmi sve referale
+        let aktivniReferali = 0;
 
-        // Postavljamo listener za svakog referala
-        referralIds.forEach(referralId => {
-            const referralDocRef = doc(db, 'network', referralId);
+        const now = new Date();
+        const twoMinutes = 2 * 60 * 1000; // Testno 2 minute
 
-            onSnapshot(referralDocRef, async (referralSnap) => {
-                if (referralSnap.exists()) {
-                    const referralData = referralSnap.data();
-                    const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
-                    const now = new Date();
-                    const twoMinutes = 2 * 60 * 1000; // Testno 2 minute
+        // Provjera da li je sponzor (korisnik) aktivan
+        const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
+        const sponsorAktivan = sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes;
 
-                    // Ako je referal upravo kliknuo
-                    if (referralLastClickTime && now - referralLastClickTime < twoMinutes) {
-                        console.log(`Referal ${referralData.username} je postao aktivan!`);
+        if (sponsorAktivan) {
+            // Iteriramo kroz sve referale i provjeravamo ko je aktivan
+            for (const referralId of referralIds) {
+                try {
+                    const referralDocRef = doc(db, 'network', referralId);
+                    const referralDocSnap = await getDoc(referralDocRef);
 
-                        // Sada provjeravamo da li je i sponzor aktivan
-                        const sponsorDocRef = doc(db, 'network', userId);
-                        const sponsorSnap = await getDoc(sponsorDocRef);
+                    if (referralDocSnap.exists()) {
+                        const referralData = referralDocSnap.data();
+                        const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
 
-                        if (sponsorSnap.exists()) {
-                            const sponsorData = sponsorSnap.data();
-                            const sponsorLastClickTime = sponsorData.lastClickTime ? sponsorData.lastClickTime.toDate() : null;
-
-                            if (sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes) {
-                                console.log(`Sponzor ${sponsorData.username} je aktivan – dodajemo bonus!`);
-
-                                // Povećavamo referralBonus za 0.01
-                                const newBonus = (sponsorData.referralBonus || 0) + 0.01;
-
-                                await updateDoc(sponsorDocRef, {
-                                    referralBonus: newBonus
-                                });
-
-                                console.log(`Novi referral bonus za ${sponsorData.username}: ${newBonus}`);
-                            } else {
-                                console.log(`Sponzor ${sponsorData.username} nije aktivan – nema bonusa.`);
-                            }
+                        if (referralLastClickTime && now - referralLastClickTime < twoMinutes) {
+                            aktivniReferali++;
                         }
                     }
+                } catch (error) {
+                    console.error(`Greška prilikom provjere referala (${referralId}):`, error);
                 }
+            }
+
+            // Ažuriranje referral bonusa na osnovu broja aktivnih referala
+            const noviBonus = aktivniReferali * 0.01;
+            await updateDoc(docRef, {
+                referralBonus: noviBonus
             });
-        });
+
+            console.log(`${window.location.href}: Aktivni referali: ${aktivniReferali}`);
+        } else {
+            console.log(`Sponzor ${userData.username} nije aktivan – nema bonusa.`);
+        }
     }
 }
+
+// Pozivamo funkciju svakih 5 sekundi
+setInterval(provjeriAktivneReferale, 5000);
 
 
 
