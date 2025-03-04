@@ -673,8 +673,6 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
 }
 
 
-let referralCheckInterval = null; // Početno nema aktivnih provjera
-
 async function provjeriAktivneReferale() {
     const docRef = doc(db, 'network', userId);
     const docSnap = await getDoc(docRef);
@@ -691,82 +689,41 @@ async function provjeriAktivneReferale() {
         const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
         const sponsorAktivan = sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes;
 
-        if (!sponsorAktivan) {
-            console.log(`Korisnik ${userData.username} više nije aktivan – zaustavljamo provjere.`);
-            stopReferralCheck(); // Zaustavljamo provjere ako korisnik više nije aktivan
-            return;
-        }
+        if (sponsorAktivan) {
+            // Iteriramo kroz sve referale i provjeravamo ko je aktivan
+            for (const referralId of referralIds) {
+                try {
+                    const referralDocRef = doc(db, 'network', referralId);
+                    const referralDocSnap = await getDoc(referralDocRef);
 
-        // Iteriramo kroz sve referale i provjeravamo ko je aktivan
-        for (const referralId of referralIds) {
-            try {
-                const referralDocRef = doc(db, 'network', referralId);
-                const referralDocSnap = await getDoc(referralDocRef);
+                    if (referralDocSnap.exists()) {
+                        const referralData = referralDocSnap.data();
+                        const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
 
-                if (referralDocSnap.exists()) {
-                    const referralData = referralDocSnap.data();
-                    const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
-
-                    if (referralLastClickTime && now - referralLastClickTime < twoMinutes) {
-                        aktivniReferali++;
+                        if (referralLastClickTime && now - referralLastClickTime < twoMinutes) {
+                            aktivniReferali++;
+                        }
                     }
+                } catch (error) {
+                    console.error(`Greška prilikom provjere referala (${referralId}):`, error);
                 }
-            } catch (error) {
-                console.error(`Greška prilikom provjere referala (${referralId}):`, error);
             }
-        }
 
-        // Ažuriranje referral bonusa samo ako ima promjena
-        const noviBonus = aktivniReferali * 0.01;
-        await updateDoc(docRef, {
-            referralBonus: noviBonus
-        });
+            // Ažuriranje referral bonusa na osnovu broja aktivnih referala
+            const noviBonus = aktivniReferali * 0.01;
+            await updateDoc(docRef, {
+                referralBonus: noviBonus
+            });
 
-        console.log(`${window.location.href}: Aktivni referali: ${aktivniReferali}`);
-    }
-}
-
-// Funkcija za pokretanje provjera svakih 5 sekundi
-function startReferralCheck() {
-    if (!referralCheckInterval) {
-        referralCheckInterval = setInterval(provjeriAktivneReferale, 5000);
-        console.log("Pokrenute provjere svakih 5 sekundi.");
-    }
-}
-
-// Funkcija za zaustavljanje provjera
-function stopReferralCheck() {
-    if (referralCheckInterval) {
-        clearInterval(referralCheckInterval);
-        referralCheckInterval = null;
-        console.log("Zaustavljene provjere.");
-    }
-}
-
-// **Ponovno pokretanje provjera kada korisnik klikne na "amount"**
-document.getElementById('amount').addEventListener('click', () => {
-    console.log("Korisnik je kliknuo - ponovo pokrećemo provjere.");
-    startReferralCheck();
-});
-
-// **Firestore listener koji prati kada korisnik ponovo postane aktivan**
-const userDocRef = doc(db, 'network', userId);
-onSnapshot(userDocRef, (docSnap) => {
-    if (docSnap.exists()) {
-        const userData = docSnap.data();
-        const now = new Date();
-        const twoMinutes = 2 * 60 * 1000; // Testno 2 minute
-        const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
-
-        if (sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes) {
-            console.log("Korisnik je ponovo postao aktivan - pokrećemo provjere!");
-            startReferralCheck();
+            console.log(`${window.location.href}: Aktivni referali: ${aktivniReferali}`);
+        } else {
+            console.log(`Sponzor ${userData.username} nije aktivan – nema bonusa.`);
         }
     }
-});
+}
 
-// Automatski pokreni provjere kada se stranica učita
-startReferralCheck();
+// Pozivamo funkciju svakih 5 sekundi
+setInterval(provjeriAktivneReferale, 5000);
 
 
 
