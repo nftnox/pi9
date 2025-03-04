@@ -673,9 +673,8 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
 }
 
 
-let referralCheckInterval;
+let referralCheckInterval = null; // Početno nema aktivnih provjera
 
-// Funkcija koja provjerava aktivne referale
 async function provjeriAktivneReferale() {
     const docRef = doc(db, 'network', userId);
     const docSnap = await getDoc(docRef);
@@ -688,13 +687,14 @@ async function provjeriAktivneReferale() {
         const now = new Date();
         const twoMinutes = 2 * 60 * 1000; // Testno 2 minute
 
-        // Provjera da li je sponzor (korisnik) aktivan
+        // Provjera da li je korisnik aktivan
         const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
         const sponsorAktivan = sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes;
 
         if (!sponsorAktivan) {
-            console.log(`Sponzor ${userData.username} nije aktivan – nema bonusa.`);
-            return; // Ako sponzor nije aktivan, prekidamo funkciju i ne radimo Firestore upite
+            console.log(`Korisnik ${userData.username} više nije aktivan – zaustavljamo provjere.`);
+            stopReferralCheck(); // Zaustavljamo provjere ako korisnik više nije aktivan
+            return;
         }
 
         // Iteriramo kroz sve referale i provjeravamo ko je aktivan
@@ -727,31 +727,30 @@ async function provjeriAktivneReferale() {
     }
 }
 
-// Pokretanje intervala kada je korisnik aktivan
+// Funkcija za pokretanje provjera svakih 5 sekundi
 function startReferralCheck() {
     if (!referralCheckInterval) {
         referralCheckInterval = setInterval(provjeriAktivneReferale, 5000);
+        console.log("Pokrenute provjere svakih 5 sekundi.");
     }
 }
 
-// Zaustavljanje intervala kada korisnik nije aktivan
+// Funkcija za zaustavljanje provjera
 function stopReferralCheck() {
     if (referralCheckInterval) {
         clearInterval(referralCheckInterval);
         referralCheckInterval = null;
+        console.log("Zaustavljene provjere.");
     }
 }
 
-// Osluškujemo kada korisnik napusti ili se vrati na stranicu
-document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-        stopReferralCheck(); // Ako korisnik napusti stranicu, zaustavi provjeru
-    } else {
-        startReferralCheck(); // Ako se korisnik vrati, ponovo pokreni provjeru
-    }
+// Ponovno pokretanje provjera kada korisnik klikne na "amount"
+document.getElementById('amount').addEventListener('click', () => {
+    startReferralCheck();
+    console.log("Korisnik je kliknuo - ponovo pokrećemo provjere.");
 });
 
-// Prvi put pokreni provjeru kada se stranica učita
+// Automatski pokreni provjere kada se stranica učita
 startReferralCheck();
 
 
