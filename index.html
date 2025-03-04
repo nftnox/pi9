@@ -453,11 +453,11 @@ desktopToggleButton.addEventListener('click', () => {
                     const newReferralBonus = 0.01 * (referralCount + 1);
                     console.log(`Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus}`);
 
-                    await updateDoc(referrerDocRef, {
-    referralBonus: referrerData.referralBonus + 0.01, // Povećava bonus
-    referralCount: referrerData.referralCount + 1, // Povećava brojač
-    usedBy: arrayUnion(newUserId) // Dodaje ID novog korisnika u niz
-});
+                    await updateDoc(doc.ref, {
+                        referralBonus: 0.01 + newReferralBonus,
+                        referralCount: referralCount + 1,
+                        usedBy: [...usedByUser, userId]
+                    });
 
                     document.getElementById('referral-count').innerText = `${referralCount + 1}/${MAX_REFERRALS}`;
                 }
@@ -650,7 +650,7 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
         
     async function checkMainClickTime() {
     const now = new Date();
-    const thirtyMinutes = 30 * 60 * 1000; // 30 minuta u milisekundama
+    const oneMinute = 60 * 1000;
 
     const docRef = doc(db, 'network', userId);
     const docSnap = await getDoc(docRef);
@@ -659,7 +659,7 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
         const userData = docSnap.data();
         const mainClickTime = userData.mainClickTime ? userData.mainClickTime.toDate() : null;
 
-        if (mainClickTime && now - mainClickTime >= thirtyMinutes) {
+        if (mainClickTime && now - mainClickTime >= oneMinute) {
             // Zaustavi rudarenje
             lastClickTime = null; 
             await updateDoc(docRef, { lastClickTime: null });
@@ -667,11 +667,10 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
             // Resetuj "dolar-icon" da prikazuje 0.00/h
             document.querySelector('.amount').innerText = "0.00/h";
 
-            console.log("Isteklo je 30 minuta. Rudarenje se gasi, ali currentPrice NE resetujemo.");
+            console.log("Istekao je 1 minut. Rudarenje se gasi, ali currentPrice NE resetujemo.");
         }
     }
 }
-
 
 
 
