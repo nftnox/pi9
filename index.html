@@ -440,26 +440,26 @@ desktopToggleButton.addEventListener('click', () => {
         const querySnapshot = await getDocs(q);
 
         if (!querySnapshot.empty) {
-            // Ako pronađemo korisnika koji odgovara referralCode-u (npr. "ThorMoon")
             querySnapshot.forEach(async doc => {
-                const referralOwnerId = doc.id; // ID korisnika kojem je iskorišten referral kod
                 const referralOwnerData = doc.data();
-                const referralCount = referralOwnerData.referralCount || 0; // Broj puta kada je referral kod iskorišten
+                const referralCount = referralOwnerData.referralCount || 0;
+                const usedByUser = referralOwnerData.usedBy || [];
 
-                if (referralCount >= MAX_REFERRALS) {
-                    // Ako je referralCode već iskorišten maksimalno puta
+                if (usedByUser.includes(userId)) {
+                    console.log(`Korisnik ${userId} je već iskoristio referral kod.`);
+                } else if (referralCount >= MAX_REFERRALS) {
                     console.log(`Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.`);
                 } else {
-                    // Dodavanje bonusa postojećem korisniku
-                    const newReferralBonus = 0.01 * (referralCount + 1); // Dodajemo 0.01 za svakog novog korisnika
-
+                    const newReferralBonus = 0.01 * (referralCount + 1);
                     console.log(`Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus}`);
 
-                    // Ažuriraj korisnički dokument u Firestore-u
-                    await updateDoc(doc.ref, {
-                        referralBonus: 0.01 + newReferralBonus, // Ažuriramo bonus korisniku
-                        referralCount: referralCount + 1 // Povećavamo broj korištenja referral koda
-                    });
+                    await updateDoc(referrerDocRef, {
+    referralBonus: referrerData.referralBonus + 0.01, // Povećava bonus
+    referralCount: referrerData.referralCount + 1, // Povećava brojač
+    usedBy: arrayUnion(newUserId) // Dodaje ID novog korisnika u niz
+});
+
+                    document.getElementById('referral-count').innerText = `${referralCount + 1}/${MAX_REFERRALS}`;
                 }
             });
         }
