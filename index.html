@@ -435,35 +435,52 @@ desktopToggleButton.addEventListener('click', () => {
 
     // Provera referral koda (ostaje isto, nije obavezno za tvoju trenutnu logiku)
     async function checkReferral(referralCode) {
-        const userCollection = collection(db, 'network');
-        const q = query(userCollection, where("username", "==", referralCode));
-        const querySnapshot = await getDocs(q);
+    const userCollection = collection(db, 'network');
+    const q = query(userCollection, where("username", "==", referralCode));
+    const querySnapshot = await getDocs(q);
 
-        if (!querySnapshot.empty) {
-            querySnapshot.forEach(async doc => {
-                const referralOwnerData = doc.data();
-                const referralCount = referralOwnerData.referralCount || 0;
-                const usedByUser = referralOwnerData.usedBy || [];
+    if (!querySnapshot.empty) {
+        querySnapshot.forEach(async (refDoc) => {
+            const referralOwnerData = refDoc.data();
+            const referralDocRef = doc(db, 'network', refDoc.id); // Ispravan način referenciranja dokumenta
 
-                if (usedByUser.includes(userId)) {
-                    console.log(`Korisnik ${userId} je već iskoristio referral kod.`);
-                } else if (referralCount >= MAX_REFERRALS) {
-                    console.log(`Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.`);
-                } else {
-                    const newReferralBonus = 0.01 * (referralCount + 1);
-                    console.log(`Referral nagrada dodana korisniku ${referralOwnerData.username}, bonus: ${newReferralBonus}`);
+            let referralCount = referralOwnerData.referralCount || 0;
+            let usedByUser = referralOwnerData.usedBy || []; // Osiguraj da postoji lista
 
-                    await updateDoc(doc.ref, {
-                        referralBonus: 0.01 + newReferralBonus,
-                        referralCount: referralCount + 1,
-                        usedBy: [...usedByUser, userId]
-                    });
+            // Provjera da li je ovaj korisnik već iskoristio referal kod
+            if (usedByUser.includes(userId)) {
+                console.log(`❌ Korisnik ${userId} je već iskoristio referral kod.`);
+                return;
+            }
 
-                    document.getElementById('referral-count').innerText = `${referralCount + 1}/${MAX_REFERRALS}`;
-                }
+            // Ako je dostignut maksimum, ne dozvoli dodavanje
+            if (referralCount >= MAX_REFERRALS) {
+                console.log(`❌ Referral kod od korisnika ${referralOwnerData.username} je već iskorišten maksimalno puta.`);
+                return;
+            }
+
+            // Dodaj korisnika u listu `usedBy`
+            usedByUser.push(userId);
+            referralCount++; // Povećaj broj referral-a
+            const newReferralBonus = 0.01 * referralCount; // Bonus se povećava
+
+            // Ažuriraj podatke u Firestore
+            await updateDoc(referralDocRef, {
+                referralBonus: newReferralBonus,
+                referralCount: referralCount,
+                usedBy: usedByUser // Sada pravilno ažurira referale
             });
-        }
+
+            console.log(`✅ Referral dodan! Novi referral bonus za ${referralOwnerData.username} je ${newReferralBonus}`);
+
+            // Ažuriraj prikaz referal count-a na stranici
+            document.getElementById('referral-count-display').innerText = `${referralCount}/${MAX_REFERRALS}`;
+        });
+    } else {
+        console.log("❌ Uneseni referral kod ne postoji u bazi.");
     }
+}
+
 
     // Učitavanje podataka o korisniku iz Firestore i ažuriranje stanja
     async function loadUserData() {
