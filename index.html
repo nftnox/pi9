@@ -673,6 +673,9 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
 }
 
 
+let referralCheckInterval;
+
+// Funkcija koja provjerava aktivne referale
 async function provjeriAktivneReferale() {
     const docRef = doc(db, 'network', userId);
     const docSnap = await getDoc(docRef);
@@ -689,41 +692,67 @@ async function provjeriAktivneReferale() {
         const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
         const sponsorAktivan = sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes;
 
-        if (sponsorAktivan) {
-            // Iteriramo kroz sve referale i provjeravamo ko je aktivan
-            for (const referralId of referralIds) {
-                try {
-                    const referralDocRef = doc(db, 'network', referralId);
-                    const referralDocSnap = await getDoc(referralDocRef);
+        if (!sponsorAktivan) {
+            console.log(`Sponzor ${userData.username} nije aktivan – nema bonusa.`);
+            return; // Ako sponzor nije aktivan, prekidamo funkciju i ne radimo Firestore upite
+        }
 
-                    if (referralDocSnap.exists()) {
-                        const referralData = referralDocSnap.data();
-                        const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
+        // Iteriramo kroz sve referale i provjeravamo ko je aktivan
+        for (const referralId of referralIds) {
+            try {
+                const referralDocRef = doc(db, 'network', referralId);
+                const referralDocSnap = await getDoc(referralDocRef);
 
-                        if (referralLastClickTime && now - referralLastClickTime < twoMinutes) {
-                            aktivniReferali++;
-                        }
+                if (referralDocSnap.exists()) {
+                    const referralData = referralDocSnap.data();
+                    const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
+
+                    if (referralLastClickTime && now - referralLastClickTime < twoMinutes) {
+                        aktivniReferali++;
                     }
-                } catch (error) {
-                    console.error(`Greška prilikom provjere referala (${referralId}):`, error);
                 }
+            } catch (error) {
+                console.error(`Greška prilikom provjere referala (${referralId}):`, error);
             }
+        }
 
-            // Ažuriranje referral bonusa na osnovu broja aktivnih referala
-            const noviBonus = aktivniReferali * 0.01;
+        // Ažuriranje referral bonusa samo ako ima promjena
+        const noviBonus = aktivniReferali * 0.01;
+        if (noviBonus !== userData.referralBonus) {
             await updateDoc(docRef, {
                 referralBonus: noviBonus
             });
-
             console.log(`${window.location.href}: Aktivni referali: ${aktivniReferali}`);
-        } else {
-            console.log(`Sponzor ${userData.username} nije aktivan – nema bonusa.`);
         }
     }
 }
 
-// Pozivamo funkciju svakih 5 sekundi
-setInterval(provjeriAktivneReferale, 5000);
+// Pokretanje intervala kada je korisnik aktivan
+function startReferralCheck() {
+    if (!referralCheckInterval) {
+        referralCheckInterval = setInterval(provjeriAktivneReferale, 5000);
+    }
+}
+
+// Zaustavljanje intervala kada korisnik nije aktivan
+function stopReferralCheck() {
+    if (referralCheckInterval) {
+        clearInterval(referralCheckInterval);
+        referralCheckInterval = null;
+    }
+}
+
+// Osluškujemo kada korisnik napusti ili se vrati na stranicu
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        stopReferralCheck(); // Ako korisnik napusti stranicu, zaustavi provjeru
+    } else {
+        startReferralCheck(); // Ako se korisnik vrati, ponovo pokreni provjeru
+    }
+});
+
+// Prvi put pokreni provjeru kada se stranica učita
+startReferralCheck();
 
 
 
