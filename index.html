@@ -687,7 +687,7 @@ async function provjeriAktivneReferale() {
         const now = new Date();
         const twoMinutes = 2 * 60 * 1000; // Testno 2 minute
 
-        // Provjera da li je korisnik aktivan
+        // Provjera da li je sponzor (korisnik) aktivan
         const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
         const sponsorAktivan = sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes;
 
@@ -743,10 +743,26 @@ function stopReferralCheck() {
     }
 }
 
-// **Kada korisnik klikne na amount, ponovo pokreni provjere**
+// **Ponovno pokretanje provjera kada korisnik klikne na "amount"**
 document.getElementById('amount').addEventListener('click', () => {
-    startReferralCheck();
     console.log("Korisnik je kliknuo - ponovo pokrećemo provjere.");
+    startReferralCheck();
+});
+
+// **Firestore listener koji prati kada korisnik ponovo postane aktivan**
+const userDocRef = doc(db, 'network', userId);
+onSnapshot(userDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+        const userData = docSnap.data();
+        const now = new Date();
+        const twoMinutes = 2 * 60 * 1000; // Testno 2 minute
+        const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
+
+        if (sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes) {
+            console.log("Korisnik je ponovo postao aktivan - pokrećemo provjere!");
+            startReferralCheck();
+        }
+    }
 });
 
 // Automatski pokreni provjere kada se stranica učita
