@@ -647,18 +647,16 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
         const userData = docSnap.data();
         const mainClickTime = userData.mainClickTime ? userData.mainClickTime.toDate() : null;
 
+        // ❌ SPRIJEČI RUDARENJE DA SE ODMAH GASI PRI KLIKU!
         if (mainClickTime && now - mainClickTime >= thirtyMinutes) {
-            // Zaustavi rudarenje
-            lastClickTime = null; 
-            await updateDoc(docRef, { lastClickTime: null });
+            console.log("⚠️ Isteklo je 30 minuta. Rudarenje će se zaustaviti AKO korisnik ne klikne opet.");
 
-            // Resetuj "dolar-icon" da prikazuje 0.00/h
-            document.querySelector('.amount').innerText = "0.00/h";
-
-            console.log("Isteklo je 30 minuta. Rudarenje se gasi, ali currentPrice NE resetujemo.");
+            // ✅ NE gasimo rudarenje odmah - korisnik ima šansu da klikne!
+            return;
         }
     }
 }
+
 
 
 
