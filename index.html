@@ -467,63 +467,48 @@ desktopToggleButton.addEventListener('click', () => {
 
     // Učitavanje podataka o korisniku iz Firestore i ažuriranje stanja
     async function loadUserData() {
-    const docRef = doc(db, 'network', userId);
+        const docRef = doc(db, 'network', userId);
+        const docSnap = await getDoc(docRef);
 
-    // Real-time listener za automatsko povećavanje bonusa ako se referali aktiviraju
-    onSnapshot(docRef, async (docSnap) => {
         if (docSnap.exists()) {
-            const data = docSnap.data();
-            currentPrice = data.currentPrice || 0.00;
-            totalPrice = data.totalPrice || 0.00;
-            lastClickTime = data.lastClickTime ? data.lastClickTime.toDate() : null;
-            mainClickTime = data.mainClickTime ? data.mainClickTime.toDate() : null;
+            currentPrice = docSnap.data().currentPrice || 0.00;
+
+            // DODANO: Učitavanje totalPrice iz Firestore
+            totalPrice = docSnap.data().totalPrice || 0.00;
+
+            lastClickTime = docSnap.data().lastClickTime ? docSnap.data().lastClickTime.toDate() : null;
+            const userReferralBonus = docSnap.data().referralBonus || 0.01;
+
+            document.getElementById('current-price').querySelector('#amount').innerText = currentPrice.toFixed(2);
+            const baseMiningRate = 0.01; // Vaša fiksna baza
+const actualRate = baseMiningRate + userReferralBonus;
+
+document.querySelector('.amount').innerText = (currentPrice > 0) 
+    ? actualRate.toFixed(2) + "/h"
+    : "0.00/h";
 
             const now = new Date();
-            const thirtyMinutes = 30 * 60 * 1000; // 30 minuta u milisekundama
+            const twentyFourHours = 24 * 60 * 60 * 1000;
 
-            // Ako je korisnikov mainClickTime unutar posljednjih 30 minuta, nastavlja da zarađuje
-            const isMiningActive = mainClickTime && (now - mainClickTime < thirtyMinutes);
+            // Logika akumulacije po proteku vremena (kao ranije)
+            if (lastClickTime) {
+                const elapsed = now - lastClickTime;
+                const increments = Math.floor(elapsed / 5000);
+                if (increments > 0) {
+    const baseMiningRate = 0.01; 
+    const actualRate = baseMiningRate + userReferralBonus;
 
-            // Ako korisnik zarađuje, pratimo aktivnost njegovih referala
-            if (isMiningActive) {
-                const referralIds = data.usedBy || [];
-                let activeReferralCount = 0;
+    currentPrice += increments * actualRate;
+    totalPrice += increments * actualRate;
 
-                for (const referralId of referralIds) {
-                    const referralDocRef = doc(db, 'network', referralId);
-                    const referralDocSnap = await getDoc(referralDocRef);
+    document.getElementById('amount').innerText = currentPrice.toFixed(2);
 
-                    if (referralDocSnap.exists()) {
-                        const referralData = referralDocSnap.data();
-                        const referralLastClick = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
+    lastClickTime.setSeconds(lastClickTime.getSeconds() + increments * 5);
 
-                        // Ako je referal postao aktivan unutar 30 minuta od korisnikovog mainClickTime
-                        if (referralLastClick && (now - referralLastClick < thirtyMinutes)) {
-                            activeReferralCount++;
-                        }
-                    }
-                }
-
-                // Izračunaj bonus i novu stopu rudarenja
-                const userReferralBonus = activeReferralCount * 0.01;
-                const baseMiningRate = 0.02;
-                const actualRate = baseMiningRate + userReferralBonus;
-
-                // Ažuriraj prikaz zarade
-                document.getElementById('amount').innerText = currentPrice.toFixed(2);
-                document.querySelector('.amount').innerText = `${actualRate.toFixed(2)}/h`;
-
-                // Ažuriraj Firestore ako se promijenio referralBonus
-                if (data.referralBonus !== userReferralBonus) {
-                    await updateDoc(docRef, { referralBonus: userReferralBonus });
-                }
-            }
-        } else {
-            console.error("Korisnik ne postoji u Firestore-u.");
-        }
-    });
+    await updateFirestore(currentPrice, lastClickTime, totalPrice);
 }
 
+            }
 
             // Klik na ikonu "dolar-icon" -> povećanje currentPrice
            // Funkcija za resetovanje cijene nakon 24h
@@ -642,7 +627,10 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
 
 
 
-        
+        } else {
+            console.error("Korisnik ne postoji u Firestore-u.");
+        }
+    }
 
     // DODANO: updateFirestore sada prima i totalPrice
     async function updateFirestore(currentPrice, lastClickTime, totalPrice) {
