@@ -718,12 +718,11 @@ async function provjeriAktivneReferale() {
 
         // Ažuriranje referral bonusa samo ako ima promjena
         const noviBonus = aktivniReferali * 0.01;
-        if (noviBonus !== userData.referralBonus) {
-            await updateDoc(docRef, {
-                referralBonus: noviBonus
-            });
-            console.log(`${window.location.href}: Aktivni referali: ${aktivniReferali}`);
-        }
+        await updateDoc(docRef, {
+            referralBonus: noviBonus
+        });
+
+        console.log(`${window.location.href}: Aktivni referali: ${aktivniReferali}`);
     }
 }
 
@@ -744,26 +743,10 @@ function stopReferralCheck() {
     }
 }
 
-// Ponovno pokretanje provjera kada korisnik klikne na "amount"
+// **Kada korisnik klikne na amount, ponovo pokreni provjere**
 document.getElementById('amount').addEventListener('click', () => {
     startReferralCheck();
     console.log("Korisnik je kliknuo - ponovo pokrećemo provjere.");
-});
-
-// **LISTENER NA FIRESTORE KOJI AUTOMATSKI POKREĆE PROVJERE KADA KORISNIK PONOVO POSTANE AKTIVAN**
-const userDocRef = doc(db, 'network', userId);
-onSnapshot(userDocRef, (docSnap) => {
-    if (docSnap.exists()) {
-        const userData = docSnap.data();
-        const now = new Date();
-        const twoMinutes = 2 * 60 * 1000; // Testno 2 minute
-        const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
-
-        if (sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes) {
-            console.log("Korisnik je ponovo postao aktivan - pokrećemo provjere!");
-            startReferralCheck();
-        }
-    }
 });
 
 // Automatski pokreni provjere kada se stranica učita
