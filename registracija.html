@@ -9,9 +9,25 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            getDocs, 
+            query, 
+            where, 
+            doc, 
+            updateDoc, 
+            arrayUnion 
+        } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+        import { 
+            getStorage, 
+            ref, 
+            uploadBytes, 
+            getDownloadURL 
+        } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-storage.js";
 
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBKfTE0qZdxVLq0lvmli367_yyqpGK-fPA",
             authDomain: "piii-7844e.firebaseapp.com",
@@ -22,11 +38,13 @@
             measurementId: "G-JH9SDWTS9V"
         };
 
+        // Inicijalizacija
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Dugme "Registruj se"
             document.getElementById('register-button').addEventListener('click', () => {
                 document.getElementById('registration-box').style.display = 'none';
                 document.getElementById('form-container').style.display = 'block';
@@ -35,6 +53,7 @@
                 document.getElementById('login-form').style.display = 'none';
             });
 
+            // Dugme "Prijavi se"
             document.getElementById('login-button').addEventListener('click', () => {
                 document.getElementById('registration-box').style.display = 'none';
                 document.getElementById('form-container').style.display = 'block';
@@ -43,95 +62,121 @@
                 document.getElementById('login-form').style.display = 'block';
             });
 
+            // Klik na "Submit Registration"
             document.getElementById('submit-registration').addEventListener('click', async () => {
-    const ime = document.getElementById('ime').value;
-    const prezime = document.getElementById('prezime').value;
-    const email = document.getElementById('email').value;
-    const username = document.getElementById('username').value;
-    const brojTelefona = document.getElementById('brojTelefona').value;
-    const drzava = document.getElementById('drzava').value;
-    const grad = document.getElementById('grad').value;
-    const adresa = document.getElementById('adresa').value;
-    const sifra = document.getElementById('sifra').value;
-    const chatCode = document.getElementById('chat-code').value; // Novo polje
-    const referralCode = document.getElementById('referral-code').value; // Referal kod
-    const profilePicture = document.getElementById('profile-picture').files[0]; // File input for profile picture
+                const ime = document.getElementById('ime').value;
+                const prezime = document.getElementById('prezime').value;
+                const email = document.getElementById('email').value;
+                const username = document.getElementById('username').value;
+                const brojTelefona = document.getElementById('brojTelefona').value;
+                const drzava = document.getElementById('drzava').value;
+                const grad = document.getElementById('grad').value;
+                const adresa = document.getElementById('adresa').value;
+                const sifra = document.getElementById('sifra').value;
+                const chatCode = document.getElementById('chat-code').value; 
+                const referralCode = document.getElementById('referral-code').value;
+                const profilePicture = document.getElementById('profile-picture').files[0];
 
-    // Validacija četverocifrenog koda
-    if (!/^\d{4}$/.test(chatCode)) {
-        alert("Četverocifreni kod mora sadržavati tačno 4 broja.");
-        return;
-    }
+                // Validacija 4-cifrenog koda
+                if (!/^\d{4}$/.test(chatCode)) {
+                    alert("Četverocifreni kod mora sadržavati tačno 4 broja.");
+                    return;
+                }
 
-    // Proveri da li username ili email već postoji
-    const usernameQuery = query(collection(db, 'network'), where("username", "==", username));
-    const usernameSnapshot = await getDocs(usernameQuery);
-    const emailQuery = query(collection(db, 'network'), where("email", "==", email));
-    const emailSnapshot = await getDocs(emailQuery);
+                // Provera da li username ili email već postoje
+                const usernameQuery = query(collection(db, 'network'), where("username", "==", username));
+                const usernameSnapshot = await getDocs(usernameQuery);
+                const emailQuery = query(collection(db, 'network'), where("email", "==", email));
+                const emailSnapshot = await getDocs(emailQuery);
 
-    if (!usernameSnapshot.empty) {
-        alert("Username već postoji. Molimo izaberite drugi.");
-        return;
-    }
+                if (!usernameSnapshot.empty) {
+                    alert("Username već postoji. Molimo izaberite drugi.");
+                    return;
+                }
+                if (!emailSnapshot.empty) {
+                    alert("Email već postoji. Molimo izaberite drugi.");
+                    return;
+                }
 
-    if (!emailSnapshot.empty) {
-        alert("Email već postoji. Molimo izaberite drugi.");
-        return;
-    }
-
-    try {
-        let profilePictureUrl = '';
-        // Upload slike u Firebase Storage i preuzmi URL
-        if (profilePicture) {
-            const storageRef = ref(storage, 'profilePictures/' + username + '_' + profilePicture.name);
-            const snapshot = await uploadBytes(storageRef, profilePicture);
-            profilePictureUrl = await getDownloadURL(snapshot.ref);
-        }
-
-        // Sačuvaj korisničke podatke u Firestore
-        await addDoc(collection(db, 'network'), {
-            ime,
-            prezime,
-            email,
-            username,
-            brojTelefona,
-            drzava,
-            grad,
-            adresa,
-            sifra,
-            chatCode, // Sačuvaj četverocifreni kod
-            referralCode,
-            profilePictureUrl,
-            amount: 0,
-            clickCount: 0
-        });
-
-        alert("Registracija uspješna! Možete se prijaviti.");
-        document.getElementById('login-button').click();
-    } catch (e) {
-        console.error("Greška pri dodavanju dokumenta: ", e);
-    }
-
-
-                // Referral code logic (if any)
-                if (referralCode) {
-                    const existingUserQuery = query(collection(db, 'network'), where("username", "==", referralCode));
-                    const querySnapshot = await getDocs(existingUserQuery);
-
-                    if (!querySnapshot.empty) {
-                        querySnapshot.forEach(async (doc) => {
-                            const userId = doc.id;
-                            const userData = doc.data();
-
-                            // Update referral user's price
-                            let currentPrice = userData.currentPrice || 0.00;
-                            currentPrice += 0.01; // Povećanje cijene za 0.01
-                            await updateFirestore(userId, currentPrice, userData.lastClickTime); // Update Firestore
-                        });
+                try {
+                    let profilePictureUrl = '';
+                    // Upload slike u Firebase Storage (ako je korisnik izabrao sliku)
+                    if (profilePicture) {
+                        const storageRef = ref(storage, 'profilePictures/' + username + '_' + profilePicture.name);
+                        const snapshot = await uploadBytes(storageRef, profilePicture);
+                        profilePictureUrl = await getDownloadURL(snapshot.ref);
                     }
+
+                    // 1) Dodajemo novog korisnika u Firestore
+                    const newUserRef = await addDoc(collection(db, 'network'), {
+                        ime,
+                        prezime,
+                        email,
+                        username,
+                        brojTelefona,
+                        drzava,
+                        grad,
+                        adresa,
+                        sifra,
+                        chatCode,
+                        referralCode,
+                        profilePictureUrl,
+                        amount: 0,
+                        clickCount: 0
+                    });
+
+                    const newUserId = newUserRef.id; // ID novog korisnika
+
+                    // 2) Ako postoji referralCode, potraži referera i ažuriraj ga
+                    if (referralCode) {
+                        const existingUserQuery = query(
+                            collection(db, 'network'),
+                            where("username", "==", referralCode)
+                        );
+                        const querySnapshot = await getDocs(existingUserQuery);
+
+                        if (!querySnapshot.empty) {
+                            querySnapshot.forEach(async (referrerDoc) => {
+                                const referrerId = referrerDoc.id;
+                                const referrerData = referrerDoc.data();
+
+                                // Povećaj mu currentPrice za 0.01 (ili koliko hoćeš)
+                                let currentPrice = referrerData.currentPrice || 0.00;
+                                currentPrice += 0.01;
+
+                                // Povećaj referralBonus za 0.01
+                                let referralBonus = referrerData.referralBonus || 0.00;
+                                referralBonus += 0.01;
+
+                                // Povećaj referralCount
+                                const referralCount = referrerData.referralCount || 0;
+
+                                const referrerDocRef = doc(db, 'network', referrerId);
+
+                                // Ažuriraj polja kod referera:
+                                //   - currentPrice
+                                //   - referralBonus
+                                //   - referralCount
+                                //   - usedBy (novi ID korisnika)
+                                await updateDoc(referrerDocRef, {
+                                    currentPrice: currentPrice,
+                                    referralBonus: referralBonus,
+                                    referralCount: referralCount + 1,
+                                    usedBy: arrayUnion(newUserId)
+                                });
+                            });
+                        }
+                    }
+
+                    alert("Registracija uspješna! Možete se prijaviti.");
+                    // Prebaci na login-form
+                    document.getElementById('login-button').click();
+                } catch (e) {
+                    console.error("Greška pri dodavanju dokumenta: ", e);
                 }
             });
 
+            // Klik na "Submit Login"
             document.getElementById('submit-login').addEventListener('click', async () => {
                 const identifier = document.getElementById('login-identifier').value;
                 const sifra = document.getElementById('login-sifra').value;
@@ -141,25 +186,41 @@
                     return;
                 }
 
-                const qUsername = query(collection(db, 'network'), where("username", "==", identifier), where("sifra", "==", sifra));
-                const qEmail = query(collection(db, 'network'), where("email", "==", identifier), where("sifra", "==", sifra));
+                const qUsername = query(
+                    collection(db, 'network'),
+                    where("username", "==", identifier),
+                    where("sifra", "==", sifra)
+                );
+                const qEmail = query(
+                    collection(db, 'network'),
+                    where("email", "==", identifier),
+                    where("sifra", "==", sifra)
+                );
 
                 const usernameSnapshot = await getDocs(qUsername);
 
+                // Ako nema rezultata po username-u, proveri email
                 if (usernameSnapshot.empty) {
                     const emailSnapshot = await getDocs(qEmail);
                     if (emailSnapshot.empty) {
                         alert("Pogrešno username/email ili šifra.");
                     } else {
                         const userData = emailSnapshot.docs[0].data();
-                        window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
+                        window.location.href = 
+                            'index.html?ime=' + userData.ime + 
+                            '&prezime=' + userData.prezime + 
+                            '&username=' + userData.username;
                     }
                 } else {
                     const userData = usernameSnapshot.docs[0].data();
-                    window.location.href = 'index.html?ime=' + userData.ime + '&prezime=' + userData.prezime + '&username=' + userData.username;
+                    window.location.href = 
+                        'index.html?ime=' + userData.ime + 
+                        '&prezime=' + userData.prezime + 
+                        '&username=' + userData.username;
                 }
             });
 
+            // Funkcija za toggle password (vidljivo / skriveno)
             const togglePassword = (inputId, iconId) => {
                 const input = document.getElementById(inputId);
                 const icon = document.getElementById(iconId);
@@ -169,9 +230,47 @@
                     icon.textContent = type === 'password' ? 'visibility' : 'visibility_off';
                 });
             };
+            // Povezivanje toggle funkcionisanja za polja lozinke
             togglePassword('login-sifra', 'toggle-login-sifra');
             togglePassword('sifra', 'toggle-sifra');
         });
+
+
+
+        // PROVJERA KORAKA REFERAL SISTEMA
+console.log('Uneseni referal kod:', referralCode);
+
+const existingUserQuery = query(
+    collection(db, 'network'),
+    where("username", "==", referralCode)
+);
+const querySnapshot = await getDocs(existingUserQuery);
+
+console.log('Referal korisnik pronađen:', !querySnapshot.empty);
+
+if (!querySnapshot.empty) {
+    querySnapshot.forEach(async (referrerDoc) => {
+        const referrerId = referrerDoc.id;
+        const referrerData = referrerDoc.data();
+        
+        console.log('Dodavanje u usedBy za korisnika:', referrerId, 'novi korisnik ID:', newUserId);
+        
+        const referrerDocRef = doc(db, 'network', referrerId);
+        
+        try {
+            await updateDoc(referrerDocRef, {
+                referralCount: (referrerData.referralCount || 0) + 1,
+                usedBy: arrayUnion(newUserId)
+            });
+            console.log('Firestore update pokrenut za', referrerId);
+        } catch (error) {
+            console.error('Greška prilikom ažuriranja Firestore-a:', error);
+        }
+    });
+} else {
+    console.error('Greška: Referal korisnik nije pronađen u Firestore-u.');
+}
+
     </script>
 </head>
 <body>
@@ -190,40 +289,61 @@
         <img src="images/upitnik.png" alt="Delta Image" class="responsive-image">
     </div>
 
-    <div id="form-container" style="display:none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); padding: 20px; z-index: 1000;">
+    <div id="form-container" 
+         style="display:none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                background-color: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); 
+                padding: 20px; z-index: 1000;">
         <h2 id="form-title">Prijava</h2>
+
+        <!-- Login form -->
         <div id="login-form">
             <input type="text" id="login-identifier" placeholder="Username ili Email" required>
             <div style="position: relative;">
                 <input type="password" id="login-sifra" placeholder="Šifra" required>
-                <span id="toggle-login-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span>
+                <span id="toggle-login-sifra" class="toggle-password material-icons" 
+                      style="cursor: pointer;">visibility</span>
             </div>
-            <button id="submit-login" style="color: black; display: block; margin: 0 auto; width: 108%;">Prijavi se</button>
+            <button id="submit-login" 
+                    style="color: black; display: block; margin: 0 auto; width: 108%;">
+                Prijavi se
+            </button>
         </div>
-    
+
+        <!-- Registration form -->
         <div id="registration-form" style="display:none;">
             <h2 id="form-title">Registracija</h2>
             <input type="text" id="ime" placeholder="Ime" required>
             <input type="text" id="prezime" placeholder="Prezime" required>
             <input type="email" id="email" placeholder="Email" required>
             <input type="text" id="username" placeholder="Username" required>
-            <input type="text" id="brojTelefona" placeholder="Broj telefona" required pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            <input type="text" id="brojTelefona" placeholder="Broj telefona" required 
+                   pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
             <input type="text" id="drzava" placeholder="Država" required>
             <input type="text" id="grad" placeholder="Grad" required>
             <input type="text" id="adresa" placeholder="Adresa" required>
+
             <div style="position: relative;">
                 <input type="password" id="sifra" placeholder="Šifra" required>
-                <span id="toggle-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span>
+                <span id="toggle-sifra" class="toggle-password material-icons" 
+                      style="cursor: pointer;">visibility</span>
             </div>
-            <input type="text" id="chat-code" placeholder="4 digit code for chat" maxlength="4" required pattern="\d{4}" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+
+            <input type="text" id="chat-code" placeholder="4 digit code for chat" 
+                   maxlength="4" required pattern="\d{4}" 
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'')">
 
             <input type="text" id="referral-code" placeholder="Referal kod (opcionalno)">
-            <input type="file" id="profile-picture" accept="image/*"> <!-- Input for profile picture -->
-            <button id="submit-registration" style="color: black; display: block; margin: 0 auto; width: 108%;">Registruj se</button>
+            <input type="file" id="profile-picture" accept="image/*">
+
+            <button id="submit-registration" 
+                    style="color: black; display: block; margin: 0 auto; width: 108%;">
+                Registruj se
+            </button>
         </div>
     </div>
 </body>
 </html>
+
 
 
 
