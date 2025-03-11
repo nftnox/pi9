@@ -17,7 +17,7 @@
 <body>
 
     <header class="header-container">
-        <div id="greeting">Pozdrav, <span id="logged-in-user"></span></div>
+        <div id="greeting">Hi, <span id="logged-in-user"></span></div>
         <div id="current-price-display">Your wallet: <span id="current-price">0.00</span> <span class="delta">&#948;</span></div>
         
         <!-- Toggle button for mobile devices -->
@@ -101,7 +101,7 @@
         </div>
     
         <div id="eth-account-section" style="display: none; margin-top: 20px; text-align: center; background-color: #ffcccc; padding: 10px; border-radius: 8px;">
-            <label for="eth-address-input" style="color: #800000; font-weight: bold;">Vaš MetaMask račun:</label>
+            <label for="eth-address-input" style="color: #800000; font-weight: bold;">Your metamask wallet:</label>
             <input type="text" id="eth-address-input" placeholder="Unesite vašu Ethereum adresu" style="margin-top: 10px; padding: 5px; width: 60%; border: 1px solid #800000;" disabled>
             <button id="save-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer;">Spremi adresu</button>
             <button id="edit-eth-address" style="margin-top: 10px; padding: 5px; background-color: #800000; color: white; border: none; border-radius: 5px; cursor: pointer; display: none;">Promeni adresu</button>
@@ -111,7 +111,7 @@
     </div>
     
     <div id="transaction-history" class="product-list-container">
-        <div id="transaction-title" class="profile-title">Historija transakcija</div>
+        <div id="transaction-title" class="profile-title">Transaction history</div>
     </div>
     
 
@@ -622,7 +622,7 @@ async function loadTransactionHistory() {
             });
         } else {
             const noTransactionsMessage = document.createElement('div');
-            noTransactionsMessage.innerText = 'Nema transakcija.';
+            noTransactionsMessage.innerText = 'No transaction';
             noTransactionsMessage.style.textAlign = 'center';
             transactionHistoryDiv.appendChild(noTransactionsMessage);
         }
@@ -651,9 +651,9 @@ async function loadProfileOwnerData() {
             
             const profileTitle = document.getElementById('profile-title');
             if (loggedInUserIme === profileName) {
-                profileTitle.innerText = 'Vaš profil';
+                profileTitle.innerText = 'Your profile';
             } else {
-                profileTitle.innerText = `Profil korisnika: ${profileName}`;
+                profileTitle.innerText = `Profile of: ${profileName}`;
             }
         });
     } else {
