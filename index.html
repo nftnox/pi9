@@ -19,7 +19,7 @@
 <body>
 
     <header>
-        <div id="user-name">Pozdrav, <span id="ime"></span></div>
+        <div id="user-name">Hi, <span id="ime"></span></div>
         <div id="current-price">Your wallet: <span id="amount">0.00</span> &#948;</div>
 
     
@@ -106,8 +106,8 @@
             <button id="start-audio-call"><span class="material-icons">call</span> Audio Call</button>
 
             <button id="start-call"><span class="material-icons">videocam</span></button>
-            <input type="text" id="chat-message" placeholder="Unesite poruku">
-            <button id="send-message">Pošalji</button>
+            <input type="text" id="chat-message" placeholder="Type">
+            <button id="send-message">Send</button>
         </div>
     </div>
 </div>
@@ -115,14 +115,14 @@
 <!-- Modal za kreiranje grupnog chata -->
 <div id="create-group-modal" class="modal" style="display: none;">
     <div class="modal-content">
-        <h3 style="color: black;">Kreiraj grupni chat</h3>
+        <h3 style="color: black;">Create group chat</h3>
 
         <div id="group-friends-list"></div>
         <label for="group-name">Naziv grupe:</label>
-        <input type="text" id="group-name" placeholder="Unesite naziv grupe">
-        <button id="create-group-chat-button">Kreiraj grupu</button>
-        <button id="cancel-create-group">Otkaži</button>
-        <label for="group-image">Dodaj sliku grupe:</label>
+        <input type="text" id="group-name" placeholder="Name of the group">
+        <button id="create-group-chat-button">Create group</button>
+        <button id="cancel-create-group">Cancel</button>
+        <label for="group-image">Add group picture:</label>
 <input type="file" id="group-image" accept="image/*">
 
     </div>
@@ -315,7 +315,7 @@ desktopToggleButton.addEventListener('click', () => {
 
 <!-- Virtuelna tržnica -->
 <div id="virtual-marketplace" class="marketplace-outline">
-    <h2>Virtuelna tržnica</h2>
+    <h2>Marketplace</h2>
     <div id="product-list" class="product-list-container">
         <!-- Individual product boxes will be added here -->
     </div>
@@ -771,16 +771,11 @@ async function loadProducts() {
 
   // Prikaži cijenu u ETH ako postoji
   const productCryptoPrice = document.createElement('div');
-    if (productData.cryptoPrice) {
-        productCryptoPrice.textContent = `Price: ${productData.cryptoPrice} ETH`;
-    }
+    
 
     const buyWithCryptoButton = document.createElement('button');
-buyWithCryptoButton.textContent = 'Buy with Crypto';
-buyWithCryptoButton.style.backgroundColor = 'purple';
-buyWithCryptoButton.style.color = 'white';
-buyWithCryptoButton.style.marginTop = '10px';
-buyWithCryptoButton.style.fontSize = '16px'; // Set font size to 14px
+
+
 
 
     // Omogući MetaMask plaćanje
@@ -918,7 +913,7 @@ buyButton.disabled = productData.sold; // Disable button if the product is sold
         // Element za prikaz novog vlasnika
         const ownerDiv = document.createElement('div');
         if (productData.sold && productData.ownerName) {
-            ownerDiv.textContent = `Novi vlasnik: ${productData.ownerName}`;
+            ownerDiv.textContent = `New owner: ${productData.ownerName}`;
             ownerDiv.style.color = 'white';
             ownerDiv.style.cursor = 'pointer';
 
