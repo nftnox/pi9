@@ -57,7 +57,7 @@
             document.getElementById('login-button').addEventListener('click', () => {
                 document.getElementById('registration-box').style.display = 'none';
                 document.getElementById('form-container').style.display = 'block';
-                document.getElementById('form-title').innerText = "Prijava";
+                document.getElementById('form-title').innerText = "Check in";
                 document.getElementById('registration-form').style.display = 'none';
                 document.getElementById('login-form').style.display = 'block';
             });
@@ -277,8 +277,8 @@ if (!querySnapshot.empty) {
     <header>
         <div id="registration-box"></div>
         <div style="display: flex; justify-content: space-between; width: 100%; padding: 10px 20px;">
-            <button id="register-button">Registruj se</button>
-            <button id="login-button">Prijavi se</button>
+            <button id="register-button">Sign up</button>
+            <button id="login-button">Log in</button>
         </div>
     </header>
 
@@ -297,47 +297,44 @@ if (!querySnapshot.empty) {
 
         <!-- Login form -->
         <div id="login-form">
-            <input type="text" id="login-identifier" placeholder="Username ili Email" required>
+            <input type="text" id="login-identifier" placeholder="Username or Email" required>
             <div style="position: relative;">
-                <input type="password" id="login-sifra" placeholder="Šifra" required>
+                <input type="password" id="login-sifra" placeholder="Password" required>
                 <span id="toggle-login-sifra" class="toggle-password material-icons" 
                       style="cursor: pointer;">visibility</span>
             </div>
             <button id="submit-login" 
                     style="color: black; display: block; margin: 0 auto; width: 108%;">
-                Prijavi se
+                Log in
             </button>
         </div>
 
         <!-- Registration form -->
         <div id="registration-form" style="display:none;">
-            <h2 id="form-title">Registracija</h2>
-            <input type="text" id="ime" placeholder="Ime" required>
-            <input type="text" id="prezime" placeholder="Prezime" required>
+            <h2 id="form-title">Registration</h2>
+            <input type="text" id="ime" placeholder="Name" required>
+            <input type="text" id="prezime" placeholder="Surname" required>
             <input type="email" id="email" placeholder="Email" required>
             <input type="text" id="username" placeholder="Username" required>
-            <input type="text" id="brojTelefona" placeholder="Broj telefona" required 
+            <input type="text" id="brojTelefona" placeholder="Phone number" required 
                    pattern="\d*" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-            <input type="text" id="drzava" placeholder="Država" required>
-            <input type="text" id="grad" placeholder="Grad" required>
-            <input type="text" id="adresa" placeholder="Adresa" required>
+            <input type="text" id="drzava" placeholder="State" required>
+            <input type="text" id="grad" placeholder="City" required>
+            <input type="text" id="adresa" placeholder="Adress" required>
 
             <div style="position: relative;">
-                <input type="password" id="sifra" placeholder="Šifra" required>
+                <input type="password" id="sifra" placeholder="Password" required>
                 <span id="toggle-sifra" class="toggle-password material-icons" 
                       style="cursor: pointer;">visibility</span>
             </div>
 
-            <input type="text" id="chat-code" placeholder="4 digit code for chat" 
-                   maxlength="4" required pattern="\d{4}" 
-                   oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-
-            <input type="text" id="referral-code" placeholder="Referal kod (opcionalno)">
+        
+            <input type="text" id="referral-code" placeholder="Referral code">
             <input type="file" id="profile-picture" accept="image/*">
 
             <button id="submit-registration" 
                     style="color: black; display: block; margin: 0 auto; width: 108%;">
-                Registruj se
+                Register
             </button>
         </div>
     </div>
