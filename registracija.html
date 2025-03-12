@@ -73,15 +73,11 @@
                 const grad = document.getElementById('grad').value;
                 const adresa = document.getElementById('adresa').value;
                 const sifra = document.getElementById('sifra').value;
-                const chatCode = document.getElementById('chat-code').value; 
+                
                 const referralCode = document.getElementById('referral-code').value;
                 const profilePicture = document.getElementById('profile-picture').files[0];
 
-                // Validacija 4-cifrenog koda
-                if (!/^\d{4}$/.test(chatCode)) {
-                    alert("Četverocifreni kod mora sadržavati tačno 4 broja.");
-                    return;
-                }
+               
 
                 // Provera da li username ili email već postoje
                 const usernameQuery = query(collection(db, 'network'), where("username", "==", username));
@@ -118,7 +114,7 @@
                         grad,
                         adresa,
                         sifra,
-                        chatCode,
+                       
                         referralCode,
                         profilePictureUrl,
                         amount: 0,
@@ -203,7 +199,7 @@
                 if (usernameSnapshot.empty) {
                     const emailSnapshot = await getDocs(qEmail);
                     if (emailSnapshot.empty) {
-                        alert("Pogrešno username/email ili šifra.");
+                        alert("Wrong username/email or password.");
                     } else {
                         const userData = emailSnapshot.docs[0].data();
                         window.location.href = 
