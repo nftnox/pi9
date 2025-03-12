@@ -289,7 +289,7 @@ desktopToggleButton.addEventListener('click', () => {
                 <span class="material-icons">share</span> Invite
             </span>
             <span id="referral-count-display" style="font-size: 0.9em; color: gray; display: block; margin-top: 5px;">
-                0/10
+              
             </span>
         </button>
         
@@ -934,58 +934,55 @@ async function loadProducts() {
 
 
 
-        async function loadReferralCount() {
-    try {
-        const docRef = doc(db, 'network', userId); 
-        const docSnap = await getDoc(docRef);
+        async function trackReferralCount() {
+    const docRef = doc(db, 'network', userId);
+    let lastActiveReferrals = -1; // Početna vrijednost za provjeru promjena
 
+    onSnapshot(docRef, async (docSnap) => {
         if (docSnap.exists()) {
             const userData = docSnap.data();
-            const referralIds = userData.usedBy || []; // Lista svih referala
-            const totalReferrals = referralIds.length; // Ukupan broj referala
+            const referralIds = userData.usedBy || [];
+            const totalReferrals = referralIds.length;
             let activeReferrals = 0;
 
             const now = new Date();
-            const twentyFourHours = 24 * 60 * 60 * 1000; // 24 sata
+            const twentyFourHours = 24 * 60 * 60 * 1000;
 
-            // Iteriramo kroz sve referale i provjeravamo koji su aktivni
             for (const referralId of referralIds) {
-                try {
-                    const referralDocRef = doc(db, 'network', referralId);
-                    const referralDocSnap = await getDoc(referralDocRef);
+                const referralDocRef = doc(db, 'network', referralId);
+                const referralDocSnap = await getDoc(referralDocRef);
 
-                    if (referralDocSnap.exists()) {
-                        const referralData = referralDocSnap.data();
-                        const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
+                if (referralDocSnap.exists()) {
+                    const referralData = referralDocSnap.data();
+                    const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
 
-                        // Ako je referal bio aktivan u zadnjih 24h, povećaj brojač aktivnih referala
-                        if (referralLastClickTime && (now - referralLastClickTime) < twentyFourHours) {
-                            activeReferrals++;
-                        }
+                    if (referralLastClickTime && (now - referralLastClickTime) < twentyFourHours) {
+                        activeReferrals++;
                     }
-                } catch (error) {
-                    console.error(`Greška prilikom provjere referala (${referralId}):`, error);
                 }
             }
 
-            // Ažuriramo prikaz u Share icon-u
-            document.getElementById('referral-count-display').innerText = `${activeReferrals}/${totalReferrals}`;
+            // ⚡️ Ažuriraj samo ako se broj aktivnih referala promijenio
+            if (activeReferrals !== lastActiveReferrals) {
+                document.getElementById('referral-count-display').innerText = `${activeReferrals}/${totalReferrals}`;
+                lastActiveReferrals = activeReferrals; // Ažuriraj zadnju vrijednost
+            }
         } else {
             console.error("Korisnik ne postoji u Firestore-u.");
         }
-    } catch (error) {
-        console.error("Greška prilikom učitavanja referral count-a:", error);
-    }
+    });
 }
+
+
 
 
 // Pozivanje funkcije nakon učitavanja korisničkog ID-ja
 async function initializeUserData() {
-    await loadUserId(); // Učitava `userId` iz Firestore-a
-    await loadUserData(); // Učitava `currentPrice`
-    await loadReferralCount(); // Učitava `referralCount`
-    
+    await loadUserId();
+    await loadUserData();
+    trackReferralCount(); // Dodano praćenje broja referala u realnom vremenu
 }
+
 
 
 
