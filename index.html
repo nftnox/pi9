@@ -293,6 +293,15 @@ desktopToggleButton.addEventListener('click', () => {
             </span>
         </button>
         
+        <div id="referral-details" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; color: black; padding: 15px; border-radius: 5px; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); z-index: 1000;">
+            <h4 style="margin-top: 0;">Referral List</h4>
+            <p><strong>Active Referrals:</strong></p>
+            <ul id="active-referrals"></ul>
+            <p><strong>Inactive Referrals:</strong></p>
+            <ul id="inactive-referrals"></ul>
+            <button id="close-referral-details" style="margin-top: 10px; display: block; width: 100%; background: red; color: white; border: none; padding: 8px; cursor: pointer;">Close</button>
+        </div>
+        
         
     </div>
 
@@ -650,7 +659,7 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
         
     async function checkMainClickTime() {
     const now = new Date();
-    const twoMinutes = 2 * 60 * 1000; // 2 minute u milisekundama
+    const twentyFourHours = 24 * 60 * 60 * 1000; // 24 sata u milisekundama
 
     const docRef = doc(db, 'network', userId);
     const docSnap = await getDoc(docRef);
@@ -659,20 +668,20 @@ document.getElementById('dolar-icon').addEventListener('click', async () => {
         const userData = docSnap.data();
         const mainClickTime = userData.mainClickTime ? userData.mainClickTime.toDate() : null;
 
-        if (mainClickTime && now - mainClickTime >= twoMinutes) {
-            // Zaustavi rudarenje
+        if (mainClickTime && now - mainClickTime >= twentyFourHours) {
+            // Zaustavi rudarenje nakon 24h
             lastClickTime = null; 
             await updateDoc(docRef, { lastClickTime: null });
 
             // Resetuj "dolar-icon" da prikazuje 0.00/h
             document.querySelector('.amount').innerText = "0.00/h";
 
-            console.log("Isteklo je 2 minute. Rudarenje se gasi, ali currentPrice NE resetujemo.");
+            console.log("Isteklo je 24 sata. Rudarenje se gasi, ali currentPrice NE resetujemo.");
         }
     }
 }
 
-
+// Provjera aktivnih referala u periodu od 24h umjesto 2 minute
 async function provjeriAktivneReferale() {
     const docRef = doc(db, 'network', userId);
     const docSnap = await getDoc(docRef);
@@ -683,14 +692,14 @@ async function provjeriAktivneReferale() {
         let aktivniReferali = 0;
 
         const now = new Date();
-        const twoMinutes = 2 * 60 * 1000; // Testno 2 minute
+        const twentyFourHours = 24 * 60 * 60 * 1000; // 24 sata u milisekundama
 
         // Provjera da li je sponzor (korisnik) aktivan
         const sponsorLastClickTime = userData.lastClickTime ? userData.lastClickTime.toDate() : null;
-        const sponsorAktivan = sponsorLastClickTime && now - sponsorLastClickTime < twoMinutes;
+        const sponsorAktivan = sponsorLastClickTime && now - sponsorLastClickTime < twentyFourHours;
 
         if (sponsorAktivan) {
-            // Iteriramo kroz sve referale i provjeravamo ko je aktivan
+            // Iteriramo kroz sve referale i provjeravamo ko je aktivan u posljednja 24h
             for (const referralId of referralIds) {
                 try {
                     const referralDocRef = doc(db, 'network', referralId);
@@ -700,7 +709,7 @@ async function provjeriAktivneReferale() {
                         const referralData = referralDocSnap.data();
                         const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
 
-                        if (referralLastClickTime && now - referralLastClickTime < twoMinutes) {
+                        if (referralLastClickTime && now - referralLastClickTime < twentyFourHours) {
                             aktivniReferali++;
                         }
                     }
@@ -715,15 +724,74 @@ async function provjeriAktivneReferale() {
                 referralBonus: noviBonus
             });
 
-            console.log(`${window.location.href}: Aktivni referali: ${aktivniReferali}`);
+            console.log(`Aktivni referali u zadnjih 24 sata: ${aktivniReferali}`);
         } else {
-            console.log(`Sponzor ${userData.username} nije aktivan – nema bonusa.`);
+            console.log(`Sponzor ${userData.username} nije aktivan u zadnjih 24 sata – nema bonusa.`);
         }
     }
 }
 
-// Pozivamo funkciju svakih 5 sekundi
+document.getElementById('referral-count-display').addEventListener('click', async function (event) {
+    event.stopPropagation(); // Sprječava da klik aktivira invite dugme
+
+    const docRef = doc(db, 'network', userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const userData = docSnap.data();
+        const referralIds = userData.usedBy || [];
+        let activeReferrals = [];
+        let inactiveReferrals = [];
+
+        const now = new Date();
+        const twentyFourHours = 24 * 60 * 60 * 1000; // 24 sata
+
+        for (const referralId of referralIds) {
+            try {
+                const referralDocRef = doc(db, 'network', referralId);
+                const referralDocSnap = await getDoc(referralDocRef);
+
+                if (referralDocSnap.exists()) {
+                    const referralData = referralDocSnap.data();
+                    const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
+                    const referralName = referralData.ime || "Unknown";
+
+                    if (referralLastClickTime && (now - referralLastClickTime) < twentyFourHours) {
+                        activeReferrals.push(referralName);
+                    } else {
+                        inactiveReferrals.push(referralName);
+                    }
+                }
+            } catch (error) {
+                console.error(`Greška prilikom provjere referala (${referralId}):`, error);
+            }
+        }
+
+        // Ažuriraj listu aktivnih i neaktivnih referala
+        const activeList = document.getElementById('active-referrals');
+        const inactiveList = document.getElementById('inactive-referrals');
+        
+        activeList.innerHTML = activeReferrals.length ? activeReferrals.map(name => `<li>${name}</li>`).join('') : '<li>Nema aktivnih referala</li>';
+        inactiveList.innerHTML = inactiveReferrals.length ? inactiveReferrals.map(name => `<li>${name}</li>`).join('') : '<li>Nema neaktivnih referala</li>';
+
+        // Prikaži popup i dugme Close
+        const referralDetails = document.getElementById('referral-details');
+        referralDetails.style.display = 'block';
+        document.getElementById('close-referral-details').style.display = 'block';
+    }
+});
+
+// **Zatvaranje popupa klikom na Close dugme**
+document.getElementById('close-referral-details').addEventListener('click', function (event) {
+    event.stopPropagation(); // Sprječava konflikte s klikovima izvan popupa
+    document.getElementById('referral-details').style.display = 'none';
+    document.getElementById('close-referral-details').style.display = 'none';
+});
+
+
+// Pozivamo funkciju svakih 5 sekundi (može se smanjiti ako je potrebno)
 setInterval(provjeriAktivneReferale, 5000);
+
 
 
 
@@ -868,15 +936,40 @@ async function loadProducts() {
 
         async function loadReferralCount() {
     try {
-        const docRef = doc(db, 'network', userId); // Preuzima korisnički dokument
+        const docRef = doc(db, 'network', userId); 
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            const referralCount = docSnap.data().referralCount || 0; // Ako nema podataka, postavi na 0
-            const maxReferrals = 10; // Maksimalan broj preporuka
+            const userData = docSnap.data();
+            const referralIds = userData.usedBy || []; // Lista svih referala
+            const totalReferrals = referralIds.length; // Ukupan broj referala
+            let activeReferrals = 0;
 
-            // Ažuriramo prikaz referal count-a
-            document.getElementById('referral-count-display').innerText = `${referralCount}/${maxReferrals}`;
+            const now = new Date();
+            const twentyFourHours = 24 * 60 * 60 * 1000; // 24 sata
+
+            // Iteriramo kroz sve referale i provjeravamo koji su aktivni
+            for (const referralId of referralIds) {
+                try {
+                    const referralDocRef = doc(db, 'network', referralId);
+                    const referralDocSnap = await getDoc(referralDocRef);
+
+                    if (referralDocSnap.exists()) {
+                        const referralData = referralDocSnap.data();
+                        const referralLastClickTime = referralData.lastClickTime ? referralData.lastClickTime.toDate() : null;
+
+                        // Ako je referal bio aktivan u zadnjih 24h, povećaj brojač aktivnih referala
+                        if (referralLastClickTime && (now - referralLastClickTime) < twentyFourHours) {
+                            activeReferrals++;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Greška prilikom provjere referala (${referralId}):`, error);
+                }
+            }
+
+            // Ažuriramo prikaz u Share icon-u
+            document.getElementById('referral-count-display').innerText = `${activeReferrals}/${totalReferrals}`;
         } else {
             console.error("Korisnik ne postoji u Firestore-u.");
         }
@@ -884,6 +977,7 @@ async function loadProducts() {
         console.error("Greška prilikom učitavanja referral count-a:", error);
     }
 }
+
 
 // Pozivanje funkcije nakon učitavanja korisničkog ID-ja
 async function initializeUserData() {
@@ -5898,6 +5992,13 @@ nav .material-icons {
     margin-top: 5px; /* Razmak između glavnog sadržaja i referal broja */
 }
 
+#referral-details {
+    display: none; /* Skriveno po defaultu */
+}
+
+#close-referral-details {
+    display: none; /* Dugme za zatvaranje se ne prikazuje dok popup nije otvoren */
+}
 
 </style>
 
